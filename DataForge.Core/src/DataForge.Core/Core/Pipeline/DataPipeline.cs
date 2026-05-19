@@ -71,10 +71,12 @@ internal class DataPipeline<T> : IDataPipeline<T>
         if (_errorHandler != null || _onErrorContinue)
         {
             return new DataPipeline<T>((ct) =>
-                WhereSafeInternal(_sourceFactory(ct), predicate, _errorHandler));
+                WhereSafeInternal(_sourceFactory(ct), predicate, _errorHandler),
+                _validator, _continueOnValidationError, _failOnValidationError, _errorHandler, true);
         }
         return new DataPipeline<T>((ct) =>
-            WhereInternal(_sourceFactory(ct), predicate));
+            WhereInternal(_sourceFactory(ct), predicate),
+            _validator, _continueOnValidationError, _failOnValidationError, _errorHandler, _onErrorContinue);
     }
 
     public IDataPipeline<T> WhereAsync(Func<T, Task<bool>> predicate)
@@ -402,21 +404,28 @@ internal class DataPipeline<T> : IDataPipeline<T>
     {
         await foreach (var item in source.WithCancellation(ct).ConfigureAwait(false))
         {
-            TResult result;
+            TResult? result = default;
+            Exception? caughtException = null;
             try
             {
                 result = selector(item);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                var action = errorHandler?.Invoke(null!, item) ?? ErrorAction.Skip;
+                caughtException = ex;
+            }
+
+            if (caughtException != null)
+            {
+                var action = errorHandler?.Invoke(caughtException, item) ?? ErrorAction.Skip;
                 if (action == ErrorAction.Stop || action == ErrorAction.Throw)
                 {
-                    throw;
+                    throw caughtException;
                 }
                 continue;
             }
-            yield return result;
+
+            yield return result!;
         }
     }
 
@@ -468,6 +477,7 @@ internal class DataPipeline<T> : IDataPipeline<T>
         await foreach (var item in source.WithCancellation(ct).ConfigureAwait(false))
         {
             var shouldYield = false;
+            Exception? caughtException = null;
             try
             {
                 if (predicate(item))
@@ -475,14 +485,21 @@ internal class DataPipeline<T> : IDataPipeline<T>
                     shouldYield = true;
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                var action = errorHandler?.Invoke(null!, item) ?? ErrorAction.Skip;
+                caughtException = ex;
+            }
+
+            if (caughtException != null)
+            {
+                var action = errorHandler?.Invoke(caughtException, item) ?? ErrorAction.Skip;
                 if (action == ErrorAction.Stop || action == ErrorAction.Throw)
                 {
-                    throw;
+                    throw caughtException;
                 }
+                continue;
             }
+
             if (shouldYield)
             {
                 yield return item;

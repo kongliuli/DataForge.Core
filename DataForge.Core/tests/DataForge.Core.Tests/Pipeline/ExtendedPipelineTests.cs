@@ -111,12 +111,12 @@ public class ExtendedPipelineTests
     public async Task OnErrorContinue_SkipsErrorsInSource()
     {
         var pipeline = DataForgePipeline.FromMemory(new[] { 1, 2, 3, 4, 5 })
+            .OnErrorContinue()
             .Where(x =>
             {
                 if (x == 3) throw new InvalidOperationException("test");
                 return true;
-            })
-            .OnErrorContinue();
+            });
 
         var result = await pipeline.ToListAsync();
 
@@ -127,12 +127,12 @@ public class ExtendedPipelineTests
     public async Task OnErrorSkip_SkipsErrorsInSource()
     {
         var pipeline = DataForgePipeline.FromMemory(new[] { "a", "b", "c", "d", "e" })
+            .OnErrorSkip()
             .Where(x =>
             {
                 if (x == "c") throw new InvalidOperationException("test");
                 return true;
-            })
-            .OnErrorSkip();
+            });
 
         var result = await pipeline.ToListAsync();
 
@@ -143,12 +143,12 @@ public class ExtendedPipelineTests
     public async Task OnError_WithCustomHandler_UsesHandlerDecision()
     {
         var pipeline = DataForgePipeline.FromMemory(new[] { "a", "b", "c" })
+            .OnError((ex, item) => DataForge.Core.Core.Infrastructure.ErrorAction.Skip)
             .Where(x =>
             {
                 if (x == "b") throw new InvalidOperationException("test");
                 return true;
-            })
-            .OnError((ex, item) => DataForge.Core.Core.Infrastructure.ErrorAction.Skip);
+            });
 
         var result = await pipeline.ToListAsync();
 
