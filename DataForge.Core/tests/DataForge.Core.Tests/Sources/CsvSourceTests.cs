@@ -12,7 +12,11 @@ public class CsvSourceTests
         using var tempFile = new TemporaryFile("Name,Age\nAlice,30\nBob,25");
         var source = new CsvSource<Person>(tempFile.Path);
 
-        var result = await source.ReadAsync().ToListAsync();
+        var result = new List<Person>();
+        await foreach (var item in source.ReadAsync())
+        {
+            result.Add(item);
+        }
 
         result.Should().HaveCount(2);
         result[0].Name.Should().Be("Alice");

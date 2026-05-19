@@ -33,4 +33,23 @@ public class FluentValidationAdapter<T> : IValidator<T>
 
         return ValidationResult.Failure(errors);
     }
+
+    public ValidationResult Validate(T instance)
+    {
+        var fluentResult = _innerValidator.Validate(instance);
+
+        if (fluentResult.IsValid)
+        {
+            return ValidationResult.Success();
+        }
+
+        var errors = fluentResult.Errors.Select(e => new ValidationError
+        {
+            PropertyName = e.PropertyName,
+            Message = e.ErrorMessage,
+            ErrorCode = ValidationErrorCode.Custom
+        }).ToList();
+
+        return ValidationResult.Failure(errors);
+    }
 }

@@ -13,4 +13,15 @@
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="DataForge.Core.Tests" />
+    <InternalsVisibleTo Include="DataForge.Core.IntegrationTests" />
+    <InternalsVisibleTo Include="DataForge.Core.SqlServer" />
+    <InternalsVisibleTo Include="DataForge.Core.MySql" />
+    <InternalsVisibleTo Include="DataForge.Core.Sqlite" />
+    <InternalsVisibleTo Include="DataForge.Core.Excel" />
+    <InternalsVisibleTo Include="DataForge.Core.Json" />
+    <InternalsVisibleTo Include="DataForge.Core.FluentValidation" />
+  </ItemGroup>
+
 </Project>
