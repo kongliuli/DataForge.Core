@@ -1,8 +1,11 @@
+using DataForge.Core.Core.Infrastructure;
 using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Targets;
+using DataForge.Core.Core.Transforms;
 using DataForge.Core.Core.Validation;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -16,6 +19,8 @@ internal class DataPipeline<T> : IDataPipeline<T>
     private readonly IValidator<T>? _validator;
     private readonly bool _continueOnValidationError;
     private readonly bool _failOnValidationError;
+    private readonly Func<Exception, T, ErrorAction>? _errorHandler;
+    private readonly bool _onErrorContinue;
 
     public DataPipeline(IAsyncEnumerable<T> source)
     {
@@ -26,16 +31,25 @@ internal class DataPipeline<T> : IDataPipeline<T>
         Func<CancellationToken, IAsyncEnumerable<T>> sourceFactory,
         IValidator<T>? validator = null,
         bool continueOnValidationError = false,
-        bool failOnValidationError = true)
+        bool failOnValidationError = true,
+        Func<Exception, T, ErrorAction>? errorHandler = null,
+        bool onErrorContinue = false)
     {
         _sourceFactory = sourceFactory;
         _validator = validator;
         _continueOnValidationError = continueOnValidationError;
         _failOnValidationError = failOnValidationError;
+        _errorHandler = errorHandler;
+        _onErrorContinue = onErrorContinue;
     }
 
     public IDataPipeline<TResult> Select<TResult>(Func<T, TResult> selector)
     {
+        if (_errorHandler != null || _onErrorContinue)
+        {
+            return new DataPipeline<TResult>((ct) =>
+                SelectSafeInternal(_sourceFactory(ct), selector, _errorHandler));
+        }
         return new DataPipeline<TResult>((ct) =>
             SelectInternal(_sourceFactory(ct), selector));
     }
@@ -46,8 +60,19 @@ internal class DataPipeline<T> : IDataPipeline<T>
             SelectAsyncInternal(_sourceFactory(ct), selector, ct));
     }
 
+    public IDataPipeline<TResult> SelectMany<TResult>(Func<T, IEnumerable<TResult>> selector)
+    {
+        return new DataPipeline<TResult>((ct) =>
+            SelectManyInternal(_sourceFactory(ct), selector));
+    }
+
     public IDataPipeline<T> Where(Func<T, bool> predicate)
     {
+        if (_errorHandler != null || _onErrorContinue)
+        {
+            return new DataPipeline<T>((ct) =>
+                WhereSafeInternal(_sourceFactory(ct), predicate, _errorHandler));
+        }
         return new DataPipeline<T>((ct) =>
             WhereInternal(_sourceFactory(ct), predicate));
     }
@@ -104,24 +129,77 @@ internal class DataPipeline<T> : IDataPipeline<T>
             TakeInternal(_sourceFactory(ct), count));
     }
 
+    public IDataPipeline<List<T>> Batch(int batchSize)
+    {
+        return new DataPipeline<List<T>>((ct) =>
+            BatchInternal(_sourceFactory(ct), batchSize));
+    }
+
     public IGroupedDataPipeline<TKey, T> GroupBy<TKey>(Func<T, TKey> keySelector) where TKey : notnull
     {
         return new GroupedDataPipeline<TKey, T>(_sourceFactory, keySelector);
     }
 
+    public IDataPipeline<(T First, TSecond Second)> Zip<TSecond>(IDataPipeline<TSecond> second)
+    {
+        var secondEnum = second.AsAsyncEnumerable();
+        return new DataPipeline<(T First, TSecond Second)>((ct) =>
+            ZipInternal(_sourceFactory(ct), secondEnum, ct));
+    }
+
+    public IDataPipeline<TResult> TransformWith<TResult>(IDataTransform<T, TResult> transform)
+    {
+        return new DataPipeline<TResult>((ct) =>
+            TransformWithInternal(_sourceFactory(ct), transform));
+    }
+
     public IDataPipeline<T> ValidateWith(IValidator<T> validator)
     {
-        return new DataPipeline<T>(_sourceFactory, validator, _continueOnValidationError, _failOnValidationError);
+        return new DataPipeline<T>(_sourceFactory, validator, _continueOnValidationError, _failOnValidationError, _errorHandler, _onErrorContinue);
     }
 
     public IDataPipeline<T> ContinueOnValidationError()
     {
-        return new DataPipeline<T>(_sourceFactory, _validator, continueOnValidationError: true, failOnValidationError: false);
+        return new DataPipeline<T>(_sourceFactory, _validator, continueOnValidationError: true, failOnValidationError: false, _errorHandler, _onErrorContinue);
     }
 
     public IDataPipeline<T> FailOnValidationError()
     {
-        return new DataPipeline<T>(_sourceFactory, _validator, continueOnValidationError: false, failOnValidationError: true);
+        return new DataPipeline<T>(_sourceFactory, _validator, continueOnValidationError: false, failOnValidationError: true, _errorHandler, _onErrorContinue);
+    }
+
+    public IDataPipeline<T> OnErrorContinue()
+    {
+        return new DataPipeline<T>(_sourceFactory, _validator, _continueOnValidationError, _failOnValidationError,
+            errorHandler: (ex, item) => ErrorAction.Continue, onErrorContinue: true);
+    }
+
+    public IDataPipeline<T> OnErrorStop()
+    {
+        return new DataPipeline<T>(_sourceFactory, _validator, _continueOnValidationError, _failOnValidationError,
+            errorHandler: null, onErrorContinue: false);
+    }
+
+    public IDataPipeline<T> OnErrorSkip()
+    {
+        return new DataPipeline<T>(_sourceFactory, _validator, _continueOnValidationError, _failOnValidationError,
+            errorHandler: (ex, item) => ErrorAction.Skip, onErrorContinue: true);
+    }
+
+    public IDataPipeline<T> OnError(Func<Exception, T, ErrorAction> handler)
+    {
+        return new DataPipeline<T>(_sourceFactory, _validator, _continueOnValidationError, _failOnValidationError,
+            errorHandler: handler, onErrorContinue: true);
+    }
+
+    public async Task<TResult> AggregateAsync<TResult>(Func<TResult, T, TResult> aggregator, TResult seed, CancellationToken cancellationToken = default)
+    {
+        var result = seed;
+        await foreach (var item in GetValidatedEnumerable(cancellationToken).ConfigureAwait(false))
+        {
+            result = aggregator(result, item);
+        }
+        return result;
     }
 
     public async Task<List<T>> ToListAsync(CancellationToken cancellationToken = default)
@@ -202,28 +280,106 @@ internal class DataPipeline<T> : IDataPipeline<T>
         return result;
     }
 
+    public async Task<ExportResults> ToConsoleAsync(Func<T, string>? formatter = null, CancellationToken cancellationToken = default)
+    {
+        var target = new ConsoleTarget<T>(formatter);
+        var sw = Stopwatch.StartNew();
+        var result = await target.ExportAsync(GetValidatedEnumerable(cancellationToken), "", cancellationToken).ConfigureAwait(false);
+        sw.Stop();
+        result.Duration = sw.Elapsed;
+        return result;
+    }
+
+    public async Task<ExportResults> ToStreamAsync(Stream stream, ExportFormat format, CancellationToken cancellationToken = default)
+    {
+        var target = new StreamTarget<T>(format);
+        var sw = Stopwatch.StartNew();
+        var result = await target.ExportToStreamAsync(GetValidatedEnumerable(cancellationToken), stream, cancellationToken).ConfigureAwait(false);
+        sw.Stop();
+        result.Duration = sw.Elapsed;
+        return result;
+    }
+
     private async IAsyncEnumerable<T> GetValidatedEnumerable(
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var source = _sourceFactory(cancellationToken);
-        await foreach (var item in source.WithCancellation(cancellationToken).ConfigureAwait(false))
+        IAsyncEnumerator<T> enumerator;
+        try
         {
-            if (_validator != null)
+            enumerator = source.GetAsyncEnumerator(cancellationToken);
+        }
+        catch (Exception ex) when (_errorHandler != null || _onErrorContinue)
+        {
+            var action = _errorHandler?.Invoke(ex, default!) ?? ErrorAction.Skip;
+            if (action == ErrorAction.Stop || action == ErrorAction.Throw) throw;
+            yield break;
+        }
+
+        await using (enumerator)
+        {
+            while (true)
             {
-                var validationResult = await _validator.ValidateAsync(item, cancellationToken).ConfigureAwait(false);
-                if (!validationResult.IsValid)
+                T item;
+                try
                 {
-                    if (_continueOnValidationError)
+                    if (!await enumerator.MoveNextAsync().ConfigureAwait(false))
+                    {
+                        break;
+                    }
+                    item = enumerator.Current;
+                }
+                catch (Exception ex) when (_errorHandler != null || _onErrorContinue)
+                {
+                    var action = _errorHandler?.Invoke(ex, default!) ?? ErrorAction.Skip;
+                    if (action == ErrorAction.Skip || action == ErrorAction.Continue)
                     {
                         continue;
                     }
-                    if (_failOnValidationError)
+                    throw;
+                }
+
+                var isValid = true;
+                if (_validator != null)
+                {
+                    try
                     {
-                        throw new ValidationException(validationResult.Errors);
+                        var validationResult = await _validator.ValidateAsync(item, cancellationToken).ConfigureAwait(false);
+                        if (!validationResult.IsValid)
+                        {
+                            if (_continueOnValidationError)
+                            {
+                                isValid = false;
+                            }
+                            else if (_failOnValidationError)
+                            {
+                                throw new ValidationException(validationResult.Errors);
+                            }
+                        }
+                    }
+                    catch (ValidationException)
+                    {
+                        throw;
+                    }
+                    catch (Exception ex) when (_errorHandler != null || _onErrorContinue)
+                    {
+                        var action = _errorHandler?.Invoke(ex, item) ?? ErrorAction.Skip;
+                        if (action == ErrorAction.Skip || action == ErrorAction.Continue)
+                        {
+                            isValid = false;
+                        }
+                        else if (action == ErrorAction.Stop || action == ErrorAction.Throw)
+                        {
+                            throw;
+                        }
                     }
                 }
+
+                if (isValid)
+                {
+                    yield return item;
+                }
             }
-            yield return item;
         }
     }
 
@@ -238,6 +394,32 @@ internal class DataPipeline<T> : IDataPipeline<T>
         }
     }
 
+    private static async IAsyncEnumerable<TResult> SelectSafeInternal<TResult>(
+        IAsyncEnumerable<T> source,
+        Func<T, TResult> selector,
+        Func<Exception, T, ErrorAction>? errorHandler,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await foreach (var item in source.WithCancellation(ct).ConfigureAwait(false))
+        {
+            TResult result;
+            try
+            {
+                result = selector(item);
+            }
+            catch (Exception)
+            {
+                var action = errorHandler?.Invoke(null!, item) ?? ErrorAction.Skip;
+                if (action == ErrorAction.Stop || action == ErrorAction.Throw)
+                {
+                    throw;
+                }
+                continue;
+            }
+            yield return result;
+        }
+    }
+
     private static async IAsyncEnumerable<TResult> SelectAsyncInternal<TResult>(
         IAsyncEnumerable<T> source,
         Func<T, Task<TResult>> selector,
@@ -249,6 +431,20 @@ internal class DataPipeline<T> : IDataPipeline<T>
         }
     }
 
+    private static async IAsyncEnumerable<TResult> SelectManyInternal<TResult>(
+        IAsyncEnumerable<T> source,
+        Func<T, IEnumerable<TResult>> selector,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await foreach (var item in source.WithCancellation(ct).ConfigureAwait(false))
+        {
+            foreach (var result in selector(item))
+            {
+                yield return result;
+            }
+        }
+    }
+
     private static async IAsyncEnumerable<T> WhereInternal(
         IAsyncEnumerable<T> source,
         Func<T, bool> predicate,
@@ -257,6 +453,37 @@ internal class DataPipeline<T> : IDataPipeline<T>
         await foreach (var item in source.WithCancellation(ct).ConfigureAwait(false))
         {
             if (predicate(item))
+            {
+                yield return item;
+            }
+        }
+    }
+
+    private static async IAsyncEnumerable<T> WhereSafeInternal(
+        IAsyncEnumerable<T> source,
+        Func<T, bool> predicate,
+        Func<Exception, T, ErrorAction>? errorHandler,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await foreach (var item in source.WithCancellation(ct).ConfigureAwait(false))
+        {
+            var shouldYield = false;
+            try
+            {
+                if (predicate(item))
+                {
+                    shouldYield = true;
+                }
+            }
+            catch (Exception)
+            {
+                var action = errorHandler?.Invoke(null!, item) ?? ErrorAction.Skip;
+                if (action == ErrorAction.Stop || action == ErrorAction.Throw)
+                {
+                    throw;
+                }
+            }
+            if (shouldYield)
             {
                 yield return item;
             }
@@ -356,6 +583,51 @@ internal class DataPipeline<T> : IDataPipeline<T>
             if (taken >= count) yield break;
             yield return item;
             taken++;
+        }
+    }
+
+    private static async IAsyncEnumerable<List<T>> BatchInternal(
+        IAsyncEnumerable<T> source,
+        int batchSize,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        var batch = new List<T>(batchSize);
+        await foreach (var item in source.WithCancellation(ct).ConfigureAwait(false))
+        {
+            batch.Add(item);
+            if (batch.Count >= batchSize)
+            {
+                yield return batch;
+                batch = new List<T>(batchSize);
+            }
+        }
+        if (batch.Count > 0)
+        {
+            yield return batch;
+        }
+    }
+
+    private static async IAsyncEnumerable<(TFirst First, TSecond Second)> ZipInternal<TFirst, TSecond>(
+        IAsyncEnumerable<TFirst> first,
+        IAsyncEnumerable<TSecond> second,
+        CancellationToken ct)
+    {
+        await using var e1 = first.GetAsyncEnumerator(ct);
+        await using var e2 = second.GetAsyncEnumerator(ct);
+        while (await e1.MoveNextAsync().ConfigureAwait(false) && await e2.MoveNextAsync().ConfigureAwait(false))
+        {
+            yield return (e1.Current, e2.Current);
+        }
+    }
+
+    private static async IAsyncEnumerable<TResult> TransformWithInternal<TResult>(
+        IAsyncEnumerable<T> source,
+        IDataTransform<T, TResult> transform,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await foreach (var item in source.WithCancellation(ct).ConfigureAwait(false))
+        {
+            yield return transform.Transform(item);
         }
     }
 }

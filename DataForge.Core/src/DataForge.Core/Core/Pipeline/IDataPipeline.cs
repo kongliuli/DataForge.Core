@@ -1,7 +1,10 @@
+using DataForge.Core.Core.Infrastructure;
 using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Targets;
+using DataForge.Core.Core.Transforms;
 using DataForge.Core.Core.Validation;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +16,8 @@ public interface IDataPipeline<T>
     IDataPipeline<TResult> Select<TResult>(Func<T, TResult> selector);
 
     IDataPipeline<TResult> SelectAsync<TResult>(Func<T, Task<TResult>> selector);
+
+    IDataPipeline<TResult> SelectMany<TResult>(Func<T, IEnumerable<TResult>> selector);
 
     IDataPipeline<T> Where(Func<T, bool> predicate);
 
@@ -34,13 +39,29 @@ public interface IDataPipeline<T>
 
     IDataPipeline<T> Take(int count);
 
+    IDataPipeline<List<T>> Batch(int batchSize);
+
     IGroupedDataPipeline<TKey, T> GroupBy<TKey>(Func<T, TKey> keySelector) where TKey : notnull;
+
+    IDataPipeline<(T First, TSecond Second)> Zip<TSecond>(IDataPipeline<TSecond> second);
+
+    IDataPipeline<TResult> TransformWith<TResult>(IDataTransform<T, TResult> transform);
 
     IDataPipeline<T> ValidateWith(IValidator<T> validator);
 
     IDataPipeline<T> ContinueOnValidationError();
 
     IDataPipeline<T> FailOnValidationError();
+
+    IDataPipeline<T> OnErrorContinue();
+
+    IDataPipeline<T> OnErrorStop();
+
+    IDataPipeline<T> OnErrorSkip();
+
+    IDataPipeline<T> OnError(Func<Exception, T, ErrorAction> handler);
+
+    Task<TResult> AggregateAsync<TResult>(Func<TResult, T, TResult> aggregator, TResult seed, CancellationToken cancellationToken = default);
 
     Task<List<T>> ToListAsync(CancellationToken cancellationToken = default);
 
@@ -59,6 +80,10 @@ public interface IDataPipeline<T>
     Task<ExportResults> ToJsonAsync(string filePath, JsonExportOptions? options = null, CancellationToken cancellationToken = default);
 
     Task<ExportResults> ToExcelAsync(string filePath, ExcelExportOptions? options = null, CancellationToken cancellationToken = default);
+
+    Task<ExportResults> ToConsoleAsync(Func<T, string>? formatter = null, CancellationToken cancellationToken = default);
+
+    Task<ExportResults> ToStreamAsync(Stream stream, ExportFormat format, CancellationToken cancellationToken = default);
 }
 
 public interface IGroupedDataPipeline<TKey, TElement> where TKey : notnull
