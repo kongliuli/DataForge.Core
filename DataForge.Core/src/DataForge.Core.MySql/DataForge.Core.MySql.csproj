@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>DataForge.Core.MySql</PackageId>
+    <PackageVersion>0.1.0</PackageVersion>
+    <Authors>DataForge Team</Authors>
+    <Description>MySQL support for DataForge.Core</Description>
+    <PackageTags>data processing;ETL;MySQL</PackageTags>
+    <RepositoryUrl>https://github.com/kongliuli/DataForge.Core</RepositoryUrl>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DataForge.Core\DataForge.Core.csproj" />
+    <PackageReference Include="MySqlConnector" Version="2.3.5" />
+  </ItemGroup>
+
+</Project>

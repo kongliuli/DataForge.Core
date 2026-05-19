@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>DataForge.Core.Json</PackageId>
+    <PackageVersion>0.1.0</PackageVersion>
+    <Authors>DataForge Team</Authors>
+    <Description>JSON support for DataForge.Core</Description>
+    <PackageTags>data processing;ETL;JSON</PackageTags>
+    <RepositoryUrl>https://github.com/kongliuli/DataForge.Core</RepositoryUrl>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DataForge.Core\DataForge.Core.csproj" />
+  </ItemGroup>
+
+</Project>
