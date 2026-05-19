@@ -1,3 +1,4 @@
+using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Targets;
 using Microsoft.Data.SqlClient;
 using System.Collections.Generic;

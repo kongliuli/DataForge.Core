@@ -1,3 +1,4 @@
+using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Targets;
 using MySqlConnector;
 using System.Collections.Generic;

@@ -1,3 +1,5 @@
+using DataForge.Core.Core.Models;
+using DataForge.Core.Core.Sources.Options;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;

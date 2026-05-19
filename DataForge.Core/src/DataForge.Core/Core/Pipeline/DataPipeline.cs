@@ -1,3 +1,4 @@
+using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Targets;
 using DataForge.Core.Core.Validation;
 using System.Collections.Generic;
@@ -21,7 +22,7 @@ internal class DataPipeline<T> : IDataPipeline<T>
         _sourceFactory = _ => source;
     }
 
-    private DataPipeline(
+    internal DataPipeline(
         Func<CancellationToken, IAsyncEnumerable<T>> sourceFactory,
         IValidator<T>? validator = null,
         bool continueOnValidationError = false,
@@ -234,6 +235,17 @@ internal class DataPipeline<T> : IDataPipeline<T>
         await foreach (var item in source.WithCancellation(ct).ConfigureAwait(false))
         {
             yield return selector(item);
+        }
+    }
+
+    private static async IAsyncEnumerable<TResult> SelectAsyncInternal<TResult>(
+        IAsyncEnumerable<T> source,
+        Func<T, Task<TResult>> selector,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await foreach (var item in source.WithCancellation(ct).ConfigureAwait(false))
+        {
+            yield return await selector(item).ConfigureAwait(false);
         }
     }
 

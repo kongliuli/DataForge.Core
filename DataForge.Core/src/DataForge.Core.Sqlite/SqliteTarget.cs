@@ -1,3 +1,4 @@
+using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Targets;
 using Microsoft.Data.Sqlite;
 using System.Collections.Generic;
@@ -61,7 +62,7 @@ public class SqliteTarget<T> : IDataTarget<T>
         SqliteTransaction? transaction = null;
         if (_options.UseTransaction)
         {
-            transaction = await connection.BeginTransactionAsync(ct).ConfigureAwait(false);
+            transaction = (SqliteTransaction)await connection.BeginTransactionAsync(ct).ConfigureAwait(false);
         }
 
         try
