@@ -29,6 +29,8 @@ public class ValidationError
     
     public ValidationErrorCode ErrorCode { get; set; }
 
+    public ValidationSeverity Severity { get; set; } = ValidationSeverity.Error;
+
     public static ValidationError Required(string propertyName) => new()
     {
         PropertyName = propertyName,
@@ -58,6 +60,13 @@ public enum ValidationErrorCode
     Range,
     Length,
     Custom
+}
+
+public enum ValidationSeverity
+{
+    Warning,
+    Error,
+    Critical
 }
 
 public class ValidationException : Exception

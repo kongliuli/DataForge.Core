@@ -1,3 +1,4 @@
+using DataForge.Core.Core.Infrastructure;
 using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Targets;
 using MySqlConnector;
@@ -13,6 +14,9 @@ namespace DataForge.Core.MySql;
 public class MySqlTarget<T> : IDataTarget<T>
 {
     private readonly MySqlExportOptions _options;
+
+    public string Name => "MySQL Target";
+    public DataTargetType TargetType => DataTargetType.MySql;
 
     public MySqlTarget(MySqlExportOptions? options = null)
     {
@@ -107,6 +111,32 @@ public class MySqlTarget<T> : IDataTarget<T>
                 await transaction.RollbackAsync(ct).ConfigureAwait(false);
             }
             throw;
+        }
+    }
+
+    public Task WriteAsync(T item, CancellationToken cancellationToken = default)
+    {
+        return ExportAsync(ToAsyncEnumerable(item), "", cancellationToken);
+    }
+
+    public async Task<WriteResult> WriteBatchAsync(IEnumerable<T> items, CancellationToken cancellationToken = default)
+    {
+        var result = await ExportAsync(ToAsyncEnumerable(items), "", cancellationToken).ConfigureAwait(false);
+        return new WriteResult { SuccessCount = result.RecordsWritten };
+    }
+
+    public Task CompleteAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    private static async IAsyncEnumerable<T> ToAsyncEnumerable(T item)
+    {
+        yield return item;
+    }
+
+    private static async IAsyncEnumerable<T> ToAsyncEnumerable(IEnumerable<T> items)
+    {
+        foreach (var item in items)
+        {
+            yield return item;
         }
     }
 }

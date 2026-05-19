@@ -1,3 +1,4 @@
+using DataForge.Core.Core.Infrastructure;
 using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Sources;
 using Microsoft.Data.Sqlite;
@@ -13,6 +14,9 @@ public class SqliteSource<T> : IRelationalDataSource<T> where T : new()
 {
     private readonly string _connectionString;
     private readonly string _tableName;
+
+    public string Name => $"SQLite: {_tableName}";
+    public DataSourceType SourceType => DataSourceType.Sqlite;
 
     public SqliteSource(string connectionString, string tableName)
     {
@@ -92,5 +96,15 @@ public class SqliteSource<T> : IRelationalDataSource<T> where T : new()
             Location = _tableName,
             AdditionalInfo = { ["ConnectionString"] = _connectionString }
         });
+    }
+
+    public async Task<IReadOnlyList<T>> ReadAllAsync(CancellationToken cancellationToken = default)
+    {
+        var results = new List<T>();
+        await foreach (var item in ReadAsync(cancellationToken))
+        {
+            results.Add(item);
+        }
+        return results;
     }
 }

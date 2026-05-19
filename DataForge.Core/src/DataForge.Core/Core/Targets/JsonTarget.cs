@@ -1,3 +1,4 @@
+using DataForge.Core.Core.Infrastructure;
 using DataForge.Core.Core.Models;
 using System.Collections.Generic;
 using System.IO;
@@ -10,6 +11,9 @@ namespace DataForge.Core.Core.Targets;
 internal class JsonTarget<T> : IDataTarget<T>
 {
     private readonly JsonExportOptions _options;
+
+    public string Name => "JSON Target";
+    public DataTargetType TargetType => DataTargetType.Json;
 
     public JsonTarget(JsonExportOptions options)
     {
@@ -52,5 +56,31 @@ internal class JsonTarget<T> : IDataTarget<T>
             OutputPath = destination,
             OutputSize = new FileInfo(destination).Length
         };
+    }
+
+    public async Task WriteAsync(T item, CancellationToken cancellationToken = default)
+    {
+        await ExportAsync(ToAsyncEnumerable(item), "", cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<WriteResult> WriteBatchAsync(IEnumerable<T> items, CancellationToken cancellationToken = default)
+    {
+        var result = await ExportAsync(ToAsyncEnumerable(items), "", cancellationToken).ConfigureAwait(false);
+        return new WriteResult { SuccessCount = result.RecordsWritten };
+    }
+
+    public Task CompleteAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+    private static async IAsyncEnumerable<T> ToAsyncEnumerable(T item)
+    {
+        yield return item;
+    }
+
+    private static async IAsyncEnumerable<T> ToAsyncEnumerable(IEnumerable<T> items)
+    {
+        foreach (var item in items)
+        {
+            yield return item;
+        }
     }
 }

@@ -32,6 +32,17 @@ public static class DataForgePipeline
         return new DataPipeline<T>(source.ReadAsync());
     }
 
+    public static IDataPipeline<T> FromJsonString<T>(string jsonContent)
+    {
+        var source = new JsonStringSource<T>(jsonContent);
+        return new DataPipeline<T>(source.ReadAsync());
+    }
+
+    public static IDataPipeline<T> FromJsonArray<T>(string filePath)
+    {
+        return FromJson<T>(filePath);
+    }
+
     public static IDataPipeline<T> Merge<T>(params IDataSource<T>[] sources)
     {
         return new DataPipeline<T>(MergeSources(sources));

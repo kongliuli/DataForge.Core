@@ -1,3 +1,4 @@
+using DataForge.Core.Core.Infrastructure;
 using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Sources.Options;
 using System.Collections.Generic;
@@ -13,6 +14,8 @@ internal class JsonSource<T> : IFileDataSource<T>
     private readonly JsonSourceOptions _options;
 
     public string FilePath { get; }
+    public string Name => $"JSON: {FilePath}";
+    public DataSourceType SourceType => DataSourceType.Json;
 
     public JsonSource(string filePath, JsonSourceOptions options)
     {
@@ -81,5 +84,15 @@ internal class JsonSource<T> : IFileDataSource<T>
     public Task<bool> ExistsAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(File.Exists(FilePath));
+    }
+
+    public async Task<IReadOnlyList<T>> ReadAllAsync(CancellationToken cancellationToken = default)
+    {
+        var results = new List<T>();
+        await foreach (var item in ReadAsync(cancellationToken))
+        {
+            results.Add(item);
+        }
+        return results;
     }
 }

@@ -1,3 +1,4 @@
+using DataForge.Core.Core.Infrastructure;
 using DataForge.Core.Core.Models;
 using System.Collections.Generic;
 using System.IO;
@@ -11,6 +12,8 @@ internal class ExcelSource<T> : IFileDataSource<T>
 {
     public string FilePath { get; }
     private readonly string _sheetName;
+    public string Name => $"Excel: {FilePath}";
+    public DataSourceType SourceType => DataSourceType.Excel;
 
     public ExcelSource(string filePath, string sheetName)
     {
@@ -52,6 +55,16 @@ internal class ExcelSource<T> : IFileDataSource<T>
     public Task<bool> ExistsAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(File.Exists(FilePath));
+    }
+
+    public async Task<IReadOnlyList<T>> ReadAllAsync(CancellationToken cancellationToken = default)
+    {
+        var results = new List<T>();
+        await foreach (var item in ReadAsync(cancellationToken))
+        {
+            results.Add(item);
+        }
+        return results;
     }
 
     private T MapToObject(string[] values, string[]? headers)

@@ -1,3 +1,4 @@
+using DataForge.Core.Core.Infrastructure;
 using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Sources;
 using MySqlConnector;
@@ -13,6 +14,9 @@ public class MySqlSource<T> : IRelationalDataSource<T> where T : new()
 {
     private readonly string _connectionString;
     private readonly string _tableName;
+
+    public string Name => $"MySQL: {_tableName}";
+    public DataSourceType SourceType => DataSourceType.MySql;
 
     public MySqlSource(string connectionString, string tableName)
     {
@@ -92,5 +96,15 @@ public class MySqlSource<T> : IRelationalDataSource<T> where T : new()
             Location = _tableName,
             AdditionalInfo = { ["ConnectionString"] = _connectionString }
         });
+    }
+
+    public async Task<IReadOnlyList<T>> ReadAllAsync(CancellationToken cancellationToken = default)
+    {
+        var results = new List<T>();
+        await foreach (var item in ReadAsync(cancellationToken))
+        {
+            results.Add(item);
+        }
+        return results;
     }
 }

@@ -1,3 +1,4 @@
+using DataForge.Core.Core.Infrastructure;
 using DataForge.Core.Core.Models;
 using System.Collections.Generic;
 using System.Threading;
@@ -7,7 +8,32 @@ namespace DataForge.Core.Core.Targets;
 
 public interface IDataTarget<in T>
 {
+    string Name { get; }
+    DataTargetType TargetType { get; }
     Task<ExportResults> ExportAsync(IAsyncEnumerable<T> data, string destination, CancellationToken cancellationToken = default);
+    Task WriteAsync(T item, CancellationToken cancellationToken = default);
+    Task<WriteResult> WriteBatchAsync(IEnumerable<T> items, CancellationToken cancellationToken = default);
+    Task CompleteAsync(CancellationToken cancellationToken = default);
+}
+
+public class WriteResult
+{
+    public int SuccessCount { get; set; }
+    public int FailedCount { get; set; }
+    public List<WriteError> Errors { get; } = [];
+}
+
+public class WriteError
+{
+    public object? Item { get; set; }
+    public string Error { get; set; } = "";
+}
+
+public enum ExportFormat
+{
+    Csv,
+    Json,
+    Excel
 }
 
 public class CsvExportOptions

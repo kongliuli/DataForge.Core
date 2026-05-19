@@ -1,3 +1,4 @@
+using DataForge.Core.Core.Infrastructure;
 using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Sources.Options;
 using System.Collections.Generic;
@@ -15,6 +16,8 @@ internal class CsvSource<T> : IFileDataSource<T>
     private readonly CsvSourceOptions _options;
 
     public string FilePath { get; }
+    public string Name => $"CSV: {FilePath}";
+    public DataSourceType SourceType => DataSourceType.Csv;
 
     public CsvSource(string filePath, CsvSourceOptions? options = null)
     {
@@ -77,6 +80,16 @@ internal class CsvSource<T> : IFileDataSource<T>
     public Task<bool> ExistsAsync(CancellationToken cancellationToken = default)
     {
         return Task.FromResult(File.Exists(FilePath));
+    }
+
+    public async Task<IReadOnlyList<T>> ReadAllAsync(CancellationToken cancellationToken = default)
+    {
+        var results = new List<T>();
+        await foreach (var item in ReadAsync(cancellationToken))
+        {
+            results.Add(item);
+        }
+        return results;
     }
 
     private string[] ParseCsvLine(string line)
