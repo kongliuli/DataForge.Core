@@ -6,6 +6,7 @@ namespace DataForge.Core.Core.Validation;
 
 public interface IValidator<in T>
 {
+    ValidationResult Validate(T item);
     Task<ValidationResult> ValidateAsync(T item, CancellationToken cancellationToken = default);
 }
 

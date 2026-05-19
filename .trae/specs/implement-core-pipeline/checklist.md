@@ -1,0 +1,20 @@
+- [ ] DataPipeline 的 Where 操作正确过滤数据，不产生 default! 值
+- [ ] DataPipeline 的 OrderBy/OrderByDescending 正确排序数据
+- [ ] DataPipeline 的链式操作（Where + Select + Take）正确组合
+- [ ] DataPipeline 的 Skip/Take 正确分页
+- [ ] DataPipeline 的 Distinct/DistinctBy 正确去重
+- [ ] DataPipeline 的 GroupBy 返回正确的分组数据
+- [ ] DataPipeline 的 FirstOrDefaultAsync 正确返回首个元素或默认值
+- [ ] DataPipeline 的 ValidateWith + ContinueOnValidationError 跳过无效数据
+- [ ] DataPipeline 的 ValidateWith + FailOnValidationError 抛出 ValidationException
+- [ ] ITypeConverter/DefaultTypeConverter 正确转换常见类型
+- [ ] DataForgeException 异常层次结构完整
+- [ ] DataValidator 基类的 RuleFor 流畅 API 正确定义规则
+- [ ] 内置验证规则（Required、Length、Range、GreaterThan）正确验证
+- [ ] SqlServerSource 从数据库正确读取数据
+- [ ] SqlServerTarget 批量写入和 Upsert 模式正确工作
+- [ ] MySqlSource/MySqlTarget 正确工作
+- [ ] SqliteSource/SqliteTarget 正确工作
+- [ ] FluentValidationAdapter 正确适配 FluentValidation 验证器
+- [ ] 所有项目编译通过（dotnet build 无错误）
+- [ ] 所有单元测试通过（dotnet test 无失败）
