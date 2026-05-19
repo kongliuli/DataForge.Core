@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>DataForge.Core.Excel</PackageId>
+    <PackageVersion>0.1.0</PackageVersion>
+    <Authors>DataForge Team</Authors>
+    <Description>Excel support for DataForge.Core using ClosedXML</Description>
+    <PackageTags>data processing;ETL;Excel;ClosedXML</PackageTags>
+    <RepositoryUrl>https://github.com/kongliuli/DataForge.Core</RepositoryUrl>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DataForge.Core\DataForge.Core.csproj" />
+    <PackageReference Include="ClosedXML" Version="0.102.1" />
+  </ItemGroup>
+
+</Project>

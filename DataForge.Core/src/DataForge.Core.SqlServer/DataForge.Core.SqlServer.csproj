@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>DataForge.Core.SqlServer</PackageId>
+    <PackageVersion>0.1.0</PackageVersion>
+    <Authors>DataForge Team</Authors>
+    <Description>SQL Server support for DataForge.Core</Description>
+    <PackageTags>data processing;ETL;SQL Server</PackageTags>
+    <RepositoryUrl>https://github.com/kongliuli/DataForge.Core</RepositoryUrl>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DataForge.Core\DataForge.Core.csproj" />
+    <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.0" />
+  </ItemGroup>
+
+</Project>

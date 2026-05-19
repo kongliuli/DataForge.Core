@@ -1,0 +1,24 @@
+- [ ] SelectMany 正确展平嵌套集合
+- [ ] AggregateAsync 正确执行自定义聚合
+- [ ] Batch 按指定大小分批
+- [ ] Zip 按位置合并两个管道
+- [ ] TransformWith 集成自定义转换器
+- [ ] OnErrorContinue 跳过错误继续处理
+- [ ] OnErrorStop 遇到错误停止并抛出异常
+- [ ] OnErrorSkip 跳过错误项
+- [ ] OnError 自定义错误处理
+- [ ] IDataSource 包含 Name、SourceType、ReadAllAsync
+- [ ] IDataTarget 包含 Name、TargetType、WriteAsync/WriteBatchAsync/CompleteAsync
+- [ ] ConsoleTarget 正确输出到控制台
+- [ ] StreamTarget 正确输出到流
+- [ ] ToSqlServer/ToMySql/ToSqlite 管道扩展方法可用
+- [ ] Must 自定义谓词验证正确工作
+- [ ] When 条件验证正确工作
+- [ ] MinLength 验证正确工作
+- [ ] GreaterThanOrEqualTo/LessThan 验证正确工作
+- [ ] ValidationSeverity 严重级别正确设置
+- [ ] CollectValidationResults 收集验证结果
+- [ ] FromJsonString 从字符串创建管道
+- [ ] FromJsonArray 从 JSON 数组创建管道
+- [ ] 所有项目编译通过
+- [ ] 所有单元测试通过

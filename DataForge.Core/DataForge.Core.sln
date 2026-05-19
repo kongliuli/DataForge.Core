@@ -1,0 +1,85 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{812B025B-1FDA-456E-BE96-2F6C88695DA0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataForge.Core", "src\DataForge.Core\DataForge.Core.csproj", "{92655287-A100-4489-9124-D40D4DA25C16}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataForge.Core.SqlServer", "src\DataForge.Core.SqlServer\DataForge.Core.SqlServer.csproj", "{6D6355F2-5BB1-432C-BECF-AF1D8CF5F64C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataForge.Core.MySql", "src\DataForge.Core.MySql\DataForge.Core.MySql.csproj", "{10D43ECE-DE54-428F-9E91-464A6D804517}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataForge.Core.Sqlite", "src\DataForge.Core.Sqlite\DataForge.Core.Sqlite.csproj", "{A9F17296-0734-4920-A885-DAE94AFFD847}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataForge.Core.Excel", "src\DataForge.Core.Excel\DataForge.Core.Excel.csproj", "{A9571CF4-9446-4FBF-997E-BF4FAE02DD52}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataForge.Core.Json", "src\DataForge.Core.Json\DataForge.Core.Json.csproj", "{1EF5F763-B11A-493E-BE75-390122D23BCD}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataForge.Core.FluentValidation", "src\DataForge.Core.FluentValidation\DataForge.Core.FluentValidation.csproj", "{7B7768D5-050E-436D-9D22-88702C97578C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{B3BE344E-3BE3-4FBF-9A95-7054CA36034B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataForge.Core.Tests", "tests\DataForge.Core.Tests\DataForge.Core.Tests.csproj", "{2E15F5A0-C509-4AFD-A10A-B1C323F0E931}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataForge.Core.IntegrationTests", "tests\DataForge.Core.IntegrationTests\DataForge.Core.IntegrationTests.csproj", "{757F4E0D-EA89-40DC-84AA-864215359E67}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{92655287-A100-4489-9124-D40D4DA25C16}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92655287-A100-4489-9124-D40D4DA25C16}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92655287-A100-4489-9124-D40D4DA25C16}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{92655287-A100-4489-9124-D40D4DA25C16}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6D6355F2-5BB1-432C-BECF-AF1D8CF5F64C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D6355F2-5BB1-432C-BECF-AF1D8CF5F64C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D6355F2-5BB1-432C-BECF-AF1D8CF5F64C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D6355F2-5BB1-432C-BECF-AF1D8CF5F64C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{10D43ECE-DE54-428F-9E91-464A6D804517}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{10D43ECE-DE54-428F-9E91-464A6D804517}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{10D43ECE-DE54-428F-9E91-464A6D804517}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{10D43ECE-DE54-428F-9E91-464A6D804517}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9F17296-0734-4920-A885-DAE94AFFD847}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9F17296-0734-4920-A885-DAE94AFFD847}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9F17296-0734-4920-A885-DAE94AFFD847}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9F17296-0734-4920-A885-DAE94AFFD847}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A9571CF4-9446-4FBF-997E-BF4FAE02DD52}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A9571CF4-9446-4FBF-997E-BF4FAE02DD52}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A9571CF4-9446-4FBF-997E-BF4FAE02DD52}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A9571CF4-9446-4FBF-997E-BF4FAE02DD52}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1EF5F763-B11A-493E-BE75-390122D23BCD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1EF5F763-B11A-493E-BE75-390122D23BCD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1EF5F763-B11A-493E-BE75-390122D23BCD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1EF5F763-B11A-493E-BE75-390122D23BCD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7B7768D5-050E-436D-9D22-88702C97578C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7B7768D5-050E-436D-9D22-88702C97578C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7B7768D5-050E-436D-9D22-88702C97578C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7B7768D5-050E-436D-9D22-88702C97578C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2E15F5A0-C509-4AFD-A10A-B1C323F0E931}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E15F5A0-C509-4AFD-A10A-B1C323F0E931}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E15F5A0-C509-4AFD-A10A-B1C323F0E931}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E15F5A0-C509-4AFD-A10A-B1C323F0E931}.Release|Any CPU.Build.0 = Release|Any CPU
+		{757F4E0D-EA89-40DC-84AA-864215359E67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{757F4E0D-EA89-40DC-84AA-864215359E67}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{757F4E0D-EA89-40DC-84AA-864215359E67}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{757F4E0D-EA89-40DC-84AA-864215359E67}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{92655287-A100-4489-9124-D40D4DA25C16} = {812B025B-1FDA-456E-BE96-2F6C88695DA0}
+		{6D6355F2-5BB1-432C-BECF-AF1D8CF5F64C} = {812B025B-1FDA-456E-BE96-2F6C88695DA0}
+		{10D43ECE-DE54-428F-9E91-464A6D804517} = {812B025B-1FDA-456E-BE96-2F6C88695DA0}
+		{A9F17296-0734-4920-A885-DAE94AFFD847} = {812B025B-1FDA-456E-BE96-2F6C88695DA0}
+		{A9571CF4-9446-4FBF-997E-BF4FAE02DD52} = {812B025B-1FDA-456E-BE96-2F6C88695DA0}
+		{1EF5F763-B11A-493E-BE75-390122D23BCD} = {812B025B-1FDA-456E-BE96-2F6C88695DA0}
+		{7B7768D5-050E-436D-9D22-88702C97578C} = {812B025B-1FDA-456E-BE96-2F6C88695DA0}
+		{2E15F5A0-C509-4AFD-A10A-B1C323F0E931} = {B3BE344E-3BE3-4FBF-9A95-7054CA36034B}
+		{757F4E0D-EA89-40DC-84AA-864215359E67} = {B3BE344E-3BE3-4FBF-9A95-7054CA36034B}
+	EndGlobalSection
+EndGlobal
