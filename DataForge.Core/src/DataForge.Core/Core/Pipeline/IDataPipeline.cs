@@ -3,6 +3,7 @@ using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Targets;
 using DataForge.Core.Core.Transforms;
 using DataForge.Core.Core.Validation;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -84,6 +85,10 @@ public interface IDataPipeline<T>
     Task<ExportResults> ToConsoleAsync(Func<T, string>? formatter = null, CancellationToken cancellationToken = default);
 
     Task<ExportResults> ToStreamAsync(Stream stream, ExportFormat format, CancellationToken cancellationToken = default);
+
+    // 性能优化扩展方法
+    IDataPipeline<T> WithProgress(Action<ProgressReport<T>> progressHandler, int reportInterval = 1000);
+    IDataPipeline<T> WithCounter(PerformanceCounter counter);
 }
 
 public interface IGroupedDataPipeline<TKey, TElement> where TKey : notnull
