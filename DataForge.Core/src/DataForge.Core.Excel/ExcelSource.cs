@@ -1,46 +1,66 @@
+using ClosedXML.Excel;
 using DataForge.Core.Core.Infrastructure;
 using DataForge.Core.Core.Models;
+using DataForge.Core.Core.Sources;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace DataForge.Core.Core.Sources.Implementations;
+namespace DataForge.Core.Excel;
 
-/// <summary>
-/// 简单的 Excel 源（基本实现），使用默认 CSV 读取方式
-/// 完整功能需要安装 DataForge.Core.Excel 包
-/// </summary>
-internal class ExcelSource<T> : IFileDataSource<T>
+public class ExcelSource<T> : IFileDataSource<T> where T : new()
 {
+    private readonly ExcelSourceOptions _options;
+
     public string FilePath { get; }
-    private readonly string _sheetName;
     public string Name => $"Excel: {FilePath}";
     public DataSourceType SourceType => DataSourceType.Excel;
 
-    public ExcelSource(string filePath, string sheetName)
+    public ExcelSource(string filePath, ExcelSourceOptions? options = null)
     {
         FilePath = filePath;
-        _sheetName = sheetName;
+        _options = options ?? new ExcelSourceOptions();
     }
 
     public async IAsyncEnumerable<T> ReadAsync([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        // 这是一个基本实现，仅用于无外部依赖的核心库
-        // 使用 CSV 模拟 Excel 读取
-        using var reader = new StreamReader(FilePath);
-        string? headerLine = null;
+        using var workbook = new XLWorkbook(FilePath);
+        var worksheet = string.IsNullOrWhiteSpace(_options.SheetName)
+            ? workbook.Worksheet(1)
+            : workbook.Worksheet(_options.SheetName);
+
+        var range = worksheet.RangeUsed();
+        if (range == null) yield break;
+
+        var rowCount = range.RowCount();
+        var colCount = range.ColumnCount();
+
+        var firstRow = _options.HasHeaderRow ? 1 : 0;
+        var startRow = _options.SkipRows + (_options.HasHeaderRow ? 2 : 1);
+        var maxRows = _options.MaxRows.HasValue ? _options.MaxRows.Value + startRow - 1 : int.MaxValue;
+
         string[]? headers = null;
+        if (_options.HasHeaderRow)
+        {
+            headers = new string[colCount];
+            for (var col = 1; col <= colCount; col++)
+            {
+                headers[col - 1] = worksheet.Cell(1, col).GetString();
+            }
+        }
 
-        headerLine = await reader.ReadLineAsync().ConfigureAwait(false);
-        headers = headerLine?.Split(',');
-
-        string? line;
-        while ((line = await reader.ReadLineAsync().ConfigureAwait(false)) != null)
+        for (var row = startRow; row <= rowCount && row <= maxRows; row++)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var values = line.Split(',');
+
+            var values = new string[colCount];
+            for (var col = 1; col <= colCount; col++)
+            {
+                values[col - 1] = worksheet.Cell(row, col).GetString();
+            }
+
             var item = MapToObject(values, headers);
             yield return item;
         }
@@ -121,4 +141,12 @@ internal class ExcelSource<T> : IFileDataSource<T>
 
         return instance;
     }
+}
+
+public class ExcelSourceOptions
+{
+    public string SheetName { get; set; } = string.Empty;
+    public bool HasHeaderRow { get; set; } = true;
+    public int SkipRows { get; set; } = 0;
+    public int? MaxRows { get; set; }
 }

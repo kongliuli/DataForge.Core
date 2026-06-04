@@ -1,3 +1,5 @@
+using DataForge.Core.Core.Infrastructure;
+
 namespace DataForge.Core.MySql;
 
 public class MySqlExportOptions
@@ -7,5 +9,3 @@ public class MySqlExportOptions
     public string[]? UpsertKeyColumns { get; set; }
     public bool UseTransaction { get; set; } = true;
 }
-
-public enum InsertMode { Insert, Upsert }

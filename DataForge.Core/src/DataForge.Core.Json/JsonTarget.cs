@@ -1,27 +1,24 @@
-using DataForge.Core.Core.Infrastructure;
-using DataForge.Core.Core.Models;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using DataForge.Core.Core.Infrastructure;
+using DataForge.Core.Core.Models;
+using DataForge.Core.Core.Targets;
 
-namespace DataForge.Core.Core.Targets;
+namespace DataForge.Core.Json;
 
-/// <summary>
-/// 简单的 Excel 目标（基本实现），使用 CSV 格式
-/// 完整功能需要安装 DataForge.Core.Excel 包
-/// </summary>
-internal class ExcelTarget<T> : IDataTarget<T>
+public class JsonTarget<T> : IDataTarget<T>
 {
-    private readonly ExcelExportOptions _options;
+    private readonly JsonExportOptions _options;
 
-    public string Name => "Excel Target";
-    public DataTargetType TargetType => DataTargetType.Excel;
+    public string Name => "JSON Target";
+    public DataTargetType TargetType => DataTargetType.Json;
 
-    public ExcelTarget(ExcelExportOptions options)
+    public JsonTarget(JsonExportOptions? options = null)
     {
-        _options = options;
+        _options = options ?? new JsonExportOptions();
     }
 
     public async Task<ExportResults> ExportAsync(IAsyncEnumerable<T> data, string destination, CancellationToken cancellationToken = default)
@@ -32,25 +29,27 @@ internal class ExcelTarget<T> : IDataTarget<T>
             items.Add(item);
         }
 
-        var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-        using var stream = new MemoryStream();
-        using var writer = new StreamWriter(stream, leaveOpen: true);
-
-        if (_options.IncludeHeader)
+        var options = new JsonSerializerOptions
         {
-            var headers = properties.Select(p => p.Name);
-            await writer.WriteLineAsync(string.Join(",", headers)).ConfigureAwait(false);
+            WriteIndented = _options.Indented,
+            PropertyNameCaseInsensitive = true
+        };
+
+        string json;
+        if (!string.IsNullOrEmpty(_options.RootPropertyName))
+        {
+            var wrapper = new Dictionary<string, List<T>>
+            {
+                { _options.RootPropertyName, items }
+            };
+            json = JsonSerializer.Serialize(wrapper, options);
+        }
+        else
+        {
+            json = JsonSerializer.Serialize(items, options);
         }
 
-        foreach (var item in items)
-        {
-            var values = properties.Select(p => p.GetValue(item)?.ToString() ?? string.Empty);
-            await writer.WriteLineAsync(string.Join(",", values)).ConfigureAwait(false);
-        }
-
-        await writer.FlushAsync().ConfigureAwait(false);
-        await File.WriteAllBytesAsync(destination, stream.ToArray(), cancellationToken).ConfigureAwait(false);
+        await File.WriteAllTextAsync(destination, json, cancellationToken).ConfigureAwait(false);
 
         return new ExportResults
         {
@@ -85,4 +84,10 @@ internal class ExcelTarget<T> : IDataTarget<T>
             yield return item;
         }
     }
+}
+
+public class JsonExportOptions
+{
+    public bool Indented { get; set; } = true;
+    public string? RootPropertyName { get; set; }
 }

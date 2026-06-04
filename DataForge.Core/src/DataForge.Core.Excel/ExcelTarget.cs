@@ -1,27 +1,25 @@
+using ClosedXML.Excel;
 using DataForge.Core.Core.Infrastructure;
 using DataForge.Core.Core.Models;
+using DataForge.Core.Core.Targets;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace DataForge.Core.Core.Targets;
+namespace DataForge.Core.Excel;
 
-/// <summary>
-/// 简单的 Excel 目标（基本实现），使用 CSV 格式
-/// 完整功能需要安装 DataForge.Core.Excel 包
-/// </summary>
-internal class ExcelTarget<T> : IDataTarget<T>
+public class ExcelTarget<T> : IDataTarget<T>
 {
     private readonly ExcelExportOptions _options;
 
     public string Name => "Excel Target";
     public DataTargetType TargetType => DataTargetType.Excel;
 
-    public ExcelTarget(ExcelExportOptions options)
+    public ExcelTarget(ExcelExportOptions? options = null)
     {
-        _options = options;
+        _options = options ?? new ExcelExportOptions();
     }
 
     public async Task<ExportResults> ExportAsync(IAsyncEnumerable<T> data, string destination, CancellationToken cancellationToken = default)
@@ -32,25 +30,49 @@ internal class ExcelTarget<T> : IDataTarget<T>
             items.Add(item);
         }
 
+        using var workbook = new XLWorkbook();
+        var worksheet = workbook.Worksheets.Add(string.IsNullOrWhiteSpace(_options.SheetName) ? "Sheet1" : _options.SheetName);
+
         var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        var colCount = properties.Length;
 
-        using var stream = new MemoryStream();
-        using var writer = new StreamWriter(stream, leaveOpen: true);
-
+        // 写入标题
         if (_options.IncludeHeader)
         {
-            var headers = properties.Select(p => p.Name);
-            await writer.WriteLineAsync(string.Join(",", headers)).ConfigureAwait(false);
+            for (var col = 1; col <= colCount; col++)
+            {
+                worksheet.Cell(1, col).Value = properties[col - 1].Name;
+            }
         }
 
-        foreach (var item in items)
+        // 写入数据
+        var startRow = _options.IncludeHeader ? 2 : 1;
+        for (var i = 0; i < items.Count; i++)
         {
-            var values = properties.Select(p => p.GetValue(item)?.ToString() ?? string.Empty);
-            await writer.WriteLineAsync(string.Join(",", values)).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            var row = startRow + i;
+            var item = items[i];
+
+            for (var col = 1; col <= colCount; col++)
+            {
+                var value = properties[col - 1].GetValue(item);
+                worksheet.Cell(row, col).Value = value ?? string.Empty;
+            }
         }
 
-        await writer.FlushAsync().ConfigureAwait(false);
-        await File.WriteAllBytesAsync(destination, stream.ToArray(), cancellationToken).ConfigureAwait(false);
+        // 格式化
+        if (_options.AutoSizeColumns)
+        {
+            worksheet.Columns().AdjustToContents();
+        }
+
+        if (_options.FreezeFirstRow && _options.IncludeHeader)
+        {
+            worksheet.SheetView.FreezeRows(1);
+        }
+
+        // 保存文件
+        workbook.SaveAs(destination);
 
         return new ExportResults
         {
@@ -85,4 +107,12 @@ internal class ExcelTarget<T> : IDataTarget<T>
             yield return item;
         }
     }
+}
+
+public class ExcelExportOptions
+{
+    public string SheetName { get; set; } = "Sheet1";
+    public bool FreezeFirstRow { get; set; } = true;
+    public bool AutoSizeColumns { get; set; } = true;
+    public bool IncludeHeader { get; set; } = true;
 }

@@ -1,3 +1,5 @@
+using DataForge.Core.Core.Infrastructure;
+
 namespace DataForge.Core.SqlServer;
 
 public class SqlServerExportOptions
@@ -7,5 +9,3 @@ public class SqlServerExportOptions
     public string[]? UpsertKeyColumns { get; set; }
     public bool UseTransaction { get; set; } = true;
 }
-
-public enum InsertMode { Insert, Upsert }
