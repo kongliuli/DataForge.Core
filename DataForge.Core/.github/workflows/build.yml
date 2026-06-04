@@ -1,0 +1,130 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  NUGET_VERSION: '6.8.0'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Restore dependencies
+      run: dotnet restore DataForge.Core.sln
+    
+    - name: Build
+      run: dotnet build DataForge.Core.sln --configuration Release --no-restore
+    
+    - name: Run Tests
+      run: dotnet test DataForge.Core.sln --configuration Release --no-build --verbosity normal --collect:"XPlat Code Coverage"
+    
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v4
+      with:
+        files: '**/coverage.cobertura.xml'
+        flags: unittests
+        name: codecov-umbrella
+      continue-on-error: true
+
+  test-packages:
+    runs-on: ubuntu-latest
+    needs: build
+    strategy:
+      matrix:
+        package:
+          - DataForge.Core.SqlServer
+          - DataForge.Core.MySql
+          - DataForge.Core.Sqlite
+          - DataForge.Core.Excel
+          - DataForge.Core.Json
+          - DataForge.Core.FluentValidation
+          - DataForge.Core.Http
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Restore dependencies
+      run: dotnet restore DataForge.Core.sln
+    
+    - name: Build ${{ matrix.package }}
+      run: dotnet build src/${{ matrix.package }}/${{ matrix.package }}.csproj --configuration Release --no-restore
+
+  package:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Restore dependencies
+      run: dotnet restore DataForge.Core.sln
+    
+    - name: Build
+      run: dotnet build DataForge.Core.sln --configuration Release --no-restore
+    
+    - name: Pack Core
+      run: dotnet pack src/DataForge.Core/DataForge.Core.csproj --configuration Release --no-build -o ./packages
+    
+    - name: Pack Extensions
+      run: |
+        for pkg in DataForge.Core.SqlServer DataForge.Core.MySql DataForge.Core.Sqlite DataForge.Core.Excel DataForge.Core.Json DataForge.Core.FluentValidation DataForge.Core.Http; do
+          dotnet pack src/$pkg/$pkg.csproj --configuration Release --no-build -o ./packages
+        done
+    
+    - name: Upload packages
+      uses: actions/upload-artifact@v4
+      with:
+        name: nuget-packages
+        path: packages/*.nupkg
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: package
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Download packages
+      uses: actions/download-artifact@v4
+      with:
+        name: nuget-packages
+        path: packages
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: ${{ env.DOTNET_VERSION }}
+    
+    - name: Publish to NuGet
+      run: |
+        for pkg in packages/*.nupkg; do
+          dotnet nuget push "$pkg" --api-key ${{ secrets.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json --skip-duplicate
+        done
+      env:
+        DOTNET_CLI_TELEMETRY_OPTOUT: 1
