@@ -8,6 +8,13 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\DataForge.Core\DataForge.Core.csproj" />
+    <ProjectReference Include="..\..\src\DataForge.Core.SqlServer\DataForge.Core.SqlServer.csproj" />
+    <ProjectReference Include="..\..\src\DataForge.Core.MySql\DataForge.Core.MySql.csproj" />
+    <ProjectReference Include="..\..\src\DataForge.Core.Sqlite\DataForge.Core.Sqlite.csproj" />
+    <ProjectReference Include="..\..\src\DataForge.Core.Excel\DataForge.Core.Excel.csproj" />
+    <ProjectReference Include="..\..\src\DataForge.Core.Json\DataForge.Core.Json.csproj" />
+    <ProjectReference Include="..\..\src\DataForge.Core.Http\DataForge.Core.Http.csproj" />
+    <ProjectReference Include="..\..\src\DataForge.Core.FluentValidation\DataForge.Core.FluentValidation.csproj" />
     <PackageReference Include="xunit" Version="2.9.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
     <PackageReference Include="FluentAssertions" Version="7.0.0" />

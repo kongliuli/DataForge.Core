@@ -302,6 +302,17 @@ internal class DataPipeline<T> : IDataPipeline<T>
         return result;
     }
 
+    // 性能优化方法实现
+    public IDataPipeline<T> WithProgress(Action<ProgressReport<T>> progressHandler, int reportInterval = 1000)
+    {
+        return new ProgressReportingPipeline<T>(this, progressHandler, reportInterval);
+    }
+
+    public IDataPipeline<T> WithCounter(PerformanceCounter counter)
+    {
+        return new CounterReportingPipeline<T>(this, counter);
+    }
+
     private async IAsyncEnumerable<T> GetValidatedEnumerable(
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
@@ -648,13 +659,3 @@ internal class DataPipeline<T> : IDataPipeline<T>
         }
     }
 }
-
-    public IDataPipeline<T> WithProgress(Action<ProgressReport<T>> progressHandler, int reportInterval = 1000)
-    {
-        return new ProgressReportingPipeline<T>(this, progressHandler, reportInterval);
-    }
-
-    public IDataPipeline<T> WithCounter(PerformanceCounter counter)
-    {
-        return new CounterReportingPipeline<T>(this, counter);
-    }
