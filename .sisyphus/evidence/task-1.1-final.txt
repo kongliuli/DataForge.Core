@@ -1,0 +1,15 @@
+﻿  姝ｅ湪纭畾瑕佽繕鍘熺殑椤圭洰鈥?
+  鎵€鏈夐」鐩潎鏄渶鏂扮殑锛屾棤娉曡繕鍘熴€?
+D:\Code\OpenSource\DataForge.Core\DataForge.Core\src\DataForge.Core\Core\Sources\Implementations\CsvSource.cs(206,28): warning CS0693: 绫诲瀷鍙傛暟鈥淭鈥濅笌澶栭儴绫诲瀷鈥淐svSource<T>鈥濅腑鐨勭被鍨嬪弬鏁板悓鍚?[D:\Code\OpenSource\DataForge.Core\DataForge.Core\src\DataForge.Core\DataForge.Core.csproj]
+D:\Code\OpenSource\DataForge.Core\DataForge.Core\src\DataForge.Core\Core\Sources\Implementations\JsonSource.cs(48,39): warning CS8425: 寮傛杩唬鍣ㄢ€淛sonSource<T>.DeserializeStreamAsync(Stream, CancellationToken)鈥濆叿鏈変竴涓垨澶氫釜绫诲瀷涓?"CancellationToken" 鐨勫弬鏁帮紝浣嗗畠浠兘鏈敤 "EnumeratorCancellation" 灞炴€т慨楗帮紝鍥犳灏嗕笉浣跨敤鎵€鐢熸垚鐨?"IAsyncEnumerable<>.GetAsyncEnumerator" 涓殑鍙栨秷浠ょ墝鍙傛暟 [D:\Code\OpenSource\DataForge.Core\DataForge.Core\src\DataForge.Core\DataForge.Core.csproj]
+D:\Code\OpenSource\DataForge.Core\DataForge.Core\src\DataForge.Core\Core\Pipeline\GroupedDataPipeline.cs(79,70): warning CS8425: 寮傛杩唬鍣ㄢ€淕roupedDataPipeline<TKey, TElement>.OrderByGroupsInternal<TKey2>(IAsyncEnumerable<TElement>, Func<TElement, TKey>, Func<IGrouping<TKey, TElement>, TKey2>, bool, CancellationToken)鈥濆叿鏈変竴涓垨澶氫釜绫诲瀷涓?"CancellationToken" 鐨勫弬鏁帮紝浣嗗畠浠兘鏈敤 "EnumeratorCancellation" 灞炴€т慨楗帮紝鍥犳灏嗕笉浣跨敤鎵€鐢熸垚鐨?"IAsyncEnumerable<>.GetAsyncEnumerator" 涓殑鍙栨秷浠ょ墝鍙傛暟 [D:\Code\OpenSource\DataForge.Core\DataForge.Core\src\DataForge.Core\DataForge.Core.csproj]
+D:\Code\OpenSource\DataForge.Core\DataForge.Core\src\DataForge.Core\Core\Pipeline\DataPipeline.cs(524,46): warning CS8425: 寮傛杩唬鍣ㄢ€淒ataPipeline<T>.OrderByInternal<TKey>(IAsyncEnumerable<T>, Func<T, TKey>, bool, CancellationToken)鈥濆叿鏈変竴涓垨澶氫釜绫诲瀷涓?"CancellationToken" 鐨勫弬鏁帮紝浣嗗畠浠兘鏈敤 "EnumeratorCancellation" 灞炴€т慨楗帮紝鍥犳灏嗕笉浣跨敤鎵€鐢熸垚鐨?"IAsyncEnumerable<>.GetAsyncEnumerator" 涓殑鍙栨秷浠ょ墝鍙傛暟 [D:\Code\OpenSource\DataForge.Core\DataForge.Core\src\DataForge.Core\DataForge.Core.csproj]
+D:\Code\OpenSource\DataForge.Core\DataForge.Core\src\DataForge.Core\Core\Pipeline\DataPipeline.cs(627,75): warning CS8425: 寮傛杩唬鍣ㄢ€淒ataPipeline<T>.ZipInternal<TFirst, TSecond>(IAsyncEnumerable<TFirst>, IAsyncEnumerable<TSecond>, CancellationToken)鈥濆叿鏈変竴涓垨澶氫釜绫诲瀷涓?"CancellationToken" 鐨勫弬鏁帮紝浣嗗畠浠兘鏈敤 "EnumeratorCancellation" 灞炴€т慨楗帮紝鍥犳灏嗕笉浣跨敤鎵€鐢熸垚鐨?"IAsyncEnumerable<>.GetAsyncEnumerator" 涓殑鍙栨秷浠ょ墝鍙傛暟 [D:\Code\OpenSource\DataForge.Core\DataForge.Core\src\DataForge.Core\DataForge.Core.csproj]
+  DataForge.Core -> D:\Code\OpenSource\DataForge.Core\DataForge.Core\src\DataForge.Core\bin\Release\net8.0\DataForge.Core.dll
+  鍖?DataForge.Core.0.1.0 缂哄皯鑷堪鏂囦欢銆傝浆鍒?https://aka.ms/nuget/authoring-best-practices/readme 浜嗚В涓轰粈涔堝寘闃呰涓婚寰堥噸瑕併€?
+  宸叉垚鍔熷垱寤哄寘鈥淒:\Code\OpenSource\DataForge.Core\DataForge.Core\src\DataForge.Core\bin\Release\DataForge.Core.0.1.0.nupkg鈥濄€?
+  DataForge.Core.Tests -> D:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\bin\Release\net8.0\DataForge.Core.Tests.dll
+D:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\bin\Release\net8.0\DataForge.Core.Tests.dll (.NETCoreApp,Version=v8.0)鐨勬祴璇曡繍琛?
+鎬诲叡 1 涓祴璇曟枃浠朵笌鎸囧畾妯″紡鐩稿尮閰嶃€?
+
+宸查€氳繃! - 澶辫触:     0锛岄€氳繃:     8锛屽凡璺宠繃:     0锛屾€昏:     8锛屾寔缁椂闂? 99 ms - DataForge.Core.Tests.dll (net8.0)

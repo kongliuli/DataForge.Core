@@ -1,0 +1,120 @@
+﻿鐢熸垚鍚姩鏃堕棿涓?2026/5/20 12:09:23銆?
+     1>椤圭洰鈥淒:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\DataForge.Core.Tests.csproj鈥濆湪鑺傜偣 1 涓?Restore 涓洰鏍?銆?
+     1>_GetAllRestoreProjectPathItems:
+         姝ｅ湪纭畾瑕佽繕鍘熺殑椤圭洰鈥?
+       Restore:
+         X.509 璇佷功閾鹃獙璇佸皢浣跨敤 .NET 閫夋嫨鐨勯粯璁や俊浠诲瓨鍌ㄨ繘琛屼唬鐮佺鍚嶃€?
+         X.509 璇佷功閾鹃獙璇佸皢浣跨敤 .NET 閫夋嫨鐨勯粯璁や俊浠诲瓨鍌ㄨ繘琛屾椂闂存埑銆?
+         璧勪骇鏂囦欢鏈敼鍙樸€傝烦杩囪祫浜ф枃浠跺啓鍏ャ€傝矾寰? D:\Code\OpenSource\DataForge.Core\DataForge.Core\src\DataForge.Core\obj\project.assets.json
+         宸茶繕鍘?D:\Code\OpenSource\DataForge.Core\DataForge.Core\src\DataForge.Core\DataForge.Core.csproj (鐢ㄦ椂 145 姣)銆?
+         璧勪骇鏂囦欢鏈敼鍙樸€傝烦杩囪祫浜ф枃浠跺啓鍏ャ€傝矾寰? D:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\obj\project.assets.json
+         宸茶繕鍘?D:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\DataForge.Core.Tests.csproj (鐢ㄦ椂 164 姣)銆?
+         
+         浣跨敤鐨?NuGet 閰嶇疆鏂囦欢:
+             C:\Users\admin.DESKTOP-4R9CSJI\AppData\Roaming\NuGet\NuGet.Config
+             C:\Program Files (x86)\NuGet\Config\Microsoft.VisualStudio.FallbackLocation.config
+             C:\Program Files (x86)\NuGet\Config\Microsoft.VisualStudio.Offline.config
+         
+         浣跨敤鐨勬簮:
+             https://api.nuget.org/v3/index.json
+             C:\Program Files (x86)\Microsoft SDKs\NuGetPackages\
+             C:\Program Files\dotnet\library-packs
+         鎵€鏈夐」鐩潎鏄渶鏂扮殑锛屾棤娉曡繕鍘熴€?
+     1>宸插畬鎴愮敓鎴愰」鐩€淒:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\DataForge.Core.Tests.csproj鈥?Restore 涓洰鏍?鐨勬搷浣溿€?
+   1:7>椤圭洰鈥淒:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\DataForge.Core.Tests.csproj鈥濆湪鑺傜偣 1 涓?VSTest 涓洰鏍?銆?
+     1>BuildProject:
+         宸插紑濮嬬敓鎴愶紝璇风瓑寰?..
+   1:7>椤圭洰鈥淒:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\DataForge.Core.Tests.csproj鈥?1:7)姝ｅ湪鑺傜偣 1 涓婄敓鎴愨€淒:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\DataForge.Core.Tests.csproj鈥?1:8) (榛樿鐩爣)銆?
+   1:8>椤圭洰鈥淒:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\DataForge.Core.Tests.csproj鈥?1:8)姝ｅ湪鑺傜偣 1 涓婄敓鎴愨€淒:\Code\OpenSource\DataForge.Core\DataForge.Core\src\DataForge.Core\DataForge.Core.csproj鈥?2:6) (榛樿鐩爣)銆?
+     2>GenerateTargetFrameworkMonikerAttribute:
+       姝ｅ湪璺宠繃鐩爣鈥淕enerateTargetFrameworkMonikerAttribute鈥濓紝鍥犱负鎵€鏈夎緭鍑烘枃浠剁浉瀵逛簬杈撳叆鏂囦欢鑰岃█閮芥槸鏈€鏂扮殑銆?
+       CoreGenerateAssemblyInfo:
+       姝ｅ湪璺宠繃鐩爣鈥淐oreGenerateAssemblyInfo鈥濓紝鍥犱负鎵€鏈夎緭鍑烘枃浠剁浉瀵逛簬杈撳叆鏂囦欢鑰岃█閮芥槸鏈€鏂扮殑銆?
+       _GenerateSourceLinkFile:
+         Source Link 鏂囦欢 "obj\Release\net8.0\DataForge.Core.sourcelink.json" 鏄渶鏂扮殑銆?
+       CoreCompile:
+       姝ｅ湪璺宠繃鐩爣鈥淐oreCompile鈥濓紝鍥犱负鎵€鏈夎緭鍑烘枃浠剁浉瀵逛簬杈撳叆鏂囦欢鑰岃█閮芥槸鏈€鏂扮殑銆?
+       GenerateBuildDependencyFile:
+       姝ｅ湪璺宠繃鐩爣鈥淕enerateBuildDependencyFile鈥濓紝鍥犱负鎵€鏈夎緭鍑烘枃浠剁浉瀵逛簬杈撳叆鏂囦欢鑰岃█閮芥槸鏈€鏂扮殑銆?
+       CopyFilesToOutputDirectory:
+         DataForge.Core -> D:\Code\OpenSource\DataForge.Core\DataForge.Core\src\DataForge.Core\bin\Release\net8.0\DataForge.Core.dll
+       GenerateNuspec:
+       姝ｅ湪璺宠繃鐩爣鈥淕enerateNuspec鈥濓紝鍥犱负鎵€鏈夎緭鍑烘枃浠剁浉瀵逛簬杈撳叆鏂囦欢鑰岃█閮芥槸鏈€鏂扮殑銆?
+     2>宸插畬鎴愮敓鎴愰」鐩€淒:\Code\OpenSource\DataForge.Core\DataForge.Core\src\DataForge.Core\DataForge.Core.csproj鈥?榛樿鐩爣)鐨勬搷浣溿€?
+     1>GenerateTargetFrameworkMonikerAttribute:
+       姝ｅ湪璺宠繃鐩爣鈥淕enerateTargetFrameworkMonikerAttribute鈥濓紝鍥犱负鎵€鏈夎緭鍑烘枃浠剁浉瀵逛簬杈撳叆鏂囦欢鑰岃█閮芥槸鏈€鏂扮殑銆?
+       CoreGenerateAssemblyInfo:
+       姝ｅ湪璺宠繃鐩爣鈥淐oreGenerateAssemblyInfo鈥濓紝鍥犱负鎵€鏈夎緭鍑烘枃浠剁浉瀵逛簬杈撳叆鏂囦欢鑰岃█閮芥槸鏈€鏂扮殑銆?
+       _GenerateSourceLinkFile:
+         Source Link 鏂囦欢 "obj\Release\net8.0\DataForge.Core.Tests.sourcelink.json" 鏄渶鏂扮殑銆?
+       CoreCompile:
+       姝ｅ湪璺宠繃鐩爣鈥淐oreCompile鈥濓紝鍥犱负鎵€鏈夎緭鍑烘枃浠剁浉瀵逛簬杈撳叆鏂囦欢鑰岃█閮芥槸鏈€鏂扮殑銆?
+       _CopyOutOfDateSourceItemsToOutputDirectory:
+       姝ｅ湪璺宠繃鐩爣鈥淿CopyOutOfDateSourceItemsToOutputDirectory鈥濓紝鍥犱负鎵€鏈夎緭鍑烘枃浠剁浉瀵逛簬杈撳叆鏂囦欢鑰岃█閮芥槸鏈€鏂扮殑銆?
+       GenerateBuildDependencyFile:
+       姝ｅ湪璺宠繃鐩爣鈥淕enerateBuildDependencyFile鈥濓紝鍥犱负鎵€鏈夎緭鍑烘枃浠剁浉瀵逛簬杈撳叆鏂囦欢鑰岃█閮芥槸鏈€鏂扮殑銆?
+       GenerateBuildRuntimeConfigurationFiles:
+       姝ｅ湪璺宠繃鐩爣鈥淕enerateBuildRuntimeConfigurationFiles鈥濓紝鍥犱负鎵€鏈夎緭鍑烘枃浠剁浉瀵逛簬杈撳叆鏂囦欢鑰岃█閮芥槸鏈€鏂扮殑銆?
+       CopyFilesToOutputDirectory:
+         DataForge.Core.Tests -> D:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\bin\Release\net8.0\DataForge.Core.Tests.dll
+     1>宸插畬鎴愮敓鎴愰」鐩€淒:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\DataForge.Core.Tests.csproj鈥?榛樿鐩爣)鐨勬搷浣溿€?
+     1>BuildProject:
+         瀹屾垚鐨勭敓鎴愩€?
+         
+D:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\bin\Release\net8.0\DataForge.Core.Tests.dll (.NETCoreApp,Version=v8.0)鐨勬祴璇曡繍琛?
+鎬诲叡 1 涓祴璇曟枃浠朵笌鎸囧畾妯″紡鐩稿尮閰嶃€?
+[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 8.0.26)
+[xUnit.net 00:00:00.29]   Discovering: DataForge.Core.Tests
+[xUnit.net 00:00:00.44]   Discovered:  DataForge.Core.Tests
+[xUnit.net 00:00:00.47]   Starting:    DataForge.Core.Tests
+dotnet : [xUnit.net 00:00:00.96]     DataForge.Core.Tests.Sources.CsvSourceAdvancedTests.EscapedQuotes_ReturnsLiteralQu
+otes [FAIL]
+所在位置 行:1 字符: 36
++ ... Forge.Core; dotnet test tests\DataForge.Core.Tests\DataForge.Core.Tes ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ([xUnit.net 00:0...alQuotes [FAIL]:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+[xUnit.net 00:00:00.97]       Expected result[0].Name to be "He said "Hello"" with a length of 15, but "He said "Hello,42" has a length of 17, differs near ",42" (index 14).
+[xUnit.net 00:00:00.97]       Stack Trace:
+[xUnit.net 00:00:00.97]            at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)
+[xUnit.net 00:00:00.97]            at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)
+[xUnit.net 00:00:00.97]            at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)
+[xUnit.net 00:00:00.97]            at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+[xUnit.net 00:00:00.97]            at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+[xUnit.net 00:00:00.97]            at FluentAssertions.Primitives.StringEqualityValidator.ValidateAgainstLengthDifferences()
+[xUnit.net 00:00:00.97]            at FluentAssertions.Primitives.StringValidator.Validate()
+[xUnit.net 00:00:00.97]            at FluentAssertions.Primitives.StringAssertions`1.Be(String expected, String because, Object[] becauseArgs)
+[xUnit.net 00:00:00.97]         D:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\Sources\CsvSourceAdvancedTests.cs(66,0): at DataForge.Core.Tests.Sources.CsvSourceAdvancedTests.EscapedQuotes_ReturnsLiteralQuotes()
+[xUnit.net 00:00:00.98]         --- End of stack trace from previous location ---
+[xUnit.net 00:00:00.99]   Finished:    DataForge.Core.Tests
+  宸查€氳繃 DataForge.Core.Tests.Sources.CsvSourceAdvancedTests.MultiLineQuotedField_ReturnsSingleRecord [63 ms]
+  澶辫触 DataForge.Core.Tests.Sources.CsvSourceAdvancedTests.EscapedQuotes_ReturnsLiteralQuotes [240 ms]
+  閿欒娑堟伅:
+   Expected result[0].Name to be "He said "Hello"" with a length of 15, but "He said "Hello,42" has a length of 17, differs near ",42" (index 14).
+  鍫嗘爤璺熻釜:
+     at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)
+   at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)
+   at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)
+   at FluentAssertions.Primitives.StringEqualityValidator.ValidateAgainstLengthDifferences()
+   at FluentAssertions.Primitives.StringValidator.Validate()
+   at FluentAssertions.Primitives.StringAssertions`1.Be(String expected, String because, Object[] becauseArgs)
+   at DataForge.Core.Tests.Sources.CsvSourceAdvancedTests.EscapedQuotes_ReturnsLiteralQuotes() in D:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\Sources\CsvSourceAdvancedTests.cs:line 66
+--- End of stack trace from previous location ---
+
+娴嬭瘯杩愯澶辫触銆?
+娴嬭瘯鎬绘暟: 2
+     閫氳繃鏁? 1
+     澶辫触鏁? 1
+鎬绘椂闂? 3.0144 绉?
+       _VSTestConsole:
+         MSB4181: 鈥淰STestTask鈥濅换鍔¤繑鍥炰簡 false锛屼絾鏈褰曢敊璇€?
+     1>宸插畬鎴愮敓鎴愰」鐩€淒:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\DataForge.Core.Tests.csproj鈥?VSTest 涓洰鏍?鐨勬搷浣?- 澶辫触銆?
+
+鐢熸垚澶辫触銆?
+    0 涓鍛?
+    0 涓敊璇?
+
+宸茬敤鏃堕棿 00:00:09.70

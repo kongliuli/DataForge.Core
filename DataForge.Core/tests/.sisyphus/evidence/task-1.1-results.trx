@@ -1,0 +1,131 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="794c0549-59e6-4a0c-83de-eeabed0f804a" name="admin@DESKTOP-4R9CSJI 2026-05-20 12:13:04" runUser="DESKTOP-4R9CSJI\admin" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-05-20T12:13:04.1760097+08:00" queuing="2026-05-20T12:13:04.1760104+08:00" start="2026-05-20T12:12:59.9814488+08:00" finish="2026-05-20T12:13:04.4315627+08:00" />
+  <TestSettings name="default" id="5be3e126-b5ab-4d9c-b448-8049cfc8391f">
+    <Deployment runDeploymentRoot="admin_DESKTOP-4R9CSJI_2026-05-20_12_13_04" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="24a6fe09-65dc-4e55-9994-2beb969edefd" testId="389e2086-6977-c523-d1e5-1fbf46415328" testName="DataForge.Core.Tests.Sources.CsvSourceAdvancedTests.MultiLineQuotedField_ReturnsSingleRecord" computerName="DESKTOP-4R9CSJI" duration="00:00:00.0071529" startTime="2026-05-20T12:13:03.5885041+08:00" endTime="2026-05-20T12:13:03.5885058+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="24a6fe09-65dc-4e55-9994-2beb969edefd" />
+    <UnitTestResult executionId="bdede9f7-1aa7-4bd1-b532-a8c5bbce3d1c" testId="a4c25d2c-dcf7-e598-baff-b39ea1653b0e" testName="DataForge.Core.Tests.Sources.CsvSourceAdvancedTests.EmptyCsv_ReturnsZeroRecords" computerName="DESKTOP-4R9CSJI" duration="00:00:00.0834746" startTime="2026-05-20T12:13:04.0396620+08:00" endTime="2026-05-20T12:13:04.0396622+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="bdede9f7-1aa7-4bd1-b532-a8c5bbce3d1c" />
+    <UnitTestResult executionId="3c8269c7-43f7-4d03-9cd1-375813e083a9" testId="6e01b9e6-4232-0bfd-19fc-aca0d937fb05" testName="DataForge.Core.Tests.Sources.CsvSourceAdvancedTests.QuotedFieldWithDelimiter_ReturnsCorrectValue" computerName="DESKTOP-4R9CSJI" duration="00:00:00.0456856" startTime="2026-05-20T12:13:03.5842668+08:00" endTime="2026-05-20T12:13:03.5842670+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="3c8269c7-43f7-4d03-9cd1-375813e083a9" />
+    <UnitTestResult executionId="ad1fb118-a56f-4ed3-b496-c8e03ce90e86" testId="3c1af714-8e1c-5d12-fa63-efe588f232a9" testName="DataForge.Core.Tests.Sources.CsvSourceTests.ExistsAsync_WithNonExistingFile_ReturnsFalse" computerName="DESKTOP-4R9CSJI" duration="00:00:00.0010748" startTime="2026-05-20T12:13:03.6039015+08:00" endTime="2026-05-20T12:13:03.6039021+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ad1fb118-a56f-4ed3-b496-c8e03ce90e86" />
+    <UnitTestResult executionId="63c116e5-ec25-443e-99b1-26bc158db5f9" testId="3517fc65-f2df-6b68-845a-370582a0b4da" testName="DataForge.Core.Tests.Sources.CsvSourceAdvancedTests.EscapedQuotes_ReturnsLiteralQuotes" computerName="DESKTOP-4R9CSJI" duration="00:00:00.0056028" startTime="2026-05-20T12:13:04.0401303+08:00" endTime="2026-05-20T12:13:04.0401304+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="63c116e5-ec25-443e-99b1-26bc158db5f9" />
+    <UnitTestResult executionId="e195cf33-697e-42b1-a484-df9657669d6f" testId="25bc6316-d47a-5570-d0c3-20dc1f5c323e" testName="DataForge.Core.Tests.Sources.CsvSourceAdvancedTests.CommentLines_Skipped" computerName="DESKTOP-4R9CSJI" duration="00:00:00.2873675" startTime="2026-05-20T12:13:03.9076179+08:00" endTime="2026-05-20T12:13:03.9076189+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e195cf33-697e-42b1-a484-df9657669d6f">
+      <Output>
+        <ErrorInfo>
+          <Message>Expected result to contain 1 item(s), but found 2: &#xD;
+{&#xD;
+    DataForge.Core.Tests.Sources.CsvSourceAdvancedTests+Person&#xD;
+    {&#xD;
+        Age = 0, &#xD;
+        Name = ""&#xD;
+    }, &#xD;
+    DataForge.Core.Tests.Sources.CsvSourceAdvancedTests+Person&#xD;
+    {&#xD;
+        Age = 0, &#xD;
+        Name = ""&#xD;
+    }&#xD;
+}.</Message>
+          <StackTrace>   at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)&#xD;
+   at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)&#xD;
+   at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)&#xD;
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)&#xD;
+   at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)&#xD;
+   at FluentAssertions.Execution.AssertionScope.FailWith(String message, Object[] args)&#xD;
+   at FluentAssertions.Collections.GenericCollectionAssertions`3.HaveCount(Int32 expected, String because, Object[] becauseArgs)&#xD;
+   at DataForge.Core.Tests.Sources.CsvSourceAdvancedTests.CommentLines_Skipped() in D:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\Sources\CsvSourceAdvancedTests.cs:line 88&#xD;
+--- End of stack trace from previous location ---</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="34046e9f-7586-4e2f-a6ab-c5b32f1447ba" testId="723f0792-75fe-467e-964b-0429e620895e" testName="DataForge.Core.Tests.Sources.CsvSourceTests.ExistsAsync_WithExistingFile_ReturnsTrue" computerName="DESKTOP-4R9CSJI" duration="00:00:00.0221343" startTime="2026-05-20T12:13:03.6025263+08:00" endTime="2026-05-20T12:13:03.6025269+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="34046e9f-7586-4e2f-a6ab-c5b32f1447ba" />
+    <UnitTestResult executionId="75af686d-421e-4db3-a80b-390ad7e9d0b0" testId="23325080-e703-b81d-8e57-04127ee1b8fa" testName="DataForge.Core.Tests.Sources.CsvSourceTests.ReadAsync_WithSimpleCsv_ReturnsData" computerName="DESKTOP-4R9CSJI" duration="00:00:00.0458073" startTime="2026-05-20T12:13:03.5808388+08:00" endTime="2026-05-20T12:13:03.5808730+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="75af686d-421e-4db3-a80b-390ad7e9d0b0" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="DataForge.Core.Tests.Sources.CsvSourceAdvancedTests.QuotedFieldWithDelimiter_ReturnsCorrectValue" storage="d:\code\opensource\dataforge.core\dataforge.core\tests\dataforge.core.tests\bin\release\net8.0\dataforge.core.tests.dll" id="6e01b9e6-4232-0bfd-19fc-aca0d937fb05">
+      <Execution id="3c8269c7-43f7-4d03-9cd1-375813e083a9" />
+      <TestMethod codeBase="D:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\bin\Release\net8.0\DataForge.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="DataForge.Core.Tests.Sources.CsvSourceAdvancedTests" name="QuotedFieldWithDelimiter_ReturnsCorrectValue" />
+    </UnitTest>
+    <UnitTest name="DataForge.Core.Tests.Sources.CsvSourceAdvancedTests.EscapedQuotes_ReturnsLiteralQuotes" storage="d:\code\opensource\dataforge.core\dataforge.core\tests\dataforge.core.tests\bin\release\net8.0\dataforge.core.tests.dll" id="3517fc65-f2df-6b68-845a-370582a0b4da">
+      <Execution id="63c116e5-ec25-443e-99b1-26bc158db5f9" />
+      <TestMethod codeBase="D:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\bin\Release\net8.0\DataForge.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="DataForge.Core.Tests.Sources.CsvSourceAdvancedTests" name="EscapedQuotes_ReturnsLiteralQuotes" />
+    </UnitTest>
+    <UnitTest name="DataForge.Core.Tests.Sources.CsvSourceTests.ExistsAsync_WithNonExistingFile_ReturnsFalse" storage="d:\code\opensource\dataforge.core\dataforge.core\tests\dataforge.core.tests\bin\release\net8.0\dataforge.core.tests.dll" id="3c1af714-8e1c-5d12-fa63-efe588f232a9">
+      <Execution id="ad1fb118-a56f-4ed3-b496-c8e03ce90e86" />
+      <TestMethod codeBase="D:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\bin\Release\net8.0\DataForge.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="DataForge.Core.Tests.Sources.CsvSourceTests" name="ExistsAsync_WithNonExistingFile_ReturnsFalse" />
+    </UnitTest>
+    <UnitTest name="DataForge.Core.Tests.Sources.CsvSourceTests.ExistsAsync_WithExistingFile_ReturnsTrue" storage="d:\code\opensource\dataforge.core\dataforge.core\tests\dataforge.core.tests\bin\release\net8.0\dataforge.core.tests.dll" id="723f0792-75fe-467e-964b-0429e620895e">
+      <Execution id="34046e9f-7586-4e2f-a6ab-c5b32f1447ba" />
+      <TestMethod codeBase="D:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\bin\Release\net8.0\DataForge.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="DataForge.Core.Tests.Sources.CsvSourceTests" name="ExistsAsync_WithExistingFile_ReturnsTrue" />
+    </UnitTest>
+    <UnitTest name="DataForge.Core.Tests.Sources.CsvSourceAdvancedTests.EmptyCsv_ReturnsZeroRecords" storage="d:\code\opensource\dataforge.core\dataforge.core\tests\dataforge.core.tests\bin\release\net8.0\dataforge.core.tests.dll" id="a4c25d2c-dcf7-e598-baff-b39ea1653b0e">
+      <Execution id="bdede9f7-1aa7-4bd1-b532-a8c5bbce3d1c" />
+      <TestMethod codeBase="D:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\bin\Release\net8.0\DataForge.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="DataForge.Core.Tests.Sources.CsvSourceAdvancedTests" name="EmptyCsv_ReturnsZeroRecords" />
+    </UnitTest>
+    <UnitTest name="DataForge.Core.Tests.Sources.CsvSourceAdvancedTests.CommentLines_Skipped" storage="d:\code\opensource\dataforge.core\dataforge.core\tests\dataforge.core.tests\bin\release\net8.0\dataforge.core.tests.dll" id="25bc6316-d47a-5570-d0c3-20dc1f5c323e">
+      <Execution id="e195cf33-697e-42b1-a484-df9657669d6f" />
+      <TestMethod codeBase="D:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\bin\Release\net8.0\DataForge.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="DataForge.Core.Tests.Sources.CsvSourceAdvancedTests" name="CommentLines_Skipped" />
+    </UnitTest>
+    <UnitTest name="DataForge.Core.Tests.Sources.CsvSourceAdvancedTests.MultiLineQuotedField_ReturnsSingleRecord" storage="d:\code\opensource\dataforge.core\dataforge.core\tests\dataforge.core.tests\bin\release\net8.0\dataforge.core.tests.dll" id="389e2086-6977-c523-d1e5-1fbf46415328">
+      <Execution id="24a6fe09-65dc-4e55-9994-2beb969edefd" />
+      <TestMethod codeBase="D:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\bin\Release\net8.0\DataForge.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="DataForge.Core.Tests.Sources.CsvSourceAdvancedTests" name="MultiLineQuotedField_ReturnsSingleRecord" />
+    </UnitTest>
+    <UnitTest name="DataForge.Core.Tests.Sources.CsvSourceTests.ReadAsync_WithSimpleCsv_ReturnsData" storage="d:\code\opensource\dataforge.core\dataforge.core\tests\dataforge.core.tests\bin\release\net8.0\dataforge.core.tests.dll" id="23325080-e703-b81d-8e57-04127ee1b8fa">
+      <Execution id="75af686d-421e-4db3-a80b-390ad7e9d0b0" />
+      <TestMethod codeBase="D:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\bin\Release\net8.0\DataForge.Core.Tests.dll" adapterTypeName="executor://xunit/VsTestRunner2/netcoreapp" className="DataForge.Core.Tests.Sources.CsvSourceTests" name="ReadAsync_WithSimpleCsv_ReturnsData" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="389e2086-6977-c523-d1e5-1fbf46415328" executionId="24a6fe09-65dc-4e55-9994-2beb969edefd" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a4c25d2c-dcf7-e598-baff-b39ea1653b0e" executionId="bdede9f7-1aa7-4bd1-b532-a8c5bbce3d1c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="6e01b9e6-4232-0bfd-19fc-aca0d937fb05" executionId="3c8269c7-43f7-4d03-9cd1-375813e083a9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3c1af714-8e1c-5d12-fa63-efe588f232a9" executionId="ad1fb118-a56f-4ed3-b496-c8e03ce90e86" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3517fc65-f2df-6b68-845a-370582a0b4da" executionId="63c116e5-ec25-443e-99b1-26bc158db5f9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="25bc6316-d47a-5570-d0c3-20dc1f5c323e" executionId="e195cf33-697e-42b1-a484-df9657669d6f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="723f0792-75fe-467e-964b-0429e620895e" executionId="34046e9f-7586-4e2f-a6ab-c5b32f1447ba" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="23325080-e703-b81d-8e57-04127ee1b8fa" executionId="75af686d-421e-4db3-a80b-390ad7e9d0b0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="列表中未列出的结果" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="所有已加载的结果" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="8" executed="8" passed="7" failed="1" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>[xUnit.net 00:00:00.00] xUnit.net VSTest Adapter v2.8.2+699d445a1a (64-bit .NET 8.0.26)&#xD;
+[xUnit.net 00:00:00.38]   Discovering: DataForge.Core.Tests&#xD;
+[xUnit.net 00:00:00.58]   Discovered:  DataForge.Core.Tests&#xD;
+[xUnit.net 00:00:00.61]   Starting:    DataForge.Core.Tests&#xD;
+[xUnit.net 00:00:01.17]       Expected result to contain 1 item(s), but found 2: &#xD;
+[xUnit.net 00:00:01.17]       {&#xD;
+[xUnit.net 00:00:01.17]           DataForge.Core.Tests.Sources.CsvSourceAdvancedTests+Person&#xD;
+[xUnit.net 00:00:01.17]           {&#xD;
+[xUnit.net 00:00:01.17]               Age = 0, &#xD;
+[xUnit.net 00:00:01.17]               Name = ""&#xD;
+[xUnit.net 00:00:01.17]           }, &#xD;
+[xUnit.net 00:00:01.17]           DataForge.Core.Tests.Sources.CsvSourceAdvancedTests+Person&#xD;
+[xUnit.net 00:00:01.17]           {&#xD;
+[xUnit.net 00:00:01.17]               Age = 0, &#xD;
+[xUnit.net 00:00:01.17]               Name = ""&#xD;
+[xUnit.net 00:00:01.17]           }&#xD;
+[xUnit.net 00:00:01.17]       }.&#xD;
+[xUnit.net 00:00:01.17]       Stack Trace:&#xD;
+[xUnit.net 00:00:01.17]            at FluentAssertions.Execution.XUnit2TestFramework.Throw(String message)&#xD;
+[xUnit.net 00:00:01.18]            at FluentAssertions.Execution.TestFrameworkProvider.Throw(String message)&#xD;
+[xUnit.net 00:00:01.18]            at FluentAssertions.Execution.DefaultAssertionStrategy.HandleFailure(String message)&#xD;
+[xUnit.net 00:00:01.18]            at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)&#xD;
+[xUnit.net 00:00:01.18]            at FluentAssertions.Execution.AssertionScope.FailWith(Func`1 failReasonFunc)&#xD;
+[xUnit.net 00:00:01.18]            at FluentAssertions.Execution.AssertionScope.FailWith(String message, Object[] args)&#xD;
+[xUnit.net 00:00:01.18]            at FluentAssertions.Collections.GenericCollectionAssertions`3.HaveCount(Int32 expected, String because, Object[] becauseArgs)&#xD;
+[xUnit.net 00:00:01.18]         D:\Code\OpenSource\DataForge.Core\DataForge.Core\tests\DataForge.Core.Tests\Sources\CsvSourceAdvancedTests.cs(88,0): at DataForge.Core.Tests.Sources.CsvSourceAdvancedTests.CommentLines_Skipped()&#xD;
+[xUnit.net 00:00:01.18]         --- End of stack trace from previous location ---&#xD;
+[xUnit.net 00:00:01.34]   Finished:    DataForge.Core.Tests&#xD;
+</StdOut>
+    </Output>
+    <RunInfos>
+      <RunInfo computerName="DESKTOP-4R9CSJI" outcome="Error" timestamp="2026-05-20T12:13:03.8912416+08:00">
+        <Text>[xUnit.net 00:00:01.17]     DataForge.Core.Tests.Sources.CsvSourceAdvancedTests.CommentLines_Skipped [FAIL]</Text>
+      </RunInfo>
+    </RunInfos>
+  </ResultSummary>
+</TestRun>

@@ -1,0 +1,14 @@
+{
+    "active_plan":  "D:\\Code\\OpenSource\\DataForge.Core\\.sisyphus\\plans\\dataforge-core-improvements.md",
+    "started_at":  "2026-05-19T13:57:46.291Z",
+    "session_ids":  [
+                        "ses_1c0a05b1effefW7gJdLBWH2HIX",
+                        "ses_newcontinuation"
+                    ],
+    "session_origins":  {
+                            "ses_1c0a05b1effefW7gJdLBWH2HIX":  "direct",
+                            "ses_newcontinuation":  "continuation"
+                        },
+    "plan_name":  "dataforge-core-improvements",
+    "agent":  "atlas"
+}
