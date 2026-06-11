@@ -12,7 +12,7 @@ public class DataSourceMetadata
     
     public int? RecordCount { get; set; }
     
-    public Dictionary<string, string> AdditionalInfo { get; } = [];
+    public Dictionary<string, string> AdditionalInfo { get; set; } = [];
 }
 
 public class ExportResults

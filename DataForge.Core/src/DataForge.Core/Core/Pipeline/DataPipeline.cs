@@ -13,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace DataForge.Core.Core.Pipeline;
 
-internal class DataPipeline<T> : IDataPipeline<T>
+public class DataPipeline<T> : IDataPipeline<T>
 {
     private readonly Func<CancellationToken, IAsyncEnumerable<T>> _sourceFactory;
     private readonly IValidator<T>? _validator;
@@ -25,6 +25,7 @@ internal class DataPipeline<T> : IDataPipeline<T>
     public DataPipeline(IAsyncEnumerable<T> source)
     {
         _sourceFactory = _ => source;
+        _failOnValidationError = true;
     }
 
     internal DataPipeline(
@@ -300,17 +301,6 @@ internal class DataPipeline<T> : IDataPipeline<T>
         sw.Stop();
         result.Duration = sw.Elapsed;
         return result;
-    }
-
-    // 性能优化方法实现
-    public IDataPipeline<T> WithProgress(Action<ProgressReport<T>> progressHandler, int reportInterval = 1000)
-    {
-        return new ProgressReportingPipeline<T>(this, progressHandler, reportInterval);
-    }
-
-    public IDataPipeline<T> WithCounter(PerformanceCounter counter)
-    {
-        return new CounterReportingPipeline<T>(this, counter);
     }
 
     private async IAsyncEnumerable<T> GetValidatedEnumerable(

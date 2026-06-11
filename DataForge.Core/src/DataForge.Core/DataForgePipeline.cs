@@ -6,7 +6,7 @@ using System.Collections.Generic;
 
 namespace DataForge.Core;
 
-public static class DataForgePipeline
+public class DataForgePipeline
 {
     public static IDataPipeline<T> FromCsv<T>(string filePath, CsvSourceOptions? options = null)
     {

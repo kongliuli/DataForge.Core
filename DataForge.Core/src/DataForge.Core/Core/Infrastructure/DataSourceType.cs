@@ -23,5 +23,6 @@ public enum DataTargetType
     Sqlite,
     Console,
     Stream,
+    RestApi,
     Custom
 }

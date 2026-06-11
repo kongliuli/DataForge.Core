@@ -1,4 +1,4 @@
-using DataForge.Core.Core.Infrastructure;
+﻿using DataForge.Core.Core.Infrastructure;
 using DataForge.Core.Core.Models;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,6 +10,7 @@ namespace DataForge.Core.Core.Sources.Implementations;
 internal class MemorySource<T> : IDataSource<T>
 {
     private readonly IEnumerable<T> _data;
+    private readonly int? _cachedCount;
 
     public string Name => "Memory";
     public DataSourceType SourceType => DataSourceType.Memory;
@@ -17,6 +18,14 @@ internal class MemorySource<T> : IDataSource<T>
     public MemorySource(IEnumerable<T> data)
     {
         _data = data;
+        if (data is ICollection<T> collection)
+            _cachedCount = collection.Count;
+        else if (data is IReadOnlyCollection<T> roCollection)
+            _cachedCount = roCollection.Count;
+        else if (data is T[] array)
+            _cachedCount = array.Length;
+        else
+            _cachedCount = null;
     }
 
     public async IAsyncEnumerable<T> ReadAsync([System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -35,7 +44,7 @@ internal class MemorySource<T> : IDataSource<T>
         {
             SourceType = "Memory",
             Location = "In-Memory Collection",
-            Size = _data.Count() * 1024L
+            Size = _cachedCount.HasValue ? _cachedCount.Value * 1024L : -1L
         });
     }
 

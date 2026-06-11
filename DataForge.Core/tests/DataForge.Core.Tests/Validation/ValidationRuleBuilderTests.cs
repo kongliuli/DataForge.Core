@@ -10,8 +10,8 @@ public class ValidationRuleBuilderTests
     public void Required_Validates_NonEmpty_Value()
     {
         var validator = new TestValidator();
-        var validItem = new TestItem { Name = "John" };
-        var invalidItem = new TestItem { Name = "" };
+        var validItem = new TestItem { Name = "John", Age = 25, Email = "john@test.com" };
+        var invalidItem = new TestItem { Name = "", Age = 25, Email = "john@test.com" };
 
         var validResult = validator.Validate(validItem);
         var invalidResult = validator.Validate(invalidItem);
@@ -38,9 +38,9 @@ public class ValidationRuleBuilderTests
     public void InRange_Validates_Numeric_Range()
     {
         var validator = new TestValidator();
-        var lowItem = new TestItem { Age = 17 };
-        var validItem = new TestItem { Age = 25 };
-        var highItem = new TestItem { Age = 101 };
+        var lowItem = new TestItem { Age = 17, Name = "John", Email = "john@test.com" };
+        var validItem = new TestItem { Age = 25, Name = "John", Email = "john@test.com" };
+        var highItem = new TestItem { Age = 101, Name = "John", Email = "john@test.com" };
 
         var lowResult = validator.Validate(lowItem);
         var validResult = validator.Validate(validItem);
@@ -55,8 +55,8 @@ public class ValidationRuleBuilderTests
     public void Must_Validates_Custom_Condition()
     {
         var validator = new TestValidator();
-        var validEmail = new TestItem { Email = "test@example.com" };
-        var invalidEmail = new TestItem { Email = "invalid-email" };
+        var validEmail = new TestItem { Email = "test@example.com", Name = "John", Age = 25 };
+        var invalidEmail = new TestItem { Email = "invalid-email", Name = "John", Age = 25 };
 
         var validResult = validator.Validate(validEmail);
         var invalidResult = validator.Validate(invalidEmail);

@@ -1,4 +1,4 @@
-using DataForge.Core.Core.Infrastructure;
+﻿using DataForge.Core.Core.Infrastructure;
 using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Sources.Options;
 using System.Collections.Generic;
@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -33,18 +34,22 @@ internal class CsvSource<T> : IFileDataSource<T>
 
         if (_options.HasHeaderRow)
         {
-            headerLine = await reader.ReadLineAsync().ConfigureAwait(false);
+            headerLine = await ReadCsvLineAsync(reader, _options.QuoteChar, cancellationToken).ConfigureAwait(false);
+            while (headerLine != null && _options.CommentPrefix != null && headerLine.StartsWith(_options.CommentPrefix))
+            {
+                headerLine = await ReadCsvLineAsync(reader, _options.QuoteChar, cancellationToken).ConfigureAwait(false);
+            }
             headers = headerLine?.Split(_options.Delimiter);
         }
 
         for (var i = 0; i < _options.SkipRows; i++)
         {
-            await reader.ReadLineAsync().ConfigureAwait(false);
+            await ReadCsvLineAsync(reader, _options.QuoteChar, cancellationToken).ConfigureAwait(false);
         }
 
         var rowCount = 0;
         string? line;
-        while ((line = await reader.ReadLineAsync().ConfigureAwait(false)) != null)
+        while ((line = await ReadCsvLineAsync(reader, _options.QuoteChar, cancellationToken).ConfigureAwait(false)) != null)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -92,6 +97,32 @@ internal class CsvSource<T> : IFileDataSource<T>
         return results;
     }
 
+    /// <summary>
+    /// Reads a logical CSV line, supporting multi-line quoted fields per RFC 4180.
+    /// </summary>
+    private static async Task<string?> ReadCsvLineAsync(StreamReader reader, char quoteChar, CancellationToken ct)
+    {
+        var sb = new StringBuilder();
+        var inQuotes = false;
+        int ch;
+
+        while ((ch = reader.Read()) >= 0)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (ch == quoteChar)
+            {
+                inQuotes = !inQuotes;
+            }
+            sb.Append((char)ch);
+            if (ch == '\n' && !inQuotes)
+            {
+                return sb.ToString().TrimEnd('\r', '\n');
+            }
+        }
+
+        return sb.Length > 0 ? sb.ToString() : null;
+    }
+
     private string[] ParseCsvLine(string line)
     {
         var values = new List<string>();
@@ -104,6 +135,12 @@ internal class CsvSource<T> : IFileDataSource<T>
         {
             if (c == _options.QuoteChar)
             {
+                if (inQuotes && charIndex + 1 < line.Length && line[charIndex + 1] == _options.QuoteChar)
+                {
+                    currentValue[valueIndex++] = c;
+                    charIndex++;
+                    continue;
+                }
                 inQuotes = !inQuotes;
             }
             else if (c == _options.Delimiter && !inQuotes)

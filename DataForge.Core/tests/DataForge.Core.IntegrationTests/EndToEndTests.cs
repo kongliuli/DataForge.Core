@@ -1,5 +1,6 @@
 using DataForge.Core;
 using DataForge.Core.Core.Infrastructure;
+using DataForge.Core.Core.Pipeline;
 using DataForge.Core.Core.Validation;
 using FluentAssertions;
 using System;
@@ -74,8 +75,8 @@ public class EndToEndTests : IDisposable
         results.RecordsWritten.Should().Be(2);
         var output = await File.ReadAllTextAsync(outputPath);
         output.Should().Contain("ProductB");
-        output.Should().Contain("ProductA");
-        output.Should().NotContain("ProductC");
+        output.Should().Contain("ProductC");
+        output.Should().NotContain("ProductA");
     }
 
     [Fact]

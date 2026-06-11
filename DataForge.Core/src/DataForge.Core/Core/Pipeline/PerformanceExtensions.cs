@@ -1,4 +1,8 @@
 using DataForge.Core.Core.Infrastructure;
+using DataForge.Core.Core.Models;
+using DataForge.Core.Core.Targets;
+using DataForge.Core.Core.Transforms;
+using DataForge.Core.Core.Validation;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -108,11 +112,11 @@ internal class ProgressReportingPipeline<T> : IDataPipeline<T>
     public IDataPipeline<T> OnErrorSkip() => _inner.OnErrorSkip();
     public IDataPipeline<T> OnError(Func<Exception, T, ErrorAction> handler) => _inner.OnError(handler);
     public Task<TResult> AggregateAsync<TResult>(Func<TResult, T, TResult> aggregator, TResult seed, CancellationToken cancellationToken = default) => _inner.AggregateAsync(aggregator, seed, cancellationToken);
-    public Task<List<T>> ToListAsync(CancellationToken cancellationToken = default) => _inner.ToListAsync(cancellationToken);
-    public Task<T[]> ToArrayAsync(CancellationToken cancellationToken = default) => _inner.ToArrayAsync(cancellationToken);
-    public Task<T?> FirstOrDefaultAsync(CancellationToken cancellationToken = default) => _inner.FirstOrDefaultAsync(cancellationToken);
-    public Task<int> CountAsync(CancellationToken cancellationToken = default) => _inner.CountAsync(cancellationToken);
-    public Task<bool> AnyAsync(CancellationToken cancellationToken = default) => _inner.AnyAsync(cancellationToken);
+    public async Task<List<T>> ToListAsync(CancellationToken cancellationToken = default) { var r = new List<T>(); await foreach (var i in AsAsyncEnumerable(cancellationToken).ConfigureAwait(false)) r.Add(i); return r; }
+    public async Task<T[]> ToArrayAsync(CancellationToken cancellationToken = default) => (await ToListAsync(cancellationToken).ConfigureAwait(false)).ToArray();
+    public async Task<T?> FirstOrDefaultAsync(CancellationToken cancellationToken = default) { await foreach (var i in AsAsyncEnumerable(cancellationToken).ConfigureAwait(false)) return i; return default; }
+    public async Task<int> CountAsync(CancellationToken cancellationToken = default) { var c = 0; await foreach (var _ in AsAsyncEnumerable(cancellationToken).ConfigureAwait(false)) c++; return c; }
+    public async Task<bool> AnyAsync(CancellationToken cancellationToken = default) { await foreach (var _ in AsAsyncEnumerable(cancellationToken).ConfigureAwait(false)) return true; return false; }
     public Task<ExportResults> ToCsvAsync(string filePath, CsvExportOptions? options = null, CancellationToken cancellationToken = default) => _inner.ToCsvAsync(filePath, options, cancellationToken);
     public Task<ExportResults> ToJsonAsync(string filePath, JsonExportOptions? options = null, CancellationToken cancellationToken = default) => _inner.ToJsonAsync(filePath, options, cancellationToken);
     public Task<ExportResults> ToExcelAsync(string filePath, ExcelExportOptions? options = null, CancellationToken cancellationToken = default) => _inner.ToExcelAsync(filePath, options, cancellationToken);
@@ -168,11 +172,11 @@ internal class CounterReportingPipeline<T> : IDataPipeline<T>
     public IDataPipeline<T> OnErrorSkip() => _inner.OnErrorSkip();
     public IDataPipeline<T> OnError(Func<Exception, T, ErrorAction> handler) => _inner.OnError(handler);
     public Task<TResult> AggregateAsync<TResult>(Func<TResult, T, TResult> aggregator, TResult seed, CancellationToken cancellationToken = default) => _inner.AggregateAsync(aggregator, seed, cancellationToken);
-    public Task<List<T>> ToListAsync(CancellationToken cancellationToken = default) => _inner.ToListAsync(cancellationToken);
-    public Task<T[]> ToArrayAsync(CancellationToken cancellationToken = default) => _inner.ToArrayAsync(cancellationToken);
-    public Task<T?> FirstOrDefaultAsync(CancellationToken cancellationToken = default) => _inner.FirstOrDefaultAsync(cancellationToken);
-    public Task<int> CountAsync(CancellationToken cancellationToken = default) => _inner.CountAsync(cancellationToken);
-    public Task<bool> AnyAsync(CancellationToken cancellationToken = default) => _inner.AnyAsync(cancellationToken);
+    public async Task<List<T>> ToListAsync(CancellationToken cancellationToken = default) { var r = new List<T>(); await foreach (var i in AsAsyncEnumerable(cancellationToken).ConfigureAwait(false)) r.Add(i); return r; }
+    public async Task<T[]> ToArrayAsync(CancellationToken cancellationToken = default) => (await ToListAsync(cancellationToken).ConfigureAwait(false)).ToArray();
+    public async Task<T?> FirstOrDefaultAsync(CancellationToken cancellationToken = default) { await foreach (var i in AsAsyncEnumerable(cancellationToken).ConfigureAwait(false)) return i; return default; }
+    public async Task<int> CountAsync(CancellationToken cancellationToken = default) { var c = 0; await foreach (var _ in AsAsyncEnumerable(cancellationToken).ConfigureAwait(false)) c++; return c; }
+    public async Task<bool> AnyAsync(CancellationToken cancellationToken = default) { await foreach (var _ in AsAsyncEnumerable(cancellationToken).ConfigureAwait(false)) return true; return false; }
     public Task<ExportResults> ToCsvAsync(string filePath, CsvExportOptions? options = null, CancellationToken cancellationToken = default) => _inner.ToCsvAsync(filePath, options, cancellationToken);
     public Task<ExportResults> ToJsonAsync(string filePath, JsonExportOptions? options = null, CancellationToken cancellationToken = default) => _inner.ToJsonAsync(filePath, options, cancellationToken);
     public Task<ExportResults> ToExcelAsync(string filePath, ExcelExportOptions? options = null, CancellationToken cancellationToken = default) => _inner.ToExcelAsync(filePath, options, cancellationToken);
@@ -254,9 +258,10 @@ internal class ParallelPipeline<T> : IDataPipeline<T>
                 tasks.Add(task);
             }
 
-            await foreach (var task in tasks.ToAsyncEnumerable().WithCancellation(cancellationToken).ConfigureAwait(false))
+            var results = await Task.WhenAll(tasks).ConfigureAwait(false);
+            foreach (var result in results)
             {
-                yield return await task.ConfigureAwait(false);
+                yield return result;
             }
         }
     }
@@ -287,11 +292,11 @@ internal class ParallelPipeline<T> : IDataPipeline<T>
     public IDataPipeline<T> OnErrorSkip() => _inner.OnErrorSkip();
     public IDataPipeline<T> OnError(Func<Exception, T, ErrorAction> handler) => _inner.OnError(handler);
     public Task<TResult> AggregateAsync<TResult>(Func<TResult, T, TResult> aggregator, TResult seed, CancellationToken cancellationToken = default) => _inner.AggregateAsync(aggregator, seed, cancellationToken);
-    public Task<List<T>> ToListAsync(CancellationToken cancellationToken = default) => _inner.ToListAsync(cancellationToken);
-    public Task<T[]> ToArrayAsync(CancellationToken cancellationToken = default) => _inner.ToArrayAsync(cancellationToken);
-    public Task<T?> FirstOrDefaultAsync(CancellationToken cancellationToken = default) => _inner.FirstOrDefaultAsync(cancellationToken);
-    public Task<int> CountAsync(CancellationToken cancellationToken = default) => _inner.CountAsync(cancellationToken);
-    public Task<bool> AnyAsync(CancellationToken cancellationToken = default) => _inner.AnyAsync(cancellationToken);
+    public async Task<List<T>> ToListAsync(CancellationToken cancellationToken = default) { var r = new List<T>(); await foreach (var i in AsAsyncEnumerable(cancellationToken).ConfigureAwait(false)) r.Add(i); return r; }
+    public async Task<T[]> ToArrayAsync(CancellationToken cancellationToken = default) => (await ToListAsync(cancellationToken).ConfigureAwait(false)).ToArray();
+    public async Task<T?> FirstOrDefaultAsync(CancellationToken cancellationToken = default) { await foreach (var i in AsAsyncEnumerable(cancellationToken).ConfigureAwait(false)) return i; return default; }
+    public async Task<int> CountAsync(CancellationToken cancellationToken = default) { var c = 0; await foreach (var _ in AsAsyncEnumerable(cancellationToken).ConfigureAwait(false)) c++; return c; }
+    public async Task<bool> AnyAsync(CancellationToken cancellationToken = default) { await foreach (var _ in AsAsyncEnumerable(cancellationToken).ConfigureAwait(false)) return true; return false; }
     public Task<ExportResults> ToCsvAsync(string filePath, CsvExportOptions? options = null, CancellationToken cancellationToken = default) => _inner.ToCsvAsync(filePath, options, cancellationToken);
     public Task<ExportResults> ToJsonAsync(string filePath, JsonExportOptions? options = null, CancellationToken cancellationToken = default) => _inner.ToJsonAsync(filePath, options, cancellationToken);
     public Task<ExportResults> ToExcelAsync(string filePath, ExcelExportOptions? options = null, CancellationToken cancellationToken = default) => _inner.ToExcelAsync(filePath, options, cancellationToken);

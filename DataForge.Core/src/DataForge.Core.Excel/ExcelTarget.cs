@@ -56,7 +56,20 @@ public class ExcelTarget<T> : IDataTarget<T>
             for (var col = 1; col <= colCount; col++)
             {
                 var value = properties[col - 1].GetValue(item);
-                worksheet.Cell(row, col).Value = value ?? string.Empty;
+                if (value is string s)
+                    worksheet.Cell(row, col).Value = (XLCellValue)s;
+                else if (value is int intVal)
+                    worksheet.Cell(row, col).Value = (XLCellValue)intVal;
+                else if (value is double dVal)
+                    worksheet.Cell(row, col).Value = (XLCellValue)dVal;
+                else if (value is decimal decVal)
+                    worksheet.Cell(row, col).Value = (XLCellValue)decVal;
+                else if (value is DateTime dtVal)
+                    worksheet.Cell(row, col).Value = (XLCellValue)dtVal;
+                else if (value is bool bVal)
+                    worksheet.Cell(row, col).Value = (XLCellValue)bVal;
+                else
+                    worksheet.Cell(row, col).Value = value?.ToString() ?? string.Empty;
             }
         }
 

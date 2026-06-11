@@ -20,7 +20,7 @@ public class WriteResult
 {
     public int SuccessCount { get; set; }
     public int FailedCount { get; set; }
-    public List<WriteError> Errors { get; } = [];
+    public List<WriteError> Errors { get; set; } = [];
 }
 
 public class WriteError

@@ -20,6 +20,7 @@ public class PipelineValidationTests
         var results = await DataForgePipeline
             .FromMemory(data)
             .ValidateWith(new TestPersonValidator())
+            .ContinueOnValidationError()
             .ToListAsync();
 
         results.Should().HaveCount(2);
