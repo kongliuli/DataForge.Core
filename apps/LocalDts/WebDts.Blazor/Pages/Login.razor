@@ -1,0 +1,83 @@
+@using AntDesign
+@using WebDts.Blazor.Services
+@using System.Collections.Generic
+@inject IJwtService JwtService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<div class="login-container">
+    <Card Title="用户登录" Style="width: 400px; margin: 100px auto;">
+        <Form Model="LoginModel" Layout="Layout.Vertical" OnFinish="HandleLogin">
+            <FormItem Label="用户名" Required>
+                <input type="text" @bind="LoginModel.Username" class="ant-input" placeholder="请输入用户名" />
+            </FormItem>
+            <FormItem Label="密码" Required>
+                <input type="password" @bind="LoginModel.Password" class="ant-input" placeholder="请输入密码" />
+            </FormItem>
+            <FormItem>
+                <Button Type="primary" HtmlType="submit" Loading="IsLoading" Block>
+                    登录
+                </Button>
+            </FormItem>
+            @if (!string.IsNullOrEmpty(ErrorMessage))
+            {
+                <Alert
+                    Message="登录失败"
+                    Description="@ErrorMessage"
+                    Type="error"
+                    ShowIcon="true"
+                    Style="margin-top: 16px;"
+                />
+            }
+        </Form>
+    </Card>
+</div>
+
+@code {
+    private bool IsLoading { get; set; } = false;
+    private string ErrorMessage { get; set; } = string.Empty;
+
+    private LoginRequest LoginModel { get; set; } = new LoginRequest();
+
+    private async Task HandleLogin(EditContext context)
+    {
+        if (!context.Validate())
+        {
+            return;
+        }
+
+        IsLoading = true;
+        ErrorMessage = string.Empty;
+
+        try
+        {
+            // 硬编码账号密码验证
+            if (LoginModel.Username == "admin" && LoginModel.Password == "password")
+            {
+                var token = JwtService.GenerateToken("1", LoginModel.Username, new List<string> { "Admin" });
+                // 存入 localStorage
+                await JSRuntime.InvokeVoidAsync("localStorage.setItem", "token", token);
+                // 跳转到首页
+                NavigationManager.NavigateTo("/");
+            }
+            else
+            {
+                ErrorMessage = "用户名或密码错误";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = "登录失败，请稍后重试";
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private class LoginRequest
+    {
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+}

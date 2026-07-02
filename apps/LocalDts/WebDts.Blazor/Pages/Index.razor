@@ -1,0 +1,184 @@
+@page "/"
+@using AntDesign
+@using WebDts.Blazor.Services
+@using DataMigration.Contracts
+@using WebDts.Blazor.Models
+@inject ITaskService TaskService
+@inject IPluginService PluginService
+@inject NavigationManager NavigationManager
+
+<PageHeader Title="仪表盘" Subtitle="数据迁移平台概览" />
+
+<div class="dashboard-container">
+    <Row Gutter="16">
+        <Col Span="6">
+            <Card Hoverable>
+                <Statistic
+                    Title="插件总数"
+                    Value="@PluginCount"
+                    Prefix="🔌"
+                />
+            </Card>
+        </Col>
+        <Col Span="6">
+            <Card Hoverable>
+                <Statistic
+                    Title="任务总数"
+                    Value="@TaskCount"
+                    Prefix="📋"
+                />
+            </Card>
+        </Col>
+        <Col Span="6">
+            <Card Hoverable>
+                <Statistic
+                    Title="运行中任务"
+                    Value="@RunningTaskCount"
+                    Prefix="▶️"
+                />
+            </Card>
+        </Col>
+        <Col Span="6">
+            <Card Hoverable>
+                <Statistic
+                    Title="今日完成"
+                    Value="@TodayCompletedTaskCount"
+                    Prefix="✅"
+                />
+            </Card>
+        </Col>
+    </Row>
+
+    <Card Title="最近任务" Style="margin-top: 16px;">
+        <Table DataSource="@RecentTasks" Loading="IsLoading" Bordered>
+                <TableColumn Field="Name" Title="任务名称" />
+                <TableColumn Field="Status" Title="状态">
+                    <Template>
+                        <Tag Color="@GetStatusColor((context as WebMigrationTask).Status)">
+                            @GetStatusText((context as WebMigrationTask).Status)
+                        </Tag>
+                    </Template>
+                </TableColumn>
+                <TableColumn Field="CreatedAt" Title="创建时间">
+                    <Template>
+                        @(context as WebMigrationTask).CreatedAt.ToString("yyyy-MM-dd HH:mm")
+                    </Template>
+                </TableColumn>
+                <TableColumn Title="操作">
+                    <Template>
+                        <Space>
+                            <Button Type="link" OnClick="() => NavigateToExecution((context as WebMigrationTask).Id)">
+                                执行
+                            </Button>
+                            <Button Type="link" OnClick="() => NavigateToLogs((context as WebMigrationTask).Id)">
+                                日志
+                            </Button>
+                        </Space>
+                    </Template>
+                </TableColumn>
+            </Table>
+    </Card>
+
+    <Card Title="系统状态" Style="margin-top: 16px;">
+        <Descriptions Bordered Column="3">
+            <Descriptions.Item Label="数据源插件">@DataSourceCount</Descriptions.Item>
+            <Descriptions.Item Label="目标源插件">@DataTargetCount</Descriptions.Item>
+            <Descriptions.Item Label="转换器插件">@TransformerCount</Descriptions.Item>
+            <Descriptions.Item Label="系统时间">@DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")</Descriptions.Item>
+            <Descriptions.Item Label="运行环境">@Environment.MachineName</Descriptions.Item>
+            <Descriptions.Item Label=".NET 版本">@Environment.Version</Descriptions.Item>
+        </Descriptions>
+    </Card>
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback<(string Path, string Title)> OnNavigation { get; set; }
+
+    private bool IsLoading { get; set; } = true;
+    private int PluginCount { get; set; } = 0;
+    private int TaskCount { get; set; } = 0;
+    private int RunningTaskCount { get; set; } = 0;
+    private int TodayCompletedTaskCount { get; set; } = 0;
+    private int DataSourceCount { get; set; } = 0;
+    private int DataTargetCount { get; set; } = 0;
+    private int TransformerCount { get; set; } = 0;
+    private List<WebMigrationTask> RecentTasks { get; set; } = new List<WebMigrationTask>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        IsLoading = true;
+        try
+        {
+            // 加载插件数据
+            var allPlugins = await PluginService.GetAllPluginsAsync();
+            PluginCount = allPlugins.Count();
+            DataSourceCount = (await PluginService.GetDataSourcesAsync()).Count();
+            DataTargetCount = (await PluginService.GetDataTargetsAsync()).Count();
+            TransformerCount = (await PluginService.GetTransformersAsync()).Count();
+
+            // 加载任务数据
+            var allTasks = await TaskService.GetTasksAsync();
+            TaskCount = allTasks.Count();
+            RunningTaskCount = allTasks.Count(t => t.Status == WebDts.Blazor.Models.MigrationTaskStatus.Running);
+            TodayCompletedTaskCount = allTasks.Count(t => 
+                t.Status == WebDts.Blazor.Models.MigrationTaskStatus.Completed && 
+                t.UpdatedAt.Date == DateTime.UtcNow.Date);
+
+            // 加载最近任务
+            RecentTasks = allTasks
+                .OrderByDescending(t => t.CreatedAt)
+                .Take(5)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            // 处理异常
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private string GetStatusColor(WebDts.Blazor.Models.MigrationTaskStatus status)
+    {
+        return status switch
+        {
+            WebDts.Blazor.Models.MigrationTaskStatus.Pending => "blue",
+            WebDts.Blazor.Models.MigrationTaskStatus.Running => "orange",
+            WebDts.Blazor.Models.MigrationTaskStatus.Completed => "green",
+            WebDts.Blazor.Models.MigrationTaskStatus.Failed => "red",
+            WebDts.Blazor.Models.MigrationTaskStatus.Stopped => "gray",
+            _ => "default"
+        };
+    }
+
+    private string GetStatusText(WebDts.Blazor.Models.MigrationTaskStatus status)
+    {
+        return status switch
+        {
+            WebDts.Blazor.Models.MigrationTaskStatus.Pending => "待执行",
+            WebDts.Blazor.Models.MigrationTaskStatus.Running => "运行中",
+            WebDts.Blazor.Models.MigrationTaskStatus.Completed => "已完成",
+            WebDts.Blazor.Models.MigrationTaskStatus.Failed => "失败",
+            WebDts.Blazor.Models.MigrationTaskStatus.Stopped => "已停止",
+            _ => "未知"
+        };
+    }
+
+    private void NavigateToExecution(Guid taskId)
+    {
+        NavigationManager.NavigateTo($"/execution/{taskId}");
+    }
+
+    private void NavigateToLogs(Guid taskId)
+    {
+        NavigationManager.NavigateTo($"/logs?taskId={taskId}");
+    }
+}

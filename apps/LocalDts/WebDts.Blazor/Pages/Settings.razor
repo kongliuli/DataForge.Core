@@ -1,0 +1,164 @@
+@page "/settings"
+@using AntDesign
+@using AntDesign.Form
+@using WebDts.Blazor.Services
+@using WebDts.Blazor.Models
+@using System.IO
+@inject ISettingsService SettingsService
+
+<PageHeader Title="系统设置" Subtitle="配置系统参数和插件设置">
+</PageHeader>
+
+<Card Style="margin-top: 16px;">
+    <CardTitle>
+        <div>基本设置</div>
+    </CardTitle>
+    <CardBody>
+        <Form Model="_settings" OnFinish="SaveSettings" LabelColSpan="6" WrapperColSpan="14">
+            <FormItem Label="插件目录" Name="PluginsDirectory">
+                <Input @bind-value="_settings.PluginsDirectory" Placeholder="插件DLL文件的存储目录" />
+            </FormItem>
+            <FormItem Label="上传目录" Name="UploadDirectory">
+                <Input @bind-value="_settings.UploadDirectory" Placeholder="文件上传的存储目录" />
+            </FormItem>
+            <FormItem Label="最大文件大小" Name="MaxFileSize">
+                <AntDesign.InputNumber @bind-value="_settings.MaxFileSize" Style="width: 100%" />
+                <div style="margin-top: 8px; font-size: 12px; color: #999;">单位：字节</div>
+            </FormItem>
+            <FormItem Label="允许的文件类型" Name="AllowedFileTypes">
+                <div>
+                    <Space Wrap>
+                        @foreach (var fileType in _settings.AllowedFileTypes)
+                        {
+                            <Tag Closable OnClose="() => RemoveFileType(fileType)">
+                                @fileType
+                            </Tag>
+                        }
+                    </Space>
+                    <div style="margin-top: 8px; display: flex; gap: 8px;">
+                        <Input @bind-value="_newFileType" Placeholder="添加新的文件类型，例如: .pdf" Style="flex: 1" />
+                        <Button Type="primary" OnClick="AddFileType">添加</Button>
+                    </div>
+                </div>
+            </FormItem>
+            <FormItem WrapperColOffset="6">
+                <Space>
+                    <Button Type="primary" HtmlType="submit">
+                        保存设置
+                    </Button>
+                    <Button OnClick="ResetSettings">
+                        重置默认
+                    </Button>
+                </Space>
+            </FormItem>
+        </Form>
+    </CardBody>
+</Card>
+
+<Card Style="margin-top: 16px;">
+    <CardTitle>
+        <div>系统信息</div>
+    </CardTitle>
+    <CardBody>
+        <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 200px; padding: 16px; border: 1px solid #f0f0f0; border-radius: 8px;">
+                <h4>应用版本</h4>
+                <p>1.0.0</p>
+            </div>
+            <div style="flex: 1; min-width: 200px; padding: 16px; border: 1px solid #f0f0f0; border-radius: 8px;">
+                <h4>.NET版本</h4>
+                <p>@System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription</p>
+            </div>
+            <div style="flex: 1; min-width: 200px; padding: 16px; border: 1px solid #f0f0f0; border-radius: 8px;">
+                <h4>操作系统</h4>
+                <p>@System.Runtime.InteropServices.RuntimeInformation.OSDescription</p>
+            </div>
+            <div style="flex: 1; min-width: 200px; padding: 16px; border: 1px solid #f0f0f0; border-radius: 8px;">
+                <h4>插件数量</h4>
+                <p>@_pluginCount</p>
+            </div>
+        </div>
+    </CardBody>
+</Card>
+
+@code {
+    private WebDtsSettings _settings = new WebDtsSettings();
+    private string _newFileType = string.Empty;
+    private int _pluginCount = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSettings();
+        CountPlugins();
+    }
+
+    private async Task LoadSettings()
+    {
+        try
+        {
+            _settings = await SettingsService.GetSettingsAsync();
+        }
+        catch (Exception ex)
+        {
+            // 处理异常
+        }
+    }
+
+    private void CountPlugins()
+    {
+        try
+        {
+            var pluginsPath = Path.Combine(Directory.GetCurrentDirectory(), _settings.PluginsDirectory);
+            if (Directory.Exists(pluginsPath))
+            {
+                var dllFiles = Directory.GetFiles(pluginsPath, "*.dll", SearchOption.AllDirectories);
+                _pluginCount = dllFiles.Length;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"计算插件数量失败: {ex.Message}");
+        }
+    }
+
+    private void AddFileType()
+    {
+        if (!string.IsNullOrEmpty(_newFileType) && !_settings.AllowedFileTypes.Contains(_newFileType))
+        {
+            _settings.AllowedFileTypes.Add(_newFileType);
+            _newFileType = string.Empty;
+        }
+    }
+
+    private void RemoveFileType(string fileType)
+    {
+        _settings.AllowedFileTypes.Remove(fileType);
+    }
+
+    private async Task SaveSettings()
+    {
+        try
+        {
+            await SettingsService.UpdateSettingsAsync(_settings);
+            await LoadSettings();
+            // 显示保存成功提示
+        }
+        catch (Exception ex)
+        {
+            // 处理异常
+        }
+    }
+
+    private async Task ResetSettings()
+    {
+        try
+        {
+            await SettingsService.ResetSettingsAsync();
+            await LoadSettings();
+        }
+        catch (Exception ex)
+        {
+            // 处理异常
+        }
+    }
+}

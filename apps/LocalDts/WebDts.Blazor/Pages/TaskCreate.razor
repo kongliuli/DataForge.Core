@@ -1,0 +1,252 @@
+@using AntDesign
+@using WebDts.Blazor.Services
+@using WebDts.Blazor.Components
+@using DataMigration.Contracts
+@using System.Collections.Generic
+
+@inject ITaskService TaskService
+@inject IPluginService PluginService
+@inject NavigationManager NavigationManager
+
+<div class="task-create-wizard">
+    <PageHeader Title="创建迁移任务" Subtitle="请按照向导完成任务配置" />
+    
+    <Steps Current="CurrentStep" Size="Default">
+        <Step Title="基本信息" Description="填写任务名称和描述" />
+        <Step Title="数据源" Description="配置数据源插件" />
+        <Step Title="目标源" Description="配置目标源插件" />
+        <Step Title="转换器" Description="配置数据转换器" />
+        <Step Title="确认" Description="确认任务配置" />
+    </Steps>
+
+    <div class="wizard-content">
+        @switch (CurrentStep)
+        {
+            case 0:
+                <div class="form-group">
+                    <label class="form-label">任务名称 *</label>
+                    <input class="form-control" @bind="TaskName" placeholder="请输入任务名称" />
+                </div>
+                <div class="form-group" style="margin-top: 16px;">
+                    <label class="form-label">任务描述</label>
+                    <textarea class="form-control" rows="3" @bind="TaskDescription" placeholder="请输入任务描述"></textarea>
+                </div>
+                break;
+            case 1:
+                <ConnectionForm
+                    Title="数据源配置"
+                    PluginName="@SourcePluginName"
+                    PluginNameChanged="(value) => SourcePluginName = value"
+                    ConnectionString="@SourceConnectionString"
+                    ConnectionStringChanged="(value) => SourceConnectionString = value"
+                    Plugins="@DataSources"
+                    OnSubmit="HandleSourceConfigSubmit"
+                    OnCancel="() => PreviousStep()"
+                />
+                break;
+            case 2:
+                <ConnectionForm
+                    Title="目标源配置"
+                    PluginName="@TargetPluginName"
+                    PluginNameChanged="(value) => TargetPluginName = value"
+                    ConnectionString="@TargetConnectionString"
+                    ConnectionStringChanged="(value) => TargetConnectionString = value"
+                    Plugins="@DataTargets"
+                    OnSubmit="HandleTargetConfigSubmit"
+                    OnCancel="() => PreviousStep()"
+                />
+                break;
+            case 3:
+                <PluginParamForm
+                    Title="转换器配置"
+                    PluginName="@TransformerPluginName"
+                    PluginNameChanged="(value) => TransformerPluginName = value"
+                    Parameters="@TransformerConfig"
+                    Plugins="@Transformers"
+                    OnSubmit="HandleTransformerConfigSubmit"
+                    OnCancel="() => PreviousStep()"
+                />
+                break;
+            case 4:
+                <div class="card" style="margin-bottom: 16px; border: 1px solid #e8e8e8; border-radius: 4px; padding: 16px;">
+                    <h3 style="margin-top: 0;">任务配置确认</h3>
+                    <table class="table table-bordered" style="margin-top: 16px;">
+                        <tbody>
+                            <tr>
+                                <td><strong>任务名称</strong></td>
+                                <td>@TaskName</td>
+                            </tr>
+                            <tr>
+                                <td><strong>任务描述</strong></td>
+                                <td>@TaskDescription</td>
+                            </tr>
+                            <tr>
+                                <td><strong>数据源插件</strong></td>
+                                <td>@SourcePluginName</td>
+                            </tr>
+                            <tr>
+                                <td><strong>目标源插件</strong></td>
+                                <td>@TargetPluginName</td>
+                            </tr>
+                            <tr>
+                                <td><strong>转换器插件</strong></td>
+                                <td>@TransformerPluginName</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                break;
+        }
+    </div>
+
+    <div class="wizard-actions">
+        <Button @onclick="PreviousStep" Disabled="CurrentStep == 0 || IsLoading">
+            上一步
+        </Button>
+        @if (CurrentStep < 4)
+        {
+            <Button Type="primary" @onclick="NextStep" Disabled="IsLoading">
+                下一步
+            </Button>
+        }
+        else
+        {
+            <Button Type="primary" Loading="IsSubmitting" @onclick="SubmitTask">
+                完成创建
+            </Button>
+        }
+    </div>
+</div>
+
+@code {
+    private int CurrentStep { get; set; } = 0;
+    private bool IsLoading { get; set; } = false;
+    private bool IsSubmitting { get; set; } = false;
+
+    // 任务数据
+    private string TaskName { get; set; } = "";
+    private string TaskDescription { get; set; } = "";
+    private string SourcePluginName { get; set; } = "";
+    private string SourceConnectionString { get; set; } = "";
+    private string TargetPluginName { get; set; } = "";
+    private string TargetConnectionString { get; set; } = "";
+    private string TransformerPluginName { get; set; } = "";
+    private Dictionary<string, string> SourceConfig { get; set; } = new Dictionary<string, string>();
+    private Dictionary<string, string> TargetConfig { get; set; } = new Dictionary<string, string>();
+    private Dictionary<string, string> TransformerConfig { get; set; } = new Dictionary<string, string>();
+
+    // 插件列表
+    private List<WebDts.Blazor.Models.PluginInfo> DataSources { get; set; } = new List<WebDts.Blazor.Models.PluginInfo>();
+    private List<WebDts.Blazor.Models.PluginInfo> DataTargets { get; set; } = new List<WebDts.Blazor.Models.PluginInfo>();
+    private List<WebDts.Blazor.Models.PluginInfo> Transformers { get; set; } = new List<WebDts.Blazor.Models.PluginInfo>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        await LoadPlugins();
+    }
+
+    private async Task LoadPlugins()
+    {
+        IsLoading = true;
+        try
+        {
+            var dataSources = await PluginService.GetDataSourcesAsync();
+            DataSources = dataSources.Select(ds => new WebDts.Blazor.Models.PluginInfo
+            {
+                Id = ds.Id,
+                Name = ds.Name,
+                Type = "DataSource",
+                Version = ds.Version.ToString()
+            }).ToList();
+
+            var dataTargets = await PluginService.GetDataTargetsAsync();
+            DataTargets = dataTargets.Select(dt => new WebDts.Blazor.Models.PluginInfo
+            {
+                Id = dt.Id,
+                Name = dt.Name,
+                Type = "DataTarget",
+                Version = dt.Version.ToString()
+            }).ToList();
+
+            var transformers = await PluginService.GetTransformersAsync();
+            Transformers = transformers.Select(t => new WebDts.Blazor.Models.PluginInfo
+            {
+                Id = t.Id,
+                Name = t.Name,
+                Type = "Transformer",
+                Version = t.Version.ToString()
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            // 处理异常
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void PreviousStep()
+    {
+        if (CurrentStep > 0)
+        {
+            CurrentStep--;
+        }
+    }
+
+    private void NextStep()
+    {
+        if (CurrentStep < 4)
+        {
+            CurrentStep++;
+        }
+    }
+
+    private async Task SubmitTask()
+    {
+        IsSubmitting = true;
+        try
+        {
+            var task = new WebDts.Blazor.Models.WebMigrationTask
+            {
+                Name = TaskName,
+                Description = TaskDescription,
+                SourcePluginId = SourcePluginName,
+                TargetPluginId = TargetPluginName,
+                SourceConfig = SourceConfig,
+                TargetConfig = TargetConfig
+            };
+
+            await TaskService.CreateTaskAsync(task);
+            NavigationManager.NavigateTo("/tasks");
+        }
+        catch (Exception ex)
+        {
+            // 处理异常
+        }
+        finally
+        {
+            IsSubmitting = false;
+        }
+    }
+
+    private async Task HandleSourceConfigSubmit(Dictionary<string, string> config)
+    {
+        SourceConfig = config;
+        NextStep();
+    }
+
+    private async Task HandleTargetConfigSubmit(Dictionary<string, string> config)
+    {
+        TargetConfig = config;
+        NextStep();
+    }
+
+    private async Task HandleTransformerConfigSubmit(Dictionary<string, string> config)
+    {
+        TransformerConfig = config;
+        NextStep();
+    }
+}

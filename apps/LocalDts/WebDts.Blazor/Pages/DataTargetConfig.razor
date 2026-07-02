@@ -1,0 +1,267 @@
+@page "/datatarget/config/{pluginId}"
+@inject NavigationManager Navigation
+@inject HttpClient Http
+
+<h1>目标源配置</h1>
+
+<div class="card">
+    <h3>目标源参数配置</h3>
+    <form @onsubmit="SaveConfig">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="connection-type">连接类型</label>
+                <select id="connection-type" @bind="_connectionType">
+                    <option value="new">创建新连接</option>
+                    <option value="existing">使用已有连接</option>
+                </select>
+            </div>
+            
+            @if (_connectionType == "existing")
+            {
+                <div class="form-group">
+                    <label for="existing-connection">已有连接</label>
+                    <select id="existing-connection" @bind="_selectedConnectionId">
+                        <option value="">-- 选择连接 --</option>
+                        @foreach (var connection in _existingConnections)
+                        {
+                            <option value="@connection.Id">@connection.Name</option>
+                        }
+                    </select>
+                </div>
+            }
+            
+            @if (_connectionType == "new")
+            {
+                <div class="form-group">
+                    <label for="connection-name">连接名称</label>
+                    <input type="text" id="connection-name" @bind="_newConnection.Name" required />
+                </div>
+                
+                <div class="form-group">
+                    <label for="server">服务器地址</label>
+                    <input type="text" id="server" @bind="_newConnection.Server" required />
+                </div>
+                
+                <div class="form-group">
+                    <label for="port">端口</label>
+                    <input type="number" id="port" @bind="_newConnection.Port" required />
+                </div>
+                
+                <div class="form-group">
+                    <label for="database">数据库名称</label>
+                    <input type="text" id="database" @bind="_newConnection.Database" required />
+                </div>
+                
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" @bind="_newConnection.Username" required />
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" @bind="_newConnection.Password" required />
+                </div>
+                
+                <div class="form-group full-width">
+                    <button type="button" class="btn-secondary" @onclick="TestConnection">测试连接</button>
+                    <span class="connection-status @(_connectionStatusClass)">@_connectionStatusMessage</span>
+                </div>
+            }
+            
+            <div class="form-group">
+                <label for="table-name">目标表名</label>
+                <input type="text" id="table-name" @bind="_targetConfig.TableName" required />
+            </div>
+            
+            <div class="form-group">
+                <label for="create-table">创建表结构</label>
+                <input type="checkbox" id="create-table" @bind="_targetConfig.CreateTable" />
+            </div>
+            
+            <div class="form-group full-width">
+                <button type="submit" class="btn-primary">保存配置</button>
+                <button type="button" class="btn-secondary" @onclick="Cancel">取消</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+    .card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+    
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 16px;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .full-width {
+        grid-column: 1 / -1;
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    label {
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #333;
+    }
+    
+    input[type="text"],
+    input[type="number"],
+    input[type="password"],
+    select {
+        padding: 10px;
+        border: 1px solid #d9d9d9;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+    
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    input[type="password"]:focus,
+    select:focus {
+        outline: none;
+        border-color: #d4a676;
+        box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+    }
+    
+    input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #d4a676 0%, #e8c59c 100%);
+        color: #333;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-weight: 500;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(212, 166, 118, 0.3);
+    }
+    
+    .btn-secondary {
+        background-color: white;
+        color: #d4a676;
+        border: 1px solid #d4a676;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-weight: 500;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #f8f0e3;
+    }
+    
+    .connection-status {
+        margin-left: 12px;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    
+    .connection-status.success {
+        color: #52c41a;
+    }
+    
+    .connection-status.error {
+        color: #ff4d4f;
+    }
+    
+    .connection-status.info {
+        color: #1890ff;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string PluginId { get; set; } = string.Empty;
+    
+    private string _connectionType = "new";
+    private string _selectedConnectionId = string.Empty;
+    private List<DatabaseConnection> _existingConnections = new();
+    private DatabaseConnection _newConnection = new();
+    private TargetConfig _targetConfig = new();
+    private string _connectionStatusMessage = string.Empty;
+    private string _connectionStatusClass = string.Empty;
+    
+    protected override void OnInitialized()
+    {
+        LoadExistingConnections();
+    }
+    
+    private void LoadExistingConnections()
+    {
+        // 模拟加载已有连接
+        _existingConnections = new List<DatabaseConnection>
+        {
+            new DatabaseConnection { Id = "1", Name = "Local SQL Server" },
+            new DatabaseConnection { Id = "2", Name = "Production MySQL" }
+        };
+    }
+    
+    private async Task TestConnection()
+    {
+        _connectionStatusMessage = "正在测试连接...";
+        _connectionStatusClass = "info";
+        
+        // 模拟连接测试
+        await Task.Delay(2000);
+        
+        // 模拟连接成功
+        _connectionStatusMessage = "连接成功！";
+        _connectionStatusClass = "success";
+    }
+    
+    private void SaveConfig()
+    {
+        // 保存配置
+        Console.WriteLine("配置已保存");
+        // 返回到任务创建页面
+        Navigation.NavigateTo("/tasks");
+    }
+    
+    private void Cancel()
+    {
+        // 取消并返回到任务创建页面
+        Navigation.NavigateTo("/tasks");
+    }
+    
+    public class DatabaseConnection
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Server { get; set; } = string.Empty;
+        public int Port { get; set; }
+        public string Database { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+    
+    public class TargetConfig
+    {
+        public string TableName { get; set; } = string.Empty;
+        public bool CreateTable { get; set; } = true;
+    }
+}

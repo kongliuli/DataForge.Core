@@ -1,0 +1,500 @@
+@page "/datasource/config/{pluginId}"
+@inject NavigationManager Navigation
+@inject HttpClient Http
+
+<h1>数据源配置</h1>
+
+<div class="card">
+    <h3>数据库连接配置</h3>
+    <form @onsubmit="SaveConfig">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="connection-type">连接类型</label>
+                <select id="connection-type" @bind="_connectionType">
+                    <option value="new">创建新连接</option>
+                    <option value="existing">使用已有连接</option>
+                </select>
+            </div>
+            
+            @if (_connectionType == "existing")
+            {
+                <div class="form-group">
+                    <label for="existing-connection">已有连接</label>
+                    <select id="existing-connection" @bind="_selectedConnectionId">
+                        <option value="">-- 选择连接 --</option>
+                        @foreach (var connection in _existingConnections)
+                        {
+                            <option value="@connection.Id">@connection.Name</option>
+                        }
+                    </select>
+                </div>
+            }
+            
+            @if (_connectionType == "new")
+            {
+                <div class="form-group">
+                    <label for="connection-name">连接名称</label>
+                    <input type="text" id="connection-name" @bind="_newConnection.Name" required />
+                </div>
+                
+                <div class="form-group">
+                    <label for="server">服务器地址</label>
+                    <input type="text" id="server" @bind="_newConnection.Server" required />
+                </div>
+                
+                <div class="form-group">
+                    <label for="port">端口</label>
+                    <input type="number" id="port" @bind="_newConnection.Port" required />
+                </div>
+                
+                <div class="form-group">
+                    <label for="database">数据库名称</label>
+                    <input type="text" id="database" @bind="_newConnection.Database" required />
+                </div>
+                
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" @bind="_newConnection.Username" required />
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" @bind="_newConnection.Password" required />
+                </div>
+                
+                <div class="form-group full-width">
+                    <button type="button" class="btn-secondary" @onclick="TestConnection">测试连接</button>
+                    <span class="connection-status @(_connectionStatusClass)">@_connectionStatusMessage</span>
+                </div>
+            }
+            
+            <div class="form-group full-width">
+                <button type="submit" class="btn-primary">保存配置</button>
+                <button type="button" class="btn-secondary" @onclick="Cancel">取消</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+@if (_tablesLoaded)
+{
+    <div class="card">
+        <h3>数据库表</h3>
+        <div class="table-list">
+            @foreach (var table in _tables)
+            {
+                <div class="table-item @(_selectedTable == table ? "selected" : "")" @onclick="() => SelectTable(table)">
+                    @table
+                </div>
+            }
+        </div>
+    </div>
+}
+
+@if (_columnsLoaded)
+{
+    <div class="card">
+        <h3>表结构 - @_selectedTable</h3>
+        <div class="table-structure">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>选择</th>
+                        <th>字段名</th>
+                        <th>数据类型</th>
+                        <th>长度</th>
+                        <th>是否可空</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var column in _tableColumns)
+                    {
+                        <tr>
+                            <td>
+                                <input type="checkbox" @bind="column.IsSelected" />
+                            </td>
+                            <td>@column.Name</td>
+                            <td>@column.Type</td>
+                            <td>@column.Length</td>
+                            <td>@(column.IsNullable ? "是" : "否")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <div class="card">
+        <h3>新数据表配置</h3>
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="new-table-name">新表名</label>
+                <input type="text" id="new-table-name" @bind="_newTableName" placeholder="输入新表名" />
+            </div>
+            
+            <div class="form-group full-width">
+                <button type="button" class="btn-primary" @onclick="CreateNewTable">创建新表</button>
+                <span class="create-table-status @(_createTableStatusClass)">@_createTableStatusMessage</span>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+    
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 16px;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .full-width {
+        grid-column: 1 / -1;
+        flex-direction: row;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    label {
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #333;
+    }
+    
+    input[type="text"],
+    input[type="number"],
+    input[type="password"],
+    select {
+        padding: 10px;
+        border: 1px solid #d9d9d9;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+    
+    input[type="text"]:focus,
+    input[type="number"]:focus,
+    input[type="password"]:focus,
+    select:focus {
+        outline: none;
+        border-color: #d4a676;
+        box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #d4a676 0%, #e8c59c 100%);
+        color: #333;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-weight: 500;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(212, 166, 118, 0.3);
+    }
+    
+    .btn-secondary {
+        background-color: white;
+        color: #d4a676;
+        border: 1px solid #d4a676;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-weight: 500;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #f8f0e3;
+    }
+    
+    .connection-status {
+        margin-left: 12px;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    
+    .connection-status.success {
+        color: #52c41a;
+    }
+    
+    .connection-status.error {
+        color: #ff4d4f;
+    }
+    
+    .connection-status.info {
+        color: #1890ff;
+    }
+    
+    .table-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 8px;
+        margin-top: 12px;
+    }
+    
+    .table-item {
+        padding: 10px;
+        border: 1px solid #d9d9d9;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s;
+        text-align: center;
+    }
+    
+    .table-item:hover {
+        border-color: #d4a676;
+        background-color: #f8f0e3;
+    }
+    
+    .table-item.selected {
+        border-color: #d4a676;
+        background-color: #e8c59c;
+        font-weight: 500;
+    }
+    
+    .table-structure {
+        margin-top: 12px;
+        overflow-x: auto;
+    }
+    
+    .data-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 10px;
+        text-align: left;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .data-table th {
+        background-color: #fafafa;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .data-table tr:hover {
+        background-color: #f5f5f5;
+    }
+    
+    .create-table-status {
+        margin-left: 12px;
+        font-size: 14px;
+        font-weight: 500;
+    }
+    
+    .create-table-status.success {
+        color: #52c41a;
+    }
+    
+    .create-table-status.error {
+        color: #ff4d4f;
+    }
+    
+    .create-table-status.info {
+        color: #1890ff;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string PluginId { get; set; } = string.Empty;
+    
+    private string _connectionType = "new";
+    private string _selectedConnectionId = string.Empty;
+    private List<DatabaseConnection> _existingConnections = new();
+    private DatabaseConnection _newConnection = new();
+    private string _connectionStatusMessage = string.Empty;
+    private string _connectionStatusClass = string.Empty;
+    private List<string> _tables = new();
+    private bool _tablesLoaded = false;
+    private string _selectedTable = string.Empty;
+    private List<TableColumn> _tableColumns = new();
+    private bool _columnsLoaded = false;
+    private string _newTableName = string.Empty;
+    private string _createTableStatusMessage = string.Empty;
+    private string _createTableStatusClass = string.Empty;
+    
+    protected override void OnInitialized()
+    {
+        LoadExistingConnections();
+    }
+    
+    private void LoadExistingConnections()
+    {
+        // 模拟加载已有连接
+        _existingConnections = new List<DatabaseConnection>
+        {
+            new DatabaseConnection { Id = "1", Name = "Local SQL Server" },
+            new DatabaseConnection { Id = "2", Name = "Production MySQL" }
+        };
+    }
+    
+    private async Task TestConnection()
+    {
+        _connectionStatusMessage = "正在测试连接...";
+        _connectionStatusClass = "info";
+        
+        try
+        {
+            // 模拟连接测试
+            await Task.Delay(2000);
+            
+            // 模拟连接成功
+            _connectionStatusMessage = "连接成功！";
+            _connectionStatusClass = "success";
+            
+            // 连接成功后加载表名称
+            await LoadTables();
+        }
+        catch (Exception ex)
+        {
+            _connectionStatusMessage = $"连接失败: {ex.Message}";
+            _connectionStatusClass = "error";
+        }
+    }
+    
+    private async Task LoadTables()
+    {
+        // 模拟加载表名称
+        await Task.Delay(1000);
+        _tables = new List<string> { "users", "products", "orders", "categories", "suppliers" };
+        _tablesLoaded = true;
+    }
+    
+    private void SaveConfig()
+    {
+        // 保存配置
+        Console.WriteLine("配置已保存");
+        // 返回到任务创建页面
+        Navigation.NavigateTo("/tasks");
+    }
+    
+    private void Cancel()
+    {
+        // 取消并返回到任务创建页面
+        Navigation.NavigateTo("/tasks");
+    }
+    
+    private async Task SelectTable(string table)
+    {
+        _selectedTable = table;
+        _columnsLoaded = false;
+        
+        // 模拟加载表结构
+        await Task.Delay(1000);
+        _tableColumns = GetTableColumns(table);
+        _columnsLoaded = true;
+    }
+    
+    private List<TableColumn> GetTableColumns(string table)
+    {
+        // 模拟不同表的字段结构
+        switch (table)
+        {
+            case "users":
+                return new List<TableColumn>
+                {
+                    new TableColumn { Name = "id", Type = "int", Length = "4", IsNullable = false },
+                    new TableColumn { Name = "name", Type = "varchar", Length = "50", IsNullable = false },
+                    new TableColumn { Name = "email", Type = "varchar", Length = "100", IsNullable = false },
+                    new TableColumn { Name = "created_at", Type = "datetime", Length = "8", IsNullable = false }
+                };
+            case "products":
+                return new List<TableColumn>
+                {
+                    new TableColumn { Name = "id", Type = "int", Length = "4", IsNullable = false },
+                    new TableColumn { Name = "name", Type = "varchar", Length = "100", IsNullable = false },
+                    new TableColumn { Name = "price", Type = "decimal", Length = "10,2", IsNullable = false },
+                    new TableColumn { Name = "category_id", Type = "int", Length = "4", IsNullable = true }
+                };
+            case "orders":
+                return new List<TableColumn>
+                {
+                    new TableColumn { Name = "id", Type = "int", Length = "4", IsNullable = false },
+                    new TableColumn { Name = "user_id", Type = "int", Length = "4", IsNullable = false },
+                    new TableColumn { Name = "order_date", Type = "datetime", Length = "8", IsNullable = false },
+                    new TableColumn { Name = "total_amount", Type = "decimal", Length = "10,2", IsNullable = false }
+                };
+            default:
+                return new List<TableColumn>
+                {
+                    new TableColumn { Name = "id", Type = "int", Length = "4", IsNullable = false },
+                    new TableColumn { Name = "name", Type = "varchar", Length = "100", IsNullable = false }
+                };
+        }
+    }
+    
+    public class DatabaseConnection
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Server { get; set; } = string.Empty;
+        public int Port { get; set; }
+        public string Database { get; set; } = string.Empty;
+        public string Username { get; set; } = string.Empty;
+        public string Password { get; set; } = string.Empty;
+    }
+    
+    public class TableColumn
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Type { get; set; } = string.Empty;
+        public string Length { get; set; } = string.Empty;
+        public bool IsNullable { get; set; } = false;
+        public bool IsSelected { get; set; } = false;
+    }
+    
+    private async Task CreateNewTable()
+    {
+        if (string.IsNullOrEmpty(_newTableName))
+        {
+            _createTableStatusMessage = "请输入新表名";
+            _createTableStatusClass = "error";
+            return;
+        }
+        
+        var selectedColumns = _tableColumns.Where(c => c.IsSelected).ToList();
+        if (selectedColumns.Count == 0)
+        {
+            _createTableStatusMessage = "请至少选择一个字段";
+            _createTableStatusClass = "error";
+            return;
+        }
+        
+        _createTableStatusMessage = "正在创建新表...";
+        _createTableStatusClass = "info";
+        
+        try
+        {
+            // 模拟创建新表
+            await Task.Delay(2000);
+            _createTableStatusMessage = $"新表 {_newTableName} 创建成功！";
+            _createTableStatusClass = "success";
+        }
+        catch (Exception ex)
+        {
+            _createTableStatusMessage = $"创建新表失败: {ex.Message}";
+            _createTableStatusClass = "error";
+        }
+    }
+}

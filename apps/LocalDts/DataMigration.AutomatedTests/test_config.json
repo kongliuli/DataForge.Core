@@ -1,0 +1,174 @@
+{
+  "testScenarios": [
+    {
+      "name": "ExcelSource to CsvTarget",
+      "dataSource": {
+        "id": "Standard.ExcelSource",
+        "config": {
+          "FilePath": "test_data.xlsx",
+          "SheetName": "Sheet1"
+        }
+      },
+      "dataTarget": {
+        "id": "Standard.CsvTarget",
+        "config": {
+          "FilePath": "output_excel_to_csv_1.csv",
+          "Delimiter": ","
+        }
+      }
+    },
+    {
+      "name": "CsvSource to CsvTarget",
+      "dataSource": {
+        "id": "DataMigration.Plugin.CsvSource",
+        "config": {
+          "FilePath": "test_data.csv",
+          "Delimiter": ","
+        }
+      },
+      "dataTarget": {
+        "id": "Standard.CsvTarget",
+        "config": {
+          "FilePath": "output_csv_to_csv_1.csv",
+          "Delimiter": ","
+        }
+      }
+    },
+    {
+      "name": "ExcelSource to SqliteTarget",
+      "dataSource": {
+        "id": "Standard.ExcelSource",
+        "config": {
+          "FilePath": "test_data.xlsx",
+          "SheetName": "Sheet1"
+        }
+      },
+      "dataTarget": {
+        "id": "DataMigration.Plugin.SqliteTarget",
+        "config": {
+          "ConnectionString": "Data Source=output_excel_to_sqlite.db;Version=3;",
+          "TableName": "test_table"
+        }
+      }
+    },
+    {
+      "name": "CsvSource to SqliteTarget",
+      "dataSource": {
+        "id": "DataMigration.Plugin.CsvSource",
+        "config": {
+          "FilePath": "test_data.csv",
+          "Delimiter": ","
+        }
+      },
+      "dataTarget": {
+        "id": "DataMigration.Plugin.SqliteTarget",
+        "config": {
+          "ConnectionString": "Data Source=output_csv_to_sqlite.db;Version=3;",
+          "TableName": "test_table"
+        }
+      }
+    },
+    {
+      "name": "SqliteSource to CsvTarget",
+      "dataSource": {
+        "id": "DataMigration.Plugin.SqliteSource",
+        "config": {
+          "ConnectionString": "Data Source=test_db.sqlite;Version=3;",
+          "Query": "SELECT * FROM test_table"
+        }
+      },
+      "dataTarget": {
+        "id": "Standard.CsvTarget",
+        "config": {
+          "FilePath": "output_sqlite_to_csv_1.csv",
+          "Delimiter": ","
+        }
+      }
+    },
+    {
+      "name": "SqlServerSource to CsvTarget",
+      "dataSource": {
+        "id": "Standard.SqlServerSource",
+        "config": {
+          "ConnectionString": "Server=(local);Database=TestDB;Trusted_Connection=True;",
+          "Query": "SELECT * FROM test_table"
+        }
+      },
+      "dataTarget": {
+        "id": "Standard.CsvTarget",
+        "config": {
+          "FilePath": "output_sqlserver_to_csv_1.csv",
+          "Delimiter": ","
+        }
+      }
+    },
+    {
+      "name": "MySqlSource to CsvTarget",
+      "dataSource": {
+        "id": "DataMigration.Plugin.MySqlSource",
+        "config": {
+          "ConnectionString": "Server=localhost;Database=test_db;Uid=root;Pwd=password;",
+          "Query": "SELECT * FROM test_table"
+        }
+      },
+      "dataTarget": {
+        "id": "Standard.CsvTarget",
+        "config": {
+          "FilePath": "output_mysql_to_csv_1.csv",
+          "Delimiter": ","
+        }
+      }
+    },
+    {
+      "name": "SqliteSource to SqliteTarget",
+      "dataSource": {
+        "id": "DataMigration.Plugin.SqliteSource",
+        "config": {
+          "ConnectionString": "Data Source=test_db.sqlite;Version=3;",
+          "Query": "SELECT * FROM test_table"
+        }
+      },
+      "dataTarget": {
+        "id": "DataMigration.Plugin.SqliteTarget",
+        "config": {
+          "ConnectionString": "Data Source=output_sqlite_to_sqlite.db;Version=3;",
+          "TableName": "test_table"
+        }
+      }
+    },
+    {
+      "name": "SqlServerSource to SqliteTarget",
+      "dataSource": {
+        "id": "Standard.SqlServerSource",
+        "config": {
+          "ConnectionString": "Server=(local);Database=TestDB;Trusted_Connection=True;",
+          "Query": "SELECT * FROM test_table"
+        }
+      },
+      "dataTarget": {
+        "id": "DataMigration.Plugin.SqliteTarget",
+        "config": {
+          "ConnectionString": "Data Source=output_sqlserver_to_sqlite.db;Version=3;",
+          "TableName": "test_table"
+        }
+      }
+    },
+    {
+      "name": "MySqlSource to SqliteTarget",
+      "dataSource": {
+        "id": "DataMigration.Plugin.MySqlSource",
+        "config": {
+          "ConnectionString": "Server=localhost;Database=test_db;Uid=root;Pwd=password;",
+          "Query": "SELECT * FROM test_table"
+        }
+      },
+      "dataTarget": {
+        "id": "DataMigration.Plugin.SqliteTarget",
+        "config": {
+          "ConnectionString": "Data Source=output_mysql_to_sqlite.db;Version=3;",
+          "TableName": "test_table"
+        }
+      }
+    }
+  ]
+}

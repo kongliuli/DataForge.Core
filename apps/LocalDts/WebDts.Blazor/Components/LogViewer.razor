@@ -1,0 +1,72 @@
+@using AntDesign
+@using WebDts.Blazor.Models
+
+<div class="log-viewer">
+    <div class="log-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+        <h3 style="margin: 0;">@Title</h3>
+        @if (ShowClearButton)
+        {
+            <Button Type="text" OnClick="ClearLogs" Size="small">
+                清空
+            </Button>
+        }
+    </div>
+    <div class="log-container" style="max-height: @MaxHeight; overflow-y: auto; border: 1px solid #f0f0f0; border-radius: 4px; padding: 8px;">
+        @if (Logs == null || Logs.Count == 0)
+        {
+            <div style="text-align: center; color: #999; padding: 16px;">
+                暂无日志
+            </div>
+        }
+        else
+        {
+            @foreach (var log in Logs)
+            {
+                <div class="log-item" style="margin-bottom: 4px; font-family: monospace; font-size: 12px;">
+                    <span style="color: #999;">@log.Timestamp.ToString("HH:mm:ss")</span>
+                    <span style="margin: 0 8px;">|</span>
+                    <Tag Size="small" Color="@GetLogColor(log.Level)" Style="margin-right: 8px;">
+                        @log.Level
+                    </Tag>
+                    <span>@log.Message</span>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = "日志";
+
+    [Parameter]
+    public List<LogEntry> Logs { get; set; } = new List<LogEntry>();
+
+    [Parameter]
+    public bool ShowClearButton { get; set; } = false;
+
+    [Parameter]
+    public string MaxHeight { get; set; } = "300px";
+
+    [Parameter]
+    public EventCallback OnClear { get; set; }
+
+    private async Task ClearLogs()
+    {
+        if (OnClear.HasDelegate)
+        {
+            await OnClear.InvokeAsync();
+        }
+    }
+
+    private string GetLogColor(string level)
+    {
+        return level switch
+        {
+            "ERROR" => "red",
+            "WARN" => "orange",
+            "INFO" => "blue",
+            _ => "default"
+        };
+    }
+}

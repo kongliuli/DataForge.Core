@@ -1,0 +1,37 @@
+@using AntDesign
+@using DataMigration.Contracts
+
+<Tag Color="@GetStatusColor(Status)">
+    @GetStatusText(Status)
+</Tag>
+
+@code {
+    [Parameter]
+    public string Status { get; set; } = "Pending";
+
+    private string GetStatusColor(string status)
+    {
+        return status switch
+        {
+            "Pending" => "blue",
+            "Running" => "orange",
+            "Completed" => "green",
+            "Failed" => "red",
+            "Stopped" => "gray",
+            _ => "default"
+        };
+    }
+
+    private string GetStatusText(string status)
+    {
+        return status switch
+        {
+            "Pending" => "待执行",
+            "Running" => "运行中",
+            "Completed" => "已完成",
+            "Failed" => "失败",
+            "Stopped" => "已停止",
+            _ => "未知"
+        };
+    }
+}

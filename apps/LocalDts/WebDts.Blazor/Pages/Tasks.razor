@@ -1,0 +1,139 @@
+@page "/tasks"
+@using AntDesign
+@using WebDts.Blazor.Services
+@using WebDts.Blazor.Models
+@inject ITaskService TaskService
+@inject NavigationManager NavigationManager
+
+<PageHeader Title="迁移任务管理" Subtitle="管理所有数据迁移任务">
+    <ChildContent>
+        <Button Type="primary" OnClick="NavigateToCreateTask">
+            <PlusOutlined /> 创建任务
+        </Button>
+    </ChildContent>
+</PageHeader>
+
+<Card Style="margin-top: 16px;">
+    <Table DataSource="@MigrationTasks" Loading="IsLoading" Bordered>
+        <TableColumn Field="Id" Title="任务ID" />
+        <TableColumn Field="Name" Title="任务名称" />
+        <TableColumn Field="Status" Title="状态">
+            <Template>
+                <Tag Color="@GetStatusColor((context as WebMigrationTask).Status)">
+                    @GetStatusText((context as WebMigrationTask).Status)
+                </Tag>
+            </Template>
+        </TableColumn>
+        <TableColumn Field="CreatedAt" Title="创建时间">
+            <Template>
+                @(context as WebMigrationTask).CreatedAt.ToString("yyyy-MM-dd HH:mm")
+            </Template>
+        </TableColumn>
+        <TableColumn Title="操作">
+            <Template>
+                <Space>
+                    <Button Type="link" OnClick="() => ExecuteTask((context as WebMigrationTask).Id)">
+                        执行
+                    </Button>
+                    <Button Type="link" OnClick="() => EditTask((context as WebMigrationTask).Id)">
+                        编辑
+                    </Button>
+                    <Button Type="link" Danger OnClick="() => DeleteTask((context as WebMigrationTask).Id)">
+                        删除
+                    </Button>
+                    <Button Type="link" OnClick="() => ViewLogs((context as WebMigrationTask).Id)">
+                        查看日志
+                    </Button>
+                </Space>
+            </Template>
+        </TableColumn>
+    </Table>
+</Card>
+
+@code {
+    private bool IsLoading { get; set; } = true;
+    private List<WebMigrationTask> MigrationTasks { get; set; } = new List<WebMigrationTask>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTasks();
+    }
+
+    private async Task LoadTasks()
+    {
+        IsLoading = true;
+        try
+        {
+            var tasks = await TaskService.GetTasksAsync();
+            MigrationTasks = tasks.ToList();
+        }
+        catch (Exception ex)
+        {
+            // 处理异常
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private void NavigateToCreateTask()
+    {
+        NavigationManager.NavigateTo("/taskcreate");
+    }
+
+    private void ExecuteTask(Guid taskId)
+    {
+        NavigationManager.NavigateTo($"/execution/{taskId}");
+    }
+
+    private void EditTask(Guid taskId)
+    {
+        // 这里可以实现编辑功能，目前跳转到创建页面
+        NavigationManager.NavigateTo($"/taskcreate?edit={taskId}");
+    }
+
+    private async Task DeleteTask(Guid taskId)
+    {
+        try
+        {
+            await TaskService.DeleteTaskAsync(taskId);
+            await LoadTasks();
+        }
+        catch (Exception ex)
+        {
+            // 处理异常
+        }
+    }
+
+    private void ViewLogs(Guid taskId)
+    {
+        NavigationManager.NavigateTo($"/logs?taskId={taskId}");
+    }
+
+    private string GetStatusColor(WebDts.Blazor.Models.MigrationTaskStatus status)
+    {
+        return status switch
+        {
+            WebDts.Blazor.Models.MigrationTaskStatus.Pending => "blue",
+            WebDts.Blazor.Models.MigrationTaskStatus.Running => "orange",
+            WebDts.Blazor.Models.MigrationTaskStatus.Completed => "green",
+            WebDts.Blazor.Models.MigrationTaskStatus.Failed => "red",
+            WebDts.Blazor.Models.MigrationTaskStatus.Stopped => "gray",
+            _ => "default"
+        };
+    }
+
+    private string GetStatusText(WebDts.Blazor.Models.MigrationTaskStatus status)
+    {
+        return status switch
+        {
+            WebDts.Blazor.Models.MigrationTaskStatus.Pending => "待执行",
+            WebDts.Blazor.Models.MigrationTaskStatus.Running => "运行中",
+            WebDts.Blazor.Models.MigrationTaskStatus.Completed => "已完成",
+            WebDts.Blazor.Models.MigrationTaskStatus.Failed => "失败",
+            WebDts.Blazor.Models.MigrationTaskStatus.Stopped => "已停止",
+            _ => "未知"
+        };
+    }
+}

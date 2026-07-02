@@ -1,0 +1,225 @@
+@page "/plugins"
+@using AntDesign
+@using WebDts.Blazor.Services
+@using WebDts.Blazor.Components
+@using WebDts.Blazor.Models
+@using DataMigration.Contracts
+@using System.ComponentModel
+@inject IPluginService PluginService
+
+<PageHeader Title="插件管理" Subtitle="管理所有数据源、目标源和转换器插件" />
+
+<div class="plugins-container">
+    <Card Style="margin-bottom: 16px;">
+        <Input.Search
+            Placeholder="搜索插件"
+            OnSearch="(value) => HandleSearch(value)"
+            Style="width: 300px;"
+            AllowClear
+        />
+    </Card>
+
+    <Tabs ActiveKey="@ActiveTabKey" @onchange="(value) => HandleTabChange(value)">
+        <TabPane Tab="所有插件" Key="all">
+            <Table DataSource="@FilteredAllPlugins" Loading="IsLoading" Bordered>
+                <TableColumn Field="Id" Title="ID" />
+                <TableColumn Field="Name" Title="名称" />
+                <TableColumn Field="Type" Title="类型">
+                    <Template>
+                        <Tag Color="@GetTypeColor((context as WebDts.Blazor.Models.PluginInfo).Type)">
+                            @(context as WebDts.Blazor.Models.PluginInfo).Type
+                        </Tag>
+                    </Template>
+                </TableColumn>
+                <TableColumn Field="Version" Title="版本" />
+                <TableColumn Title="操作">
+                    <Template>
+                        <Button Type="link" OnClick="() => OpenPluginConfig(context as WebDts.Blazor.Models.PluginInfo)">
+                            配置
+                        </Button>
+                    </Template>
+                </TableColumn>
+            </Table>
+        </TabPane>
+        <TabPane Tab="数据源" Key="datasource">
+            <Table DataSource="@FilteredDataSources" Loading="IsLoading" Bordered>
+                <TableColumn Field="Id" Title="ID" />
+                <TableColumn Field="Name" Title="名称" />
+                <TableColumn Field="Version" Title="版本" />
+                <TableColumn Title="操作">
+                    <Template>
+                        <Button Type="link" OnClick="() => OpenPluginConfig(context as WebDts.Blazor.Models.PluginInfo)">
+                            配置
+                        </Button>
+                    </Template>
+                </TableColumn>
+            </Table>
+        </TabPane>
+        <TabPane Tab="目标源" Key="datatarget">
+            <Table DataSource="@FilteredDataTargets" Loading="IsLoading" Bordered>
+                <TableColumn Field="Id" Title="ID" />
+                <TableColumn Field="Name" Title="名称" />
+                <TableColumn Field="Version" Title="版本" />
+                <TableColumn Title="操作">
+                    <Template>
+                        <Button Type="link" OnClick="() => OpenPluginConfig(context as WebDts.Blazor.Models.PluginInfo)">
+                            配置
+                        </Button>
+                    </Template>
+                </TableColumn>
+            </Table>
+        </TabPane>
+        <TabPane Tab="转换器" Key="transformer">
+            <Table DataSource="@FilteredTransformers" Loading="IsLoading" Bordered>
+                <TableColumn Field="Id" Title="ID" />
+                <TableColumn Field="Name" Title="名称" />
+                <TableColumn Field="Version" Title="版本" />
+                <TableColumn Title="操作">
+                    <Template>
+                        <Button Type="link" OnClick="() => OpenPluginConfig(context as WebDts.Blazor.Models.PluginInfo)">
+                            配置
+                        </Button>
+                    </Template>
+                </TableColumn>
+            </Table>
+        </TabPane>
+        <TabPane Tab="配置" Key="config" Disabled="SelectedPlugin == null">
+            @if (SelectedPlugin != null)
+            {
+                <div style="margin-bottom: 16px;">
+                    <h3>@SelectedPlugin.Name - 配置</h3>
+                </div>
+                <PluginParamForm
+                    Title="插件配置"
+                    PluginName="@SelectedPlugin.Name"
+                    Plugins="@AllPlugins"
+                    OnSubmit="HandleConfigSubmit"
+                    OnCancel="HandleConfigCancel"
+                />
+            }
+        </TabPane>
+    </Tabs>
+</div>
+
+@code {
+    private bool IsLoading { get; set; } = true;
+    private string ActiveTabKey { get; set; } = "all";
+    private string SearchKeyword { get; set; } = string.Empty;
+    private WebDts.Blazor.Models.PluginInfo SelectedPlugin { get; set; } = null;
+
+    private List<WebDts.Blazor.Models.PluginInfo> AllPlugins { get; set; } = new List<WebDts.Blazor.Models.PluginInfo>();
+    private List<WebDts.Blazor.Models.PluginInfo> DataSources { get; set; } = new List<WebDts.Blazor.Models.PluginInfo>();
+    private List<WebDts.Blazor.Models.PluginInfo> DataTargets { get; set; } = new List<WebDts.Blazor.Models.PluginInfo>();
+    private List<WebDts.Blazor.Models.PluginInfo> Transformers { get; set; } = new List<WebDts.Blazor.Models.PluginInfo>();
+
+    private List<WebDts.Blazor.Models.PluginInfo> FilteredAllPlugins => AllPlugins.Where(p => FilterPlugin(p, SearchKeyword)).ToList();
+    private List<WebDts.Blazor.Models.PluginInfo> FilteredDataSources => DataSources.Where(p => FilterPlugin(p, SearchKeyword)).ToList();
+    private List<WebDts.Blazor.Models.PluginInfo> FilteredDataTargets => DataTargets.Where(p => FilterPlugin(p, SearchKeyword)).ToList();
+    private List<WebDts.Blazor.Models.PluginInfo> FilteredTransformers => Transformers.Where(p => FilterPlugin(p, SearchKeyword)).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadPluginsAsync();
+    }
+
+    private async Task LoadPluginsAsync()
+    {
+        IsLoading = true;
+        try
+        {
+            var allPlugins = await PluginService.GetAllPluginsAsync();
+            AllPlugins = allPlugins.Select(p => new WebDts.Blazor.Models.PluginInfo
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Type = p.GetType().Name,
+                Version = p.Version.ToString()
+            }).ToList();
+            
+            var dataSources = await PluginService.GetDataSourcesAsync();
+            DataSources = dataSources.Select(p => new WebDts.Blazor.Models.PluginInfo
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Type = "DataSource",
+                Version = p.Version.ToString()
+            }).ToList();
+            
+            var dataTargets = await PluginService.GetDataTargetsAsync();
+            DataTargets = dataTargets.Select(p => new WebDts.Blazor.Models.PluginInfo
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Type = "DataTarget",
+                Version = p.Version.ToString()
+            }).ToList();
+            
+            var transformers = await PluginService.GetTransformersAsync();
+            Transformers = transformers.Select(p => new WebDts.Blazor.Models.PluginInfo
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Type = "Transformer",
+                Version = p.Version.ToString()
+            }).ToList();
+        }
+        catch (Exception ex)
+        {
+            // 处理异常
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private bool FilterPlugin(WebDts.Blazor.Models.PluginInfo plugin, string keyword)
+    {
+        if (string.IsNullOrEmpty(keyword))
+        {
+            return true;
+        }
+        
+        return plugin.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void HandleSearch(string keyword)
+    {
+        SearchKeyword = keyword;
+    }
+
+    private void HandleTabChange(ChangeEventArgs args)
+    {
+        ActiveTabKey = args.Value?.ToString();
+    }
+
+    private void OpenPluginConfig(WebDts.Blazor.Models.PluginInfo plugin)
+    {
+        SelectedPlugin = plugin;
+        ActiveTabKey = "config";
+    }
+
+    private async Task HandleConfigSubmit(Dictionary<string, string> config)
+    {
+        // 处理配置提交
+        await PluginService.SavePluginConfigAsync(SelectedPlugin.Name, config);
+        // 可以添加成功提示
+    }
+
+    private void HandleConfigCancel()
+    {
+        SelectedPlugin = null;
+        ActiveTabKey = "all";
+    }
+
+    private string GetTypeColor(string type)
+    {
+        return type switch
+        {
+            "DataSource" => "blue",
+            "DataTarget" => "green",
+            "Transformer" => "orange",
+            _ => "default"
+        };
+    }
+}

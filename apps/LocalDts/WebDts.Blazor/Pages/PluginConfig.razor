@@ -1,0 +1,214 @@
+@page "/plugin-config"
+
+<h1>插件配置</h1>
+
+@if (Plugin != null)
+{
+    <div class="config-container">
+        <div class="config-header">
+            <h2>@Plugin.Name</h2>
+            <p>版本: @Plugin.Version | 类型: @Plugin.Type</p>
+        </div>
+        
+        <div class="config-content">
+            <div class="config-section">
+                <h3>基本信息</h3>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">ID:</span>
+                        <span class="info-value">@Plugin.Id</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">名称:</span>
+                        <span class="info-value">@Plugin.Name</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">类型:</span>
+                        <span class="info-value">@Plugin.Type</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">版本:</span>
+                        <span class="info-value">@Plugin.Version</span>
+                    </div>
+
+                </div>
+            </div>
+            
+            <div class="config-section">
+                <h3>配置选项</h3>
+                <div class="config-form">
+                    <p>该插件的配置选项将在此处显示。</p>
+                    <p>目前支持的配置项:</p>
+                    <ul>
+                        <li>数据源连接字符串</li>
+                        <li>目标源输出路径</li>
+                        <li>转换器参数设置</li>
+                        <li>插件特定的配置选项</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="config-actions">
+                <button class="btn-save">保存配置</button>
+                <button class="btn-cancel">取消</button>
+            </div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="empty-state">
+        <p>未选择插件或插件信息无效。</p>
+    </div>
+}
+
+<style>
+    .config-container {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        overflow: hidden;
+        margin-top: 24px;
+    }
+    
+    .config-header {
+        background: linear-gradient(135deg, #ff9f45 0%, #ff6b6b 100%);
+        color: white;
+        padding: 24px;
+    }
+    
+    .config-header h2 {
+        margin: 0 0 8px 0;
+        font-size: 20px;
+        font-weight: 600;
+    }
+    
+    .config-header p {
+        margin: 0;
+        font-size: 14px;
+        opacity: 0.9;
+    }
+    
+    .config-content {
+        padding: 24px;
+    }
+    
+    .config-section {
+        margin-bottom: 32px;
+    }
+    
+    .config-section h3 {
+        margin: 0 0 16px 0;
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+        border-bottom: 2px solid #ff6b6b;
+        padding-bottom: 8px;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+    }
+    
+    .info-item {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .info-label {
+        font-size: 14px;
+        color: #666;
+        margin-bottom: 4px;
+    }
+    
+    .info-value {
+        font-size: 14px;
+        color: #333;
+        font-weight: 500;
+    }
+    
+    .config-form {
+        background-color: #f9f9f9;
+        padding: 20px;
+        border-radius: 6px;
+    }
+    
+    .config-form p {
+        margin: 0 0 12px 0;
+        font-size: 14px;
+        color: #333;
+    }
+    
+    .config-form ul {
+        margin: 12px 0 0 0;
+        padding-left: 20px;
+    }
+    
+    .config-form li {
+        margin-bottom: 8px;
+        font-size: 14px;
+        color: #333;
+    }
+    
+    .config-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 32px;
+    }
+    
+    .btn-save {
+        background-color: #ff6b6b;
+        color: white;
+        border: none;
+        padding: 10px 24px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    
+    .btn-save:hover {
+        background-color: #ff5252;
+        transform: scale(1.05);
+    }
+    
+    .btn-cancel {
+        background-color: #f0f0f0;
+        color: #333;
+        border: 1px solid #d9d9d9;
+        padding: 10px 24px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    
+    .btn-cancel:hover {
+        background-color: #e6e6e6;
+        transform: scale(1.05);
+    }
+    
+    .empty-state {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 48px;
+        text-align: center;
+        margin-top: 24px;
+    }
+    
+    .empty-state p {
+        margin: 0;
+        font-size: 16px;
+        color: #666;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public PluginInfo? Plugin { get; set; }
+}

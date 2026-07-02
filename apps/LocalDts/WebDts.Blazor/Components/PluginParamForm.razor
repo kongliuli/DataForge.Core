@@ -1,0 +1,166 @@
+@using AntDesign
+@using WebDts.Blazor.Services
+@using WebDts.Blazor.Models
+@using System.Collections.Generic
+
+@inject IPluginService PluginService
+
+<div class="plugin-param-form">
+    <Form Model="Parameters" Layout="Layout.Vertical" OnFinish="HandleSubmit">
+        <FormItem Label="插件名称" Required>
+            <select @bind="PluginName" class="ant-input" style="width: 100%;" disabled="@IsLoading">
+                @foreach (var plugin in Plugins)
+                {
+                    <option value="@plugin.Name">@plugin.Name</option>
+                }
+            </select>
+        </FormItem>
+
+        @if (!string.IsNullOrEmpty(PluginName))
+        {
+            <FormItem Label="参数配置">
+                <div class="params-container">
+                    @foreach (var key in Parameters.Keys.ToList())
+                    {
+                        <div class="param-item">
+                            <FormItem Label="@key" Required>
+                                <input type="text" @bind="Parameters[key]" class="ant-input" disabled="@IsLoading" />
+                            </FormItem>
+                            <Button Type="text" Danger @onclick="() => RemoveParam(key)" Disabled="IsLoading">
+                                删除
+                            </Button>
+                        </div>
+                    }
+                    <Button Type="dashed" @onclick="AddParam" Disabled="IsLoading" Style="width: 100%; margin-top: 8px;">
+                        添加参数
+                    </Button>
+                </div>
+            </FormItem>
+        }
+
+        <FormItem>
+            <Button Type="primary" HtmlType="submit" Disabled="IsLoading || string.IsNullOrEmpty(PluginName)">
+                保存配置
+            </Button>
+            <Button @onclick="HandleCancel" Style="margin-left: 8px;" Disabled="IsLoading">
+                取消
+            </Button>
+        </FormItem>
+    </Form>
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = "插件参数配置";
+
+    [Parameter]
+    public string PluginName { get; set; }
+
+    [Parameter]
+    public EventCallback<string> PluginNameChanged { get; set; }
+
+    [Parameter]
+    public Dictionary<string, string> Parameters { get; set; } = new Dictionary<string, string>();
+
+    [Parameter]
+    public EventCallback<Dictionary<string, string>> ParametersChanged { get; set; }
+
+    [Parameter]
+    public List<WebDts.Blazor.Models.PluginInfo> Plugins { get; set; } = new List<WebDts.Blazor.Models.PluginInfo>();
+
+    [Parameter]
+    public EventCallback<Dictionary<string, string>> OnSubmit { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private bool IsLoading { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        if (!string.IsNullOrEmpty(PluginName))
+        {
+            await LoadPluginConfig();
+        }
+    }
+
+    private async Task LoadPluginConfig()
+    {
+        IsLoading = true;
+        try
+        {
+            var config = await PluginService.GetPluginConfigAsync(PluginName);
+            if (config != null)
+            {
+                Parameters = config;
+                await ParametersChanged.InvokeAsync(Parameters);
+            }
+        }
+        catch (Exception ex)
+        {
+            // 处理异常
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task HandlePluginChange(ChangeEventArgs args)
+    {
+        PluginName = args.Value?.ToString();
+        await PluginNameChanged.InvokeAsync(PluginName);
+        if (!string.IsNullOrEmpty(PluginName))
+        {
+            await LoadPluginConfig();
+        }
+        else
+        {
+            Parameters = new Dictionary<string, string>();
+            await ParametersChanged.InvokeAsync(Parameters);
+        }
+    }
+
+    private void AddParam()
+    {
+        var newKey = $"param{Parameters.Count + 1}";
+        Parameters[newKey] = "";
+        StateHasChanged();
+    }
+
+    private void RemoveParam(string key)
+    {
+        Parameters.Remove(key);
+        StateHasChanged();
+    }
+
+    private async Task HandleSubmit(EditContext context)
+    {
+        if (!context.Validate())
+        {
+            return;
+        }
+
+        IsLoading = true;
+
+        try
+        {
+            await PluginService.SavePluginConfigAsync(PluginName, Parameters);
+            await OnSubmit.InvokeAsync(Parameters);
+        }
+        catch (Exception ex)
+        {
+            // 处理异常
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task HandleCancel()
+    {
+        await OnCancel.InvokeAsync();
+    }
+}

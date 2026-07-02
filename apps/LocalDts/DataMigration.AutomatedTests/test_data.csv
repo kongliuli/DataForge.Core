@@ -1,0 +1,6 @@
+id,name,age,is_active,created_at
+1,Alice,25,true,2023-01-01T00:00:00
+2,Bob,30,false,2023-01-02T00:00:00
+3,Charlie,35,true,2023-01-03T00:00:00
+4,David,40,false,2023-01-04T00:00:00
+5,Eve,45,true,2023-01-05T00:00:00

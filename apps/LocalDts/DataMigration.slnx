@@ -1,0 +1,24 @@
+<Solution>
+  <Folder Name="/Plugins/">
+    <Project Path="Plugins/DataMigration.Plugin.AggregationTransformer/DataMigration.Plugin.AggregationTransformer.csproj" />
+    <Project Path="Plugins/DataMigration.Plugin.CsvSource/DataMigration.Plugin.CsvSource.csproj" />
+    <Project Path="Plugins/DataMigration.Plugin.CsvTarget/DataMigration.Plugin.CsvTarget.csproj" />
+    <Project Path="Plugins/DataMigration.Plugin.EnumMappingTransformer/DataMigration.Plugin.EnumMappingTransformer.csproj" />
+    <Project Path="Plugins/DataMigration.Plugin.ExcelSource/DataMigration.Plugin.ExcelSource.csproj" />
+    <Project Path="Plugins/DataMigration.Plugin.MySqlSource/DataMigration.Plugin.MySqlSource.csproj" />
+    <Project Path="Plugins/DataMigration.Plugin.RenameTransformer/DataMigration.Plugin.RenameTransformer.csproj" />
+    <Project Path="Plugins/DataMigration.Plugin.RulesEngineTransformer/DataMigration.Plugin.RulesEngineTransformer.csproj" />
+    <Project Path="Plugins/DataMigration.Plugin.SqlServerSource/DataMigration.Plugin.SqlServerSource.csproj" />
+    <Project Path="Plugins/DataMigration.Plugin.SqliteSource/DataMigration.Plugin.SqliteSource.csproj" />
+    <Project Path="Plugins/DataMigration.Plugin.SqliteTarget/DataMigration.Plugin.SqliteTarget.csproj" />
+    <Project Path="Plugins/DataMigration.Plugin.SumTransformer/DataMigration.Plugin.SumTransformer.csproj" />
+  </Folder>
+  <Project Path="DataMigration.Console/DataMigration.Console.csproj" />
+  <Project Path="DataMigration.Contracts/DataMigration.Contracts.csproj" />
+  <Project Path="DataMigration.Core/DataMigration.Core.csproj" />
+  <Project Path="DataMigration.Plugin.DwgDataSource/DataMigration.Plugin.DwgDataSource.csproj" />
+  <Project Path="DataMigration.Plugin.GeometryTransformer/DataMigration.Plugin.GeometryTransformer.csproj" />
+  <Project Path="DataMigration.Wpf/DataMigration.Wpf.csproj" />
+  <Project Path="DatabaseCreator/DatabaseCreator.csproj" />
+  <Project Path="DataMigration.Tests/DataMigration.Tests.csproj" />
+</Solution>

@@ -1,0 +1,319 @@
+@using Microsoft.AspNetCore.Components.Routing
+@inject NavigationManager Navigation
+
+<div class="tabpanel-container">
+    <div class="tab-header" @onmousedown="StartDrag">
+        @foreach (var tab in _tabs)
+        {
+            <div class="tab-item @(tab.Id == _activeTabId ? "active" : "")" 
+                 @onclick="async () => await ActivateTab(tab.Id)"
+                 draggable="true"
+                 @ondragstart="(e) => DragStart(e, tab.Id)"
+                 @ondragover="(e) => DragOver(e)"
+                 @ondrop="(e) => Drop(e, tab.Id)">
+                <span class="tab-title">@tab.Title</span>
+                <button class="tab-close" @onclick="() => CloseTab(tab.Id)">×</button>
+            </div>
+        }
+        <div class="tab-item add-tab" @onclick="AddTab">
+            <span>+</span>
+        </div>
+    </div>
+    <div class="tab-content">
+        @if (!string.IsNullOrEmpty(_activeTabId))
+        {
+            var activeTab = _tabs.FirstOrDefault(t => t.Id == _activeTabId);
+            if (activeTab != null)
+            {
+                @activeTab.Content
+            }
+        }
+        else if (_tabs.Count > 0)
+        {
+            @_tabs[0].Content
+        }
+    </div>
+</div>
+
+<style>
+    .tabpanel-container {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        background-color: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .tab-header {
+        display: flex;
+        background-color: #f5f5f5;
+        border-bottom: 1px solid #e0e0e0;
+        padding: 0 8px;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+    
+    .tab-item {
+        display: flex;
+        align-items: center;
+        padding: 8px 16px;
+        margin: 4px 4px 0 4px;
+        background-color: #e0e0e0;
+        border-radius: 6px 6px 0 0;
+        cursor: pointer;
+        transition: all 0.3s;
+        position: relative;
+    }
+    
+    .tab-item:hover {
+        background-color: #d0d0d0;
+    }
+    
+    .tab-item.active {
+        background-color: white;
+        border-bottom: 1px solid white;
+        box-shadow: 0 -2px 0 #3a86ff;
+    }
+    
+    .tab-title {
+        margin-right: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        color: #333;
+    }
+    
+    .tab-close {
+        background: none;
+        border: none;
+        font-size: 16px;
+        cursor: pointer;
+        color: #999;
+        padding: 0;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.3s;
+    }
+    
+    .tab-close:hover {
+        background-color: #ff4d4f;
+        color: white;
+    }
+    
+    .add-tab {
+        background-color: transparent;
+        border: 1px dashed #3a86ff;
+        color: #3a86ff;
+        font-size: 16px;
+        font-weight: bold;
+        padding: 8px 12px;
+        margin: 4px 4px 0 4px;
+        border-radius: 6px 6px 0 0;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    
+    .add-tab:hover {
+        background-color: rgba(58, 134, 255, 0.1);
+    }
+    
+    .tab-content {
+        flex: 1;
+        padding: 24px;
+        overflow-y: auto;
+        background-color: white;
+    }
+    
+    .tab-item.dragging {
+        opacity: 0.5;
+        background-color: #e6f0ff;
+    }
+    
+    .tab-item.drag-over {
+        border-left: 2px solid #3a86ff;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public List<TabItem> Tabs { get; set; } = new();
+    
+    [Parameter]
+    public string ActiveTabId { get; set; } = string.Empty;
+    
+    [Parameter]
+    public EventCallback<string> ActiveTabIdChanged { get; set; }
+    
+    [Parameter]
+    public EventCallback<List<TabItem>> TabsChanged { get; set; }
+    
+    [Parameter]
+    public string RoutePrefix { get; set; } = "tab";
+    
+    private List<TabItem> _tabs = new();
+    private string _activeTabId = string.Empty;
+    private string _draggedTabId = string.Empty;
+    private bool _isInitializing = true;
+    
+    protected override void OnParametersSet()
+    {
+        // 总是更新_tabs，确保与外部传入的值同步
+        _tabs = Tabs;
+        
+        // 从URL中读取Tab ID
+        if (_isInitializing)
+        {
+            var uri = new Uri(Navigation.Uri);
+            var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+            var tabIdFromUrl = query[RoutePrefix];
+            
+            if (!string.IsNullOrEmpty(tabIdFromUrl) && _tabs.Any(t => t.Id == tabIdFromUrl))
+            {
+                _activeTabId = tabIdFromUrl;
+            }
+            else if (_tabs.Count > 0 && string.IsNullOrEmpty(ActiveTabId))
+            {
+                _activeTabId = _tabs[0].Id;
+            }
+            else
+            {
+                _activeTabId = ActiveTabId;
+            }
+            
+            _isInitializing = false;
+        }
+        else
+        {
+            // 总是更新_activeTabId，确保与外部传入的值同步
+            _activeTabId = ActiveTabId;
+        }
+        
+        // 确保_activeTabId对应的Tab存在
+        if (_tabs.Count > 0 && !_tabs.Any(t => t.Id == _activeTabId))
+        {
+            _activeTabId = _tabs[0].Id;
+            // 不要在这里调用ActiveTabIdChanged，避免无限循环
+        }
+        
+        // 确保至少有一个Tab
+        if (_tabs.Count == 0)
+        {
+            AddTab();
+        }
+    }
+    
+    private async Task ActivateTab(string tabId)
+    {
+        if (_activeTabId != tabId)
+        {
+            _activeTabId = tabId;
+            await ActiveTabIdChanged.InvokeAsync(_activeTabId);
+            
+            // 更新URL
+            UpdateUrl(tabId);
+        }
+    }
+    
+    private void CloseTab(string tabId)
+    {
+        if (_tabs.Count <= 1)
+        {
+            return;
+        }
+        
+        var tabIndex = _tabs.FindIndex(t => t.Id == tabId);
+        _tabs.RemoveAt(tabIndex);
+        
+        if (_activeTabId == tabId)
+        {
+            _activeTabId = _tabs[Math.Max(0, tabIndex - 1)].Id;
+            ActiveTabIdChanged.InvokeAsync(_activeTabId);
+            UpdateUrl(_activeTabId);
+        }
+        
+        TabsChanged.InvokeAsync(_tabs);
+    }
+    
+    private void AddTab()
+    {
+        var newTabId = Guid.NewGuid().ToString();
+        var newTab = new TabItem
+        {
+            Id = newTabId,
+            Title = "新标签页",
+            Content = @<p>新标签页内容</p>
+        };
+        
+        _tabs.Add(newTab);
+        _activeTabId = newTabId;
+        
+        TabsChanged.InvokeAsync(_tabs);
+        ActiveTabIdChanged.InvokeAsync(_activeTabId);
+        UpdateUrl(_activeTabId);
+    }
+    
+    private void UpdateUrl(string tabId)
+    {
+        var uri = new Uri(Navigation.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+        var currentTabId = query[RoutePrefix];
+        
+        // 只有当tabId发生变化时才更新URL，避免无限循环
+        if (currentTabId != tabId)
+        {
+            query[RoutePrefix] = tabId;
+            var newUri = $"{uri.GetLeftPart(UriPartial.Path)}?{query.ToString()}";
+            Navigation.NavigateTo(newUri, forceLoad: false);
+        }
+    }
+    
+    private void StartDrag()
+    {
+        // 开始拖拽
+    }
+    
+    private void DragStart(DragEventArgs e, string tabId)
+    {
+        _draggedTabId = tabId;
+        e.DataTransfer.EffectAllowed = "move";
+    }
+    
+    private void DragOver(DragEventArgs e)
+    {
+        // 在Blazor中，DragEventArgs不支持PreventDefault
+        // e.PreventDefault();
+        // e.DataTransfer.DropEffect = "move";
+    }
+    
+    private void Drop(DragEventArgs e, string targetTabId)
+    {
+        // 在Blazor中，DragEventArgs不支持PreventDefault
+        // e.PreventDefault();
+        
+        if (_draggedTabId != targetTabId)
+        {
+            var draggedIndex = _tabs.FindIndex(t => t.Id == _draggedTabId);
+            var targetIndex = _tabs.FindIndex(t => t.Id == targetTabId);
+            
+            if (draggedIndex >= 0 && targetIndex >= 0)
+            {
+                var draggedTab = _tabs[draggedIndex];
+                _tabs.RemoveAt(draggedIndex);
+                _tabs.Insert(targetIndex, draggedTab);
+                TabsChanged.InvokeAsync(_tabs);
+            }
+        }
+    }
+    
+    public class TabItem
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Title { get; set; } = string.Empty;
+        public RenderFragment Content { get; set; } = default!;
+    }
+}

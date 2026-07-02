@@ -1,0 +1,168 @@
+@using AntDesign
+@using WebDts.Blazor.Services
+@using WebDts.Blazor.Models
+@using System.Collections.Generic
+
+@inject IPluginService PluginService
+
+<div class="connection-form">
+    <Form Model="ConnectionConfig" Layout="Layout.Vertical" OnFinish="HandleSubmit">
+        <FormItem Label="插件名称" Required>
+            <select @bind="PluginName" class="ant-input" style="width: 100%;" disabled="@IsLoading">
+                @foreach (var plugin in Plugins)
+                {
+                    <option value="@plugin.Name">@plugin.Name</option>
+                }
+            </select>
+        </FormItem>
+
+        <FormItem Label="连接字符串" Required>
+            <textarea @bind="ConnectionString" rows="4" class="ant-input" placeholder="输入连接字符串" disabled="@IsLoading"></textarea>
+        </FormItem>
+
+        <FormItem>
+            <Button Type="primary" Loading="IsTesting" OnClick="TestConnection" Disabled="string.IsNullOrEmpty(PluginName) || string.IsNullOrEmpty(ConnectionString) || IsLoading">
+                测试连接
+            </Button>
+            @if (TestResult != null)
+            {
+                <Alert
+                    Message="@(TestResult.Value ? "连接成功" : "连接失败")"
+                    Type="@(TestResult.Value ? AlertType.Success : AlertType.Error)"
+                    ShowIcon="true"
+                    Style="margin-left: 16px;"
+                />
+            }
+        </FormItem>
+
+        @if (ErrorMessage != null)
+        {
+            <Alert
+                Message="保存失败"
+                Description="@ErrorMessage"
+                Type="error"
+                ShowIcon="true"
+                Style="margin-bottom: 16px;"
+            />
+        }
+
+        <FormItem>
+            <Button Type="primary" HtmlType="submit" Disabled="IsLoading">
+                保存配置
+            </Button>
+            <Button @onclick="HandleCancel" Style="margin-left: 8px;" Disabled="IsLoading">
+                取消
+            </Button>
+        </FormItem>
+    </Form>
+</div>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = "连接配置";
+
+    [Parameter]
+    public string PluginName { get; set; }
+
+    [Parameter]
+    public EventCallback<string> PluginNameChanged { get; set; }
+
+    [Parameter]
+    public string ConnectionString { get; set; }
+
+    [Parameter]
+    public EventCallback<string> ConnectionStringChanged { get; set; }
+
+    [Parameter]
+    public List<WebDts.Blazor.Models.PluginInfo> Plugins { get; set; } = new List<WebDts.Blazor.Models.PluginInfo>();
+
+    [Parameter]
+    public EventCallback<Dictionary<string, string>> OnSubmit { get; set; }
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    private Dictionary<string, string> ConnectionConfig { get; set; } = new Dictionary<string, string>();
+    private bool IsLoading { get; set; } = false;
+    private bool IsTesting { get; set; } = false;
+    private bool? TestResult { get; set; } = null;
+    private string? ErrorMessage { get; set; } = null;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        UpdateConnectionConfig();
+    }
+
+    private void UpdateConnectionConfig()
+    {
+        ConnectionConfig.Clear();
+        if (!string.IsNullOrEmpty(ConnectionString))
+        {
+            var pairs = ConnectionString.Split(';');
+            foreach (var pair in pairs)
+            {
+                var parts = pair.Split('=');
+                if (parts.Length == 2)
+                {
+                    ConnectionConfig[parts[0].Trim()] = parts[1].Trim();
+                }
+            }
+        }
+    }
+
+    private async Task TestConnection()
+    {
+        if (string.IsNullOrEmpty(PluginName) || string.IsNullOrEmpty(ConnectionString))
+        {
+            return;
+        }
+
+        IsTesting = true;
+        TestResult = null;
+
+        try
+        {
+            UpdateConnectionConfig();
+            TestResult = await PluginService.TestConnectionAsync(PluginName, ConnectionConfig);
+        }
+        catch (Exception ex)
+        {
+            TestResult = false;
+        }
+        finally
+        {
+            IsTesting = false;
+        }
+    }
+
+    private async Task HandleSubmit(EditContext context)
+    {
+        if (!context.Validate())
+        {
+            return;
+        }
+
+        IsLoading = true;
+        ErrorMessage = null;
+
+        try
+        {
+            UpdateConnectionConfig();
+            await OnSubmit.InvokeAsync(ConnectionConfig);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task HandleCancel()
+    {
+        await OnCancel.InvokeAsync();
+    }
+}

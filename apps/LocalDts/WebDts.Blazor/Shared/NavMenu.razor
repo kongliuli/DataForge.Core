@@ -1,0 +1,69 @@
+<Menu Class="nav-menu">
+    <MenuItemGroup Title="WebDts">
+        <MenuItem Key="home" @onclick="@(() => HandleNavigation("/", "首页"))">
+            <Icon Type="home" />
+            <span>首页</span>
+        </MenuItem>
+        <MenuItem Key="plugins" @onclick="@(() => HandleNavigation("/plugins", "插件管理"))">
+            <Icon Type="plugin" />
+            <span>插件管理</span>
+        </MenuItem>
+        <MenuItem Key="tasks" @onclick="@(() => HandleNavigation("/tasks", "迁移任务"))">
+            <Icon Type="form" />
+            <span>迁移任务</span>
+        </MenuItem>
+        <MenuItem Key="execution" @onclick="@(() => HandleNavigation("/execution", "任务执行"))">
+            <Icon Type="play-circle" />
+            <span>任务执行</span>
+        </MenuItem>
+        <MenuItem Key="logs" @onclick="@(() => HandleNavigation("/logs", "日志查看"))">
+            <Icon Type="file-text" />
+            <span>日志查看</span>
+        </MenuItem>
+        <MenuItem Key="settings" @onclick="@(() => HandleNavigation("/settings", "系统设置"))">
+            <Icon Type="setting" />
+            <span>系统设置</span>
+        </MenuItem>
+    </MenuItemGroup>
+</Menu>
+
+<style>
+    .nav-menu {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+    
+    .nav-menu .ant-menu-item {
+        margin: 8px 0;
+        border-radius: 6px;
+        font-weight: 500;
+    }
+    
+    .nav-menu .ant-menu-item:hover {
+        background-color: #ffe6e6 !important;
+        color: #ff6b6b !important;
+    }
+    
+    .nav-menu .ant-menu-item-selected {
+        background-color: #ffe6e6 !important;
+        color: #ff6b6b !important;
+        border-left: 3px solid #ff6b6b !important;
+    }
+    
+    .nav-menu .anticon {
+        margin-right: 12px;
+        font-size: 18px;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public EventCallback<(string Path, string Title)> OnNavigation { get; set; }
+    
+    [Parameter]
+    public EventCallback<(string Path, string Title, object Data)> OnPluginConfig { get; set; }
+    
+    private void HandleNavigation(string path, string title)
+    {
+        OnNavigation.InvokeAsync((path, title));
+    }
+}

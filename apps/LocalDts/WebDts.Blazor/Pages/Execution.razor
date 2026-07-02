@@ -1,0 +1,234 @@
+@page "/execution"
+@page "/execution/{TaskId}"
+@using AntDesign
+@using Microsoft.AspNetCore.SignalR.Client
+@using WebDts.Blazor.Models
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@implements IAsyncDisposable
+
+<PageHeader Title="任务执行" Subtitle="实时监控任务执行状态">
+    <Button OnClick="GoBack">
+        返回任务列表
+    </Button>
+</PageHeader>
+
+@if (string.IsNullOrEmpty(TaskId))
+{
+    <Card Style="margin-top: 16px;">
+        <Alert
+            Message="提示"
+            Description="请从任务列表选择一个任务进行执行"
+            Type="info"
+            ShowIcon="true"
+        />
+        <div style="margin-top: 16px;">
+            <Button Type="primary" OnClick='() => Navigation.NavigateTo("/tasks")'>
+                前往任务列表
+            </Button>
+        </div>
+    </Card>
+}
+else
+{
+    <Card Style="margin-top: 16px;">
+        <div style="margin-bottom: 16px;">
+            <div style="display: flex; gap: 16px;">
+                <div>
+                    <p><strong>任务ID:</strong> @TaskId</p>
+                </div>
+                <div>
+                    <p><strong>状态:</strong> 
+                        <Tag Color="@GetStatusColor(_status)">
+                            @_status
+                        </Tag>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <Progress Percent="@_progress" />
+        <p style="margin-top: 8px; color: #666;">
+            @_progressMessage
+        </p>
+        
+        <div style="margin-top: 16px;">
+            <Button 
+                Type="primary" 
+                OnClick="StartExecution" 
+                Disabled="@(IsExecuting || _status == "Completed")"
+                Loading="IsExecuting"
+            >
+                开始执行
+            </Button>
+        </div>
+    </Card>
+    
+    <Card Style="margin-top: 16px;">
+        <div style="margin-bottom: 16px;">
+            <h3>执行日志</h3>
+        </div>
+        <div>
+            <Timeline>
+                @foreach (var log in _logs)
+                {
+                    <TimelineItem 
+                        Color="@GetLogColor(log.Level)"
+                    >
+                        <div>
+                            <span style="font-size: 12px; color: #999;">
+                                @log.Timestamp.ToString("HH:mm:ss")
+                            </span>
+                            <br />
+                            <span>@log.Message</span>
+                        </div>
+                    </TimelineItem>
+                }
+            </Timeline>
+        </div>
+    </Card>
+}
+
+@code {
+    [Parameter]
+    public string? TaskId { get; set; }
+
+    private HubConnection? _hubConnection;
+    private string _status = "Ready";
+    private int _progress = 0;
+    private string _progressMessage = "等待开始...";
+    private List<LogEntry> _logs = new();
+
+    private bool IsExecuting => _status == "Running";
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!string.IsNullOrEmpty(TaskId))
+        {
+            await InitializeSignalR();
+        }
+    }
+
+    private async Task InitializeSignalR()
+    {
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(Navigation.ToAbsoluteUri("/migrationhub"))
+            .WithAutomaticReconnect()
+            .Build();
+
+        _hubConnection.On<string, int, string>("ReceiveProgress", (taskId, progress, message) =>
+        {
+            if (taskId == TaskId)
+            {
+                _progress = progress;
+                _progressMessage = message;
+                InvokeAsync(StateHasChanged);
+            }
+        });
+
+        _hubConnection.On<string, string, string>("ReceiveStatus", (taskId, status, details) =>
+        {
+            if (taskId == TaskId)
+            {
+                _status = status;
+                _logs.Add(new LogEntry { Level = "INFO", Message = $"状态变更: {status} - {details}", Timestamp = DateTime.Now });
+                InvokeAsync(StateHasChanged);
+            }
+        });
+
+        _hubConnection.On<string, string, string>("ReceiveLog", (taskId, level, message) =>
+        {
+            if (taskId == TaskId)
+            {
+                _logs.Add(new LogEntry { Level = level, Message = message, Timestamp = DateTime.Now });
+                InvokeAsync(StateHasChanged);
+            }
+        });
+
+        await _hubConnection.StartAsync();
+        await _hubConnection.InvokeAsync("JoinTaskGroup", TaskId);
+    }
+
+    private async Task StartExecution()
+    {
+        try
+        {
+            _status = "Running";
+            _progress = 0;
+            _progressMessage = "开始执行...";
+            _logs.Clear();
+            
+            var response = await Http.PostAsync($"api/migrationtasks/{TaskId}/execute", null);
+            if (response.IsSuccessStatusCode)
+            {
+                _logs.Add(new LogEntry { Level = "INFO", Message = "任务执行完成", Timestamp = DateTime.Now });
+            }
+            else
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                _logs.Add(new LogEntry { Level = "ERROR", Message = $"任务执行失败: {error}", Timestamp = DateTime.Now });
+                _status = "Failed";
+            }
+        }
+        catch (Exception ex)
+        {
+            _logs.Add(new LogEntry { Level = "ERROR", Message = $"执行任务失败: {ex.Message}", Timestamp = DateTime.Now });
+            _status = "Failed";
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/tasks");
+    }
+
+    private string GetStatusColor(string status)
+    {
+        return status switch
+        {
+            "Ready" => "blue",
+            "Running" => "orange",
+            "Completed" => "green",
+            "Failed" => "red",
+            _ => "default"
+        };
+    }
+
+    private AntDesign.ProgressStatus GetProgressStatus()
+    {
+        if (_status == "Failed") return AntDesign.ProgressStatus.Exception;
+        if (_status == "Completed") return AntDesign.ProgressStatus.Success;
+        if (_status == "Running") return AntDesign.ProgressStatus.Active;
+        return AntDesign.ProgressStatus.Normal;
+    }
+
+    private string GetLogColor(string level)
+    {
+        return level switch
+        {
+            "ERROR" => "red",
+            "WARN" => "orange",
+            "INFO" => "blue",
+            _ => "default"
+        };
+    }
+
+    private string GetLogIcon(string level)
+    {
+        return level switch
+        {
+            "ERROR" => "error",
+            "WARN" => "warning",
+            "INFO" => "info",
+            _ => "info"
+        };
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_hubConnection is not null)
+        {
+            await _hubConnection.DisposeAsync();
+        }
+    }
+}

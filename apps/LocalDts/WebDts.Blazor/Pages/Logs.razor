@@ -1,0 +1,161 @@
+@page "/logs"
+@using AntDesign
+@using WebDts.Blazor.Services
+@using WebDts.Blazor.Models
+@inject ILogService LogService
+
+<PageHeader Title="系统日志" Subtitle="查看和管理系统运行日志">
+</PageHeader>
+
+<Card Style="margin-top: 16px;">
+    <Form Model="_filter" Layout="FormLayout.Horizontal" OnFinish="SearchLogs">
+        <Row>
+            <Col Span="6">
+                <FormItem Label="任务ID" Name="TaskId">
+                    <input type="text" @bind="_filter.TaskId" class="ant-input" placeholder="输入任务ID" />
+                </FormItem>
+            </Col>
+            <Col Span="6">
+                <FormItem Label="日志级别" Name="LogLevel">
+                    <select @bind="_filter.LogLevel" class="ant-input" style="width: 100%;">
+                        <option value="">全部</option>
+                        <option value="INFO">信息</option>
+                        <option value="WARN">警告</option>
+                        <option value="ERROR">错误</option>
+                    </select>
+                </FormItem>
+            </Col>
+            <Col Span="8">
+                <FormItem Label="时间范围" Name="TimeRange">
+                    <input type="text" @bind="_filter.TimeRange" class="ant-input" placeholder="选择时间范围" />
+                </FormItem>
+            </Col>
+            <Col Span="4" Style="display: flex; align-items: flex-end;">
+                <Button Type="primary" HtmlType="submit" Block>
+                    搜索
+                </Button>
+            </Col>
+        </Row>
+    </Form>
+</Card>
+
+<Card Style="margin-top: 16px;">
+    <Table 
+        DataSource="@LogEntries" 
+        Loading="IsLoading" 
+        Bordered 
+        PageSize="10" 
+        Total="TotalCount" 
+        OnPageIndexChange="(pageIndex) => OnPageIndexChange(pageIndex)"
+        OnPageSizeChange="(pageSize) => OnPageSizeChange(pageSize)"
+        CurrentPage="CurrentPage"
+    >
+        <TableColumn Field="Timestamp" Title="时间" Width="180">
+            <Template>
+                @(context as LogEntry).Timestamp.ToString("yyyy-MM-dd HH:mm:ss")
+            </Template>
+        </TableColumn>
+        <TableColumn Field="Level" Title="级别" Width="100">
+            <Template>
+                <Tag Color="@GetLogColor((context as LogEntry).Level)">
+                    @(context as LogEntry).Level
+                </Tag>
+            </Template>
+        </TableColumn>
+        <TableColumn Field="Message" Title="消息" />
+    </Table>
+</Card>
+
+@code {
+    private bool IsLoading { get; set; } = true;
+    private List<LogEntry> LogEntries { get; set; } = new List<LogEntry>();
+    private int TotalCount { get; set; } = 0;
+    private int CurrentPage { get; set; } = 1;
+    private int PageSize { get; set; } = 10;
+
+    private LogFilter _filter = new LogFilter
+    {
+        LogLevel = string.Empty,
+        TimeRange = null
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLogs();
+    }
+
+    private async Task LoadLogs()
+    {
+        IsLoading = true;
+        try
+        {
+            IEnumerable<LogEntry> logs;
+            if (!string.IsNullOrEmpty(_filter.TaskId))
+            {
+                if (Guid.TryParse(_filter.TaskId, out var taskId))
+                {
+                    logs = await LogService.GetLogsByTaskIdAsync(taskId, CurrentPage, PageSize);
+                }
+                else
+                {
+                    logs = new List<LogEntry>();
+                }
+            }
+            else if (!string.IsNullOrEmpty(_filter.LogLevel))
+            {
+                logs = await LogService.GetLogsByLevelAsync(_filter.LogLevel, CurrentPage, PageSize);
+            }
+            else
+            {
+                logs = await LogService.GetLogsAsync(CurrentPage, PageSize);
+            }
+            LogEntries = logs.ToList();
+            TotalCount = LogEntries.Count;
+        }
+        catch (Exception ex)
+        {
+            // 处理异常
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task SearchLogs()
+    {
+        CurrentPage = 1;
+        await LoadLogs();
+    }
+
+    private async Task OnPageIndexChange(AntDesign.PaginationEventArgs args)
+    {
+        CurrentPage = args.Page;
+        await LoadLogs();
+    }
+
+    private async Task OnPageSizeChange(AntDesign.PaginationEventArgs args)
+    {
+        PageSize = args.PageSize;
+        CurrentPage = 1;
+        await LoadLogs();
+    }
+
+    private string GetLogColor(string level)
+    {
+        return level switch
+        {
+            "ERROR" => "red",
+            "WARN" => "orange",
+            "INFO" => "blue",
+            _ => "default"
+        };
+    }
+
+    private class LogFilter
+    {
+        public string TaskId { get; set; } = string.Empty;
+        public string LogLevel { get; set; } = string.Empty;
+        public object TimeRange { get; set; } = null;
+    }
+}

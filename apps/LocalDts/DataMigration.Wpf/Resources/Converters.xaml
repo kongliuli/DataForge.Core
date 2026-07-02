@@ -1,0 +1,8 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:local="clr-namespace:DataMigration.Wpf.Converters">
+    <!-- 字符串到可见性转换器 -->
+    <local:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
+    <!-- 相等比较转换器 -->
+    <local:EqualsConverter x:Key="EqualsConverter" />
+</ResourceDictionary>

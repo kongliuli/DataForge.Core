@@ -1,0 +1,101 @@
+<Page x:Class="DataMigration.Wpf.TransformerConfigPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:local="clr-namespace:DataMigration.Wpf"
+      xmlns:vm="clr-namespace:DataMigration.Wpf.ViewModel"
+      mc:Ignorable="d"
+      d:DesignHeight="800"
+      d:DesignWidth="1000"
+      d:DataContext="{d:DesignInstance Type=vm:TransformerConfigViewModel, IsDesignTimeCreatable=True}"
+      Title="清洗规则配置">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="300" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        
+        <!-- 左侧：转换器列表和已保存配置 -->
+        <Grid Grid.Column="0" Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            
+            <TextBlock Grid.Row="0" Text="转换器列表" FontSize="16" FontWeight="Bold" Margin="0,0,0,10" />
+            <ListBox Grid.Row="1" ItemsSource="{Binding Transformers}" DisplayMemberPath="Name" SelectedItem="{Binding SelectedTransformer}" Margin="0,0,0,20" />
+            
+            <TextBlock Grid.Row="2" Text="已保存的配置" FontSize="16" FontWeight="Bold" Margin="0,0,0,10" />
+            <ListBox Grid.Row="3" ItemsSource="{Binding SavedConfigs}" SelectedItem="{Binding SelectedConfig}" DisplayMemberPath="Name">
+                <ListBox.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="删除配置" Command="{Binding DeleteConfigCommand}" CommandParameter="{Binding RelativeSource={RelativeSource AncestorType={x:Type ListBoxItem}, Mode=FindAncestor}, Path=DataContext}" />
+                    </ContextMenu>
+                </ListBox.ContextMenu>
+            </ListBox>
+        </Grid>
+        
+        <!-- 右侧：配置表单和数据预览 -->
+        <Grid Grid.Column="1" Margin="10">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="200" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="*" />
+            </Grid.RowDefinitions>
+            
+            <TextBlock Grid.Row="0" Text="清洗规则配置" FontSize="24" FontWeight="Bold" Margin="0,0,0,20" />
+            
+            <Grid Grid.Row="1" Margin="0,10,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="150" />
+                    <ColumnDefinition Width="400" />
+                </Grid.ColumnDefinitions>
+                <TextBlock Grid.Column="0" Text="配置名称:" VerticalAlignment="Center" />
+                <TextBox Grid.Column="1" Text="{Binding ConfigName, Mode=TwoWay}" />
+            </Grid>
+            
+            <Grid Grid.Row="2" Margin="0,10,0,5">
+                <TextBlock Text="规则 JSON" />
+            </Grid>
+            
+            <TextBox Grid.Row="3" x:Name="RulesJsonTextBox" Text="{Binding RulesJson}" TextWrapping="Wrap" AcceptsReturn="True" />
+            
+            <StackPanel Grid.Row="4" Orientation="Horizontal" Margin="0,10,0,0">
+                <Button Content="测试规则" Command="{Binding TestCommand}" Margin="0,0,10,0" Width="120" Height="30" />
+                <Button Content="保存配置" Command="{Binding SaveCommand}" Margin="0,0,10,0" Width="120" Height="30" />
+                <Button Content="预览数据" Command="{Binding PreviewDataCommand}" IsEnabled="{Binding !IsPreviewing}" Margin="0,0,10,0" Width="120" Height="30" />
+            </StackPanel>
+            
+            <TextBlock Grid.Row="5" Text="{Binding ErrorMessage}" Foreground="Red" Margin="0,10,0,0" />
+            
+            <Grid Grid.Row="6" Margin="0,10,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="测试结果" Margin="0,10,0,5" />
+                <TextBlock Grid.Row="1" x:Name="TestResultTextBlock" Text="{Binding TestResult}" TextWrapping="Wrap" />
+            </Grid>
+            
+            <Grid Grid.Row="7" Margin="0,10,0,0">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                <TextBlock Grid.Row="0" Text="预览结果:" FontSize="14" FontWeight="Bold" Margin="0,0,0,5" />
+                <TextBlock Grid.Row="1" Text="{Binding PreviewResult}" Margin="0,0,0,10" />
+            </Grid>
+            
+            <DataGrid Grid.Row="8" ItemsSource="{Binding PreviewData}" AutoGenerateColumns="True" Margin="0,10,0,0" CanUserSortColumns="True" />
+        </Grid>
+    </Grid>
+</Page>

@@ -1,0 +1,316 @@
+@page "/transformer/config/{pluginId}"
+@inject NavigationManager Navigation
+@inject HttpClient Http
+
+<h1>转换器配置</h1>
+
+<div class="card">
+    <h3>字段映射配置</h3>
+    <form @onsubmit="SaveConfig">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="source-data-source">源数据源</label>
+                <select id="source-data-source" @bind="_transformerConfig.SourceDataSourceId">
+                    <option value="">-- 选择数据源 --</option>
+                    @foreach (var ds in _dataSources)
+                    {
+                        <option value="@ds.Id">@ds.Name (@ds.Id)</option>
+                    }
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="source-table">源表</label>
+                <select id="source-table" @bind="_transformerConfig.SourceTable">
+                    <option value="">-- 选择表 --</option>
+                    @foreach (var table in _sourceTables)
+                    {
+                        <option value="@table">@table</option>
+                    }
+                </select>
+            </div>
+            
+            <div class="form-group full-width">
+                <h4>字段映射</h4>
+                <div class="field-mapping-container">
+                    @foreach (var mapping in _fieldMappings)
+                    {
+                        <div class="field-mapping-row">
+                            <select @bind="mapping.SourceField">
+                                <option value="">-- 选择源字段 --</option>
+                                @foreach (var field in _sourceFields)
+                                {
+                                    <option value="@field">@field</option>
+                                }
+                            </select>
+                            <span class="mapping-arrow">→</span>
+                            <select @bind="mapping.TargetField">
+                                <option value="">-- 选择目标字段 --</option>
+                                @foreach (var field in _targetFields)
+                                {
+                                    <option value="@field">@field</option>
+                                }
+                            </select>
+                            <button type="button" class="btn-sm error" @onclick="() => RemoveFieldMapping(mapping)">删除</button>
+                        </div>
+                    }
+                    <button type="button" class="btn-secondary" @onclick="AddFieldMapping">添加映射</button>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label for="join-type">联合查询类型</label>
+                <select id="join-type" @bind="_transformerConfig.JoinType">
+                    <option value="None">无</option>
+                    <option value="InnerJoin">内连接</option>
+                    <option value="LeftJoin">左连接</option>
+                    <option value="RightJoin">右连接</option>
+                </select>
+            </div>
+            
+            @if (_transformerConfig.JoinType != "None")
+            {
+                <div class="form-group">
+                    <label for="join-data-source">连接数据源</label>
+                    <select id="join-data-source" @bind="_transformerConfig.JoinDataSourceId">
+                        <option value="">-- 选择数据源 --</option>
+                        @foreach (var ds in _dataSources)
+                        {
+                            <option value="@ds.Id">@ds.Name (@ds.Id)</option>
+                        }
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="join-table">连接表</label>
+                    <select id="join-table" @bind="_transformerConfig.JoinTable">
+                        <option value="">-- 选择表 --</option>
+                        @foreach (var table in _joinTables)
+                        {
+                            <option value="@table">@table</option>
+                        }
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="join-condition">连接条件</label>
+                    <input type="text" id="join-condition" @bind="_transformerConfig.JoinCondition" placeholder="例如: source.id = join.id" />
+                </div>
+            }
+            
+            <div class="form-group full-width">
+                <button type="submit" class="btn-primary">保存配置</button>
+                <button type="button" class="btn-secondary" @onclick="Cancel">取消</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+    .card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        padding: 20px;
+        margin-bottom: 24px;
+    }
+    
+    .form-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 16px;
+    }
+    
+    .form-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .full-width {
+        grid-column: 1 / -1;
+    }
+    
+    label {
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: #333;
+    }
+    
+    input[type="text"],
+    select {
+        padding: 10px;
+        border: 1px solid #d9d9d9;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+    }
+    
+    input[type="text"]:focus,
+    select:focus {
+        outline: none;
+        border-color: #d4a676;
+        box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #d4a676 0%, #e8c59c 100%);
+        color: #333;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-weight: 500;
+    }
+    
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(212, 166, 118, 0.3);
+    }
+    
+    .btn-secondary {
+        background-color: white;
+        color: #d4a676;
+        border: 1px solid #d4a676;
+        padding: 10px 20px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.3s;
+        font-weight: 500;
+    }
+    
+    .btn-secondary:hover {
+        background-color: #f8f0e3;
+    }
+    
+    .btn-sm {
+        padding: 4px 8px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        margin-left: 8px;
+        transition: background-color 0.3s;
+    }
+    
+    .btn-sm.error {
+        background-color: #ff4d4f;
+        color: white;
+    }
+    
+    .btn-sm.error:hover {
+        background-color: #ff7875;
+    }
+    
+    .field-mapping-container {
+        margin-top: 12px;
+    }
+    
+    .field-mapping-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+    
+    .field-mapping-row select {
+        flex: 1;
+    }
+    
+    .mapping-arrow {
+        font-weight: bold;
+        color: #d4a676;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public string PluginId { get; set; } = string.Empty;
+    
+    private List<PluginInfo> _dataSources = new();
+    private List<string> _sourceTables = new();
+    private List<string> _joinTables = new();
+    private List<string> _sourceFields = new();
+    private List<string> _targetFields = new();
+    private List<FieldMapping> _fieldMappings = new();
+    private TransformerConfiguration _transformerConfig = new();
+    
+    protected override void OnInitialized()
+    {
+        LoadDataSources();
+        LoadTables();
+        LoadFields();
+        _fieldMappings.Add(new FieldMapping());
+    }
+    
+    private void LoadDataSources()
+    {
+        // 模拟加载数据源
+        _dataSources = new List<PluginInfo>
+        {
+            new PluginInfo { Id = "1", Name = "SQL Server" },
+            new PluginInfo { Id = "2", Name = "MySQL" },
+            new PluginInfo { Id = "3", Name = "SQLite" }
+        };
+    }
+    
+    private void LoadTables()
+    {
+        // 模拟加载表
+        _sourceTables = new List<string> { "users", "products", "orders" };
+        _joinTables = new List<string> { "user_details", "product_categories", "order_items" };
+    }
+    
+    private void LoadFields()
+    {
+        // 模拟加载字段
+        _sourceFields = new List<string> { "id", "name", "email", "created_at" };
+        _targetFields = new List<string> { "id", "full_name", "email_address", "creation_date" };
+    }
+    
+    private void AddFieldMapping()
+    {
+        _fieldMappings.Add(new FieldMapping());
+    }
+    
+    private void RemoveFieldMapping(FieldMapping mapping)
+    {
+        _fieldMappings.Remove(mapping);
+    }
+    
+    private void SaveConfig()
+    {
+        // 保存配置
+        Console.WriteLine("配置已保存");
+        // 返回到任务创建页面
+        Navigation.NavigateTo("/tasks");
+    }
+    
+    private void Cancel()
+    {
+        // 取消并返回到任务创建页面
+        Navigation.NavigateTo("/tasks");
+    }
+    
+    public class PluginInfo
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+    }
+    
+    public class FieldMapping
+    {
+        public string SourceField { get; set; } = string.Empty;
+        public string TargetField { get; set; } = string.Empty;
+    }
+    
+    public class TransformerConfiguration
+    {
+        public string SourceDataSourceId { get; set; } = string.Empty;
+        public string SourceTable { get; set; } = string.Empty;
+        public string JoinType { get; set; } = "None";
+        public string JoinDataSourceId { get; set; } = string.Empty;
+        public string JoinTable { get; set; } = string.Empty;
+        public string JoinCondition { get; set; } = string.Empty;
+    }
+}
