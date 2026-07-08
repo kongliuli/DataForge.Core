@@ -126,12 +126,12 @@ schema-infer csv sample.csv    # → 生成 validate.rules
 
 ## 7. 开放 PR 栈
 
-| PR | 分支 | 内容 |
+| PR | 状态 | 内容 |
 |----|------|------|
-| #7 | `cursor/v03-sync-yaml-693c` | Sync v0.3 YAML 执行 |
-| #8 | `cursor/v04-sync-v1-693c` | Sync v0.4 SQL/validate/watch |
-| #9 | `cursor/v04-parquet-duckdb-693c` | Parquet + DuckDB 扩展 |
-| **待开** | `cursor/v05-sync-parquet-schemainfer-693c` | Sync parquet/duckdb + SchemaInfer + 本蓝图 |
+| #7~#9 | 可关闭 | 已并入 #10 |
+| **#10** | **待合并 → main** | v0.5 全量（Sync + Parquet/DuckDB + SchemaInfer + 发布准备） |
+
+合并后打 tag：`v0.5.0`
 
 ---
 

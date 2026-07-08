@@ -8,13 +8,6 @@ using DataForge.Sync.Validation;
 
 namespace DataForge.Sync.Execution;
 
-public sealed class JobRunResult
-{
-    public required bool Success { get; init; }
-    public string? ErrorMessage { get; init; }
-    public ExportResults? ExportResults { get; init; }
-}
-
 public sealed class JobRunner
 {
     public async Task<JobRunResult> RunAsync(
@@ -22,10 +15,12 @@ public sealed class JobRunner
         IReadOnlyDictionary<string, string>? variables = null,
         CancellationToken cancellationToken = default)
     {
+        var startedAt = DateTimeOffset.UtcNow;
+
         try
         {
             if (!File.Exists(jobFilePath))
-                return Fail($"Job file not found: {jobFilePath}");
+                return Fail(jobFilePath, startedAt, $"Job file not found: {jobFilePath}");
 
             var jobDirectory = Path.GetDirectoryName(Path.GetFullPath(jobFilePath)) ?? Directory.GetCurrentDirectory();
             var yaml = await File.ReadAllTextAsync(jobFilePath, cancellationToken).ConfigureAwait(false);
@@ -49,11 +44,19 @@ public sealed class JobRunner
                     .ConfigureAwait(false);
             }
 
-            return new JobRunResult { Success = true, ExportResults = results };
+            return new JobRunResult
+            {
+                Success = true,
+                JobName = job.Name ?? Path.GetFileNameWithoutExtension(jobFilePath),
+                JobFilePath = Path.GetFullPath(jobFilePath),
+                StartedAt = startedAt,
+                FinishedAt = DateTimeOffset.UtcNow,
+                ExportResults = results
+            };
         }
         catch (Exception ex)
         {
-            return Fail(ex.Message);
+            return Fail(jobFilePath, startedAt, ex.Message);
         }
     }
 
@@ -162,6 +165,13 @@ public sealed class JobRunner
         return projected;
     }
 
-    private static JobRunResult Fail(string message) =>
-        new() { Success = false, ErrorMessage = message };
+    private static JobRunResult Fail(string jobFilePath, DateTimeOffset startedAt, string message) =>
+        new()
+        {
+            Success = false,
+            JobFilePath = jobFilePath,
+            StartedAt = startedAt,
+            FinishedAt = DateTimeOffset.UtcNow,
+            ErrorMessage = message
+        };
 }

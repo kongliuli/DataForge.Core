@@ -25,13 +25,16 @@ static async Task<int> RunOnceAsync(string[] args)
 {
     if (args.Length < 2)
     {
-        Console.Error.WriteLine("Missing job file. Usage: dataforge run <job.yaml> [--var key=value ...]");
+        Console.Error.WriteLine("Missing job file. Usage: dataforge run <job.yaml> [--var key=value] [--report run.json]");
         return 1;
     }
 
     var jobPath = args[1];
-    var variables = ParseVariables(args.AsSpan(2));
+    var (variables, reportPath) = ParseRunOptions(args.AsSpan(2));
     var result = await new JobRunner().RunAsync(jobPath, variables).ConfigureAwait(false);
+
+    if (!string.IsNullOrWhiteSpace(reportPath))
+        await JobRunReportWriter.WriteAsync(result, reportPath).ConfigureAwait(false);
 
     if (!result.Success)
     {
@@ -41,6 +44,8 @@ static async Task<int> RunOnceAsync(string[] args)
 
     var export = result.ExportResults!;
     Console.WriteLine($"Job completed: {export.RecordsWritten} record(s) written to {export.OutputPath}");
+    if (!string.IsNullOrWhiteSpace(reportPath))
+        Console.WriteLine($"Report written to {Path.GetFullPath(reportPath)}");
     return 0;
 }
 
@@ -60,7 +65,7 @@ static async Task<int> WatchAsync(string[] args)
     };
 
     var jobPath = args[1];
-    var variables = ParseVariables(args.AsSpan(2));
+    var (variables, _) = ParseRunOptions(args.AsSpan(2));
     await JobScheduler.WatchAsync(new JobRunner(), jobPath, variables, cts.Token).ConfigureAwait(false);
     return 0;
 }
@@ -72,9 +77,10 @@ static int UnknownCommand(string command)
     return 1;
 }
 
-static Dictionary<string, string> ParseVariables(ReadOnlySpan<string> args)
+static (Dictionary<string, string> Variables, string? ReportPath) ParseRunOptions(ReadOnlySpan<string> args)
 {
     var variables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    string? reportPath = null;
 
     for (var i = 0; i < args.Length; i++)
     {
@@ -83,16 +89,29 @@ static Dictionary<string, string> ParseVariables(ReadOnlySpan<string> args)
         {
             if (i + 1 >= args.Length)
                 throw new InvalidOperationException("Missing value for --var.");
-
             AddVariable(variables, args[++i]);
             continue;
         }
 
         if (arg.StartsWith("--var=", StringComparison.Ordinal))
+        {
             AddVariable(variables, arg["--var=".Length..]);
+            continue;
+        }
+
+        if (arg is "--report" or "-r")
+        {
+            if (i + 1 >= args.Length)
+                throw new InvalidOperationException("Missing path for --report.");
+            reportPath = args[++i];
+            continue;
+        }
+
+        if (arg.StartsWith("--report=", StringComparison.Ordinal))
+            reportPath = arg["--report=".Length..];
     }
 
-    return variables;
+    return (variables, reportPath);
 }
 
 static void AddVariable(Dictionary<string, string> variables, string pair)
@@ -100,7 +119,6 @@ static void AddVariable(Dictionary<string, string> variables, string pair)
     var index = pair.IndexOf('=');
     if (index <= 0)
         throw new InvalidOperationException($"Invalid --var value '{pair}'. Expected key=value.");
-
     variables[pair[..index]] = pair[(index + 1)..];
 }
 
@@ -110,7 +128,7 @@ static void PrintHelp()
         DataForge.Sync — YAML-driven ETL CLI (DEC-03)
 
         Usage:
-          dataforge run <job.yaml> [--var key=value ...]
+          dataforge run <job.yaml> [--var key=value] [--report run.json]
           dataforge watch <job.yaml> [--var key=value ...]
           dataforge help
 
@@ -125,6 +143,9 @@ static void PrintHelp()
           --var lastSync=2026-07-01
           ${VAR} in paths/connections — CLI vars then environment
           @lastSync in where expressions — CLI vars only
+
+        Observability (S-04 minimal):
+          --report run.json   JSON run summary (records, duration, row errors)
 
         Docs: docs/roadmap-and-iteration.md §8.5
         """);

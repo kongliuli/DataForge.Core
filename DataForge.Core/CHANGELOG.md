@@ -15,8 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **DataForge.Core.DuckDB (A-02)** — `FromDuckDb<T>()` / `ToDuckDbAsync()`
 - **DataForge.Sync v0.5** — YAML `parquet` / `duckdb` source & sink
 - **DataForge.SchemaInfer (A-03)** — `schema-infer csv|json <file>`
-- `docs/blueprint-v0.5.md` — 迭代总结蓝图
-- Parquet/DuckDB/Sync/SchemaInfer tests
+- `dataforge run --report run.json` — JSON 运行报告（S-04 最小）
+- `docs/blueprint-v0.5.md`、`docs/API-STABILITY.md`（DEC-04 1.0 路径）
+- Parquet/DuckDB/Sync/SchemaInfer 测试（146+）
+
+### Changed
+
+- **DataForge.Core** 0.2.1 → **0.3.0**
+- **DataForge.Core.DependencyInjection** 0.2.0 → **0.3.0**
 
 ## [0.4.0] - 2026-07-08
 
