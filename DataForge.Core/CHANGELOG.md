@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **DataForge.Core.Parquet (A-01)** — `FromParquet<T>()` / `ToParquetAsync()` via Parquet.Net serializer
+- **DataForge.Core.DuckDB (A-02)** — `FromDuckDb<T>(db, sql)` / `ToDuckDbAsync(db, table)` for embedded OLAP
+- Parquet + DuckDB round-trip integration tests
+
 ## [0.4.0] - 2026-07-08
 
 ### Added

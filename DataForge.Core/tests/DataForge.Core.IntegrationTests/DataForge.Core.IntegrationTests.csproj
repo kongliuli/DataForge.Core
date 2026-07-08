@@ -9,6 +9,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\DataForge.Core\DataForge.Core.csproj" />
     <ProjectReference Include="..\..\src\DataForge.Core.Excel\DataForge.Core.Excel.csproj" />
+    <ProjectReference Include="..\..\src\DataForge.Core.Parquet\DataForge.Core.Parquet.csproj" />
+    <ProjectReference Include="..\..\src\DataForge.Core.DuckDB\DataForge.Core.DuckDB.csproj" />
     <PackageReference Include="xunit" Version="2.9.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
     <PackageReference Include="FluentAssertions" Version="7.0.0" />
