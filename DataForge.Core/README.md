@@ -220,6 +220,8 @@ await pipeline
 
 ## 📖 文档
 
+- [调研汇总与迭代设计（v0.2 规划）](docs/roadmap-and-iteration.md)
+- [架构设计](docs/architecture.md)
 - [快速上手](docs/getting-started.md)
 - [管道编程指南](docs/pipeline-guide.md)
 - [数据源配置](docs/data-sources.md)
