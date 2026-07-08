@@ -1,4 +1,4 @@
-
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -26,6 +26,10 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataForge.Core.Tests", "tests\DataForge.Core.Tests\DataForge.Core.Tests.csproj", "{2E15F5A0-C509-4AFD-A10A-B1C323F0E931}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataForge.Core.IntegrationTests", "tests\DataForge.Core.IntegrationTests\DataForge.Core.IntegrationTests.csproj", "{757F4E0D-EA89-40DC-84AA-864215359E67}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{E3382ABE-9A63-4923-8BE1-FB4AB47AC913}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataForge.Sync", "tools\DataForge.Sync\DataForge.Sync.csproj", "{4170DC6D-5DC9-4AB2-A7EE-C76C4A0246D2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -76,6 +80,10 @@ Global
 		{757F4E0D-EA89-40DC-84AA-864215359E67}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{757F4E0D-EA89-40DC-84AA-864215359E67}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{757F4E0D-EA89-40DC-84AA-864215359E67}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4170DC6D-5DC9-4AB2-A7EE-C76C4A0246D2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4170DC6D-5DC9-4AB2-A7EE-C76C4A0246D2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4170DC6D-5DC9-4AB2-A7EE-C76C4A0246D2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4170DC6D-5DC9-4AB2-A7EE-C76C4A0246D2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{92655287-A100-4489-9124-D40D4DA25C16} = {812B025B-1FDA-456E-BE96-2F6C88695DA0}
@@ -88,5 +96,6 @@ Global
 		{8D24F2E1-4B5C-4D3A-9C8E-2F6B7D3A1E92} = {812B025B-1FDA-456E-BE96-2F6C88695DA0}
 		{2E15F5A0-C509-4AFD-A10A-B1C323F0E931} = {B3BE344E-3BE3-4FBF-9A95-7054CA36034B}
 		{757F4E0D-EA89-40DC-84AA-864215359E67} = {B3BE344E-3BE3-4FBF-9A95-7054CA36034B}
+		{4170DC6D-5DC9-4AB2-A7EE-C76C4A0246D2} = {E3382ABE-9A63-4923-8BE1-FB4AB47AC913}
 	EndGlobalSection
 EndGlobal

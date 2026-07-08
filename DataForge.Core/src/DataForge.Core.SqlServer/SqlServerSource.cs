@@ -12,6 +12,7 @@ namespace DataForge.Core.SqlServer;
 
 public class SqlServerSource<T> : IRelationalDataSource<T> where T : new()
 {
+    private static readonly ITypeConverter TypeConverter = new DefaultTypeConverter();
     private readonly string _connectionString;
     private readonly string _tableName;
 
@@ -21,31 +22,13 @@ public class SqlServerSource<T> : IRelationalDataSource<T> where T : new()
     public SqlServerSource(string connectionString, string tableName)
     {
         _connectionString = connectionString;
-        _tableName = tableName;
+        _tableName = SqlIdentifier.ValidateTableName(tableName);
     }
 
     public async IAsyncEnumerable<T> ReadAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        using var connection = new SqlConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-        using var command = connection.CreateCommand();
-        command.CommandText = $"SELECT * FROM {_tableName}";
-        using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-
-        var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        await foreach (var item in QueryAsync($"SELECT * FROM {_tableName}", null, cancellationToken).ConfigureAwait(false))
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var item = new T();
-            foreach (var prop in properties)
-            {
-                var ordinal = reader.GetOrdinal(prop.Name);
-                if (!reader.IsDBNull(ordinal))
-                {
-                    prop.SetValue(item, reader.GetValue(ordinal));
-                }
-            }
             yield return item;
         }
     }
@@ -79,11 +62,16 @@ public class SqlServerSource<T> : IRelationalDataSource<T> where T : new()
                     var ordinal = reader.GetOrdinal(prop.Name);
                     if (!reader.IsDBNull(ordinal))
                     {
-                        prop.SetValue(item, reader.GetValue(ordinal));
+                        var raw = reader.GetValue(ordinal);
+                        prop.SetValue(item, TypeConverter.Convert(raw, prop.PropertyType));
                     }
                 }
-                catch { }
+                catch
+                {
+                    // ponytail: skip unmapped columns
+                }
             }
+
             yield return item;
         }
     }

@@ -43,7 +43,7 @@ var results = await DataForgePipeline
     .Select(o => new { o.OrderId, o.CustomerName, o.Amount })
     .OrderByDescending(o => o.Amount)
     .Take(100)
-    .ToJson("top-orders.json");
+    .ToJsonAsync("top-orders.json");
 
 Console.WriteLine($"导出了 {results.RecordsWritten} 条记录");
 ```
@@ -61,11 +61,13 @@ public class OrderValidator : DataValidator<Order>
     }
 }
 
-await DataForgePipeline
-    .FromExcel<Order>("sales.xlsx")
+```csharp
+using DataForge.Core.Excel;
+
+await ExcelPipelineExtensions.FromExcel<Order>("sales.xlsx")
     .ValidateWith(new OrderValidator())
     .ContinueOnValidationError()
-    .ToCsv("validated-orders.csv");
+    .ToCsvAsync("validated-orders.csv");
 ```
 
 ### 性能监控
@@ -77,7 +79,7 @@ await DataForgePipeline
     .FromCsv<Order>("large-file.csv")
     .WithCounter(counter)
     .Where(o => o.Status == "Active")
-    .ToJson("filtered-orders.json");
+    .ToJsonAsync("filtered-orders.json");
 
 Console.WriteLine($"处理速度: {counter.ItemsPerSecond:F2} 条/秒");
 ```
@@ -121,6 +123,8 @@ DataForge.Core/
 ├── tests/
 │   ├── DataForge.Core.Tests/        # 单元测试
 │   └── DataForge.Core.IntegrationTests/  # 集成测试
+├── tools/
+│   └── DataForge.Sync/              # YAML 同步 CLI（DEC-03 脚手架）
 ├── docs/                            # 文档
 ├── README.md
 ├── CHANGELOG.md
@@ -209,7 +213,7 @@ var summary = await DataForgePipeline
 // 使用进度报告
 await pipeline
     .WithProgress(report => Console.WriteLine($"进度: {report.ProgressPercentage:F1}%"))
-    .ToCsv("output.csv");
+    .ToCsvAsync("output.csv");
 
 // 使用并行处理
 await pipeline
