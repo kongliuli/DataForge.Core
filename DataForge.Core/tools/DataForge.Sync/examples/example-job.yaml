@@ -1,13 +1,29 @@
 name: example-orders-sync
-# Scaffold only — execution planned for v1.0 (see docs/roadmap-and-iteration.md §8.5)
+schedule: "0 2 * * *"
 
 source:
   type: csv
   path: ./orders.csv
+  options:
+    hasHeader: true
 
 transforms:
   - where: "Amount > 0"
+  - select:
+      OrderId: OrderId
+      Amount: Amount
+
+validate:
+  onError: continue
+  badRowOutput: ./orders-errors.ndjson
+  rules:
+    - field: OrderId
+      required: true
+    - field: Amount
+      min: 0
 
 sink:
   type: json
   path: ./orders-clean.json
+  options:
+    indented: true

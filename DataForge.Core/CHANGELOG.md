@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-07-08
+
+### Added
+
+- **DataForge.Core.Parquet (A-01)** — `FromParquet<T>()` / `ToParquetAsync()`
+- **DataForge.Core.DuckDB (A-02)** — `FromDuckDb<T>()` / `ToDuckDbAsync()`
+- **DataForge.Sync v0.5** — YAML `parquet` / `duckdb` source & sink
+- **DataForge.SchemaInfer (A-03)** — `schema-infer csv|json <file>`
+- `dataforge run --report run.json` — JSON 运行报告（S-04 最小）
+- `docs/blueprint-v0.5.md`、`docs/API-STABILITY.md`（DEC-04 1.0 路径）
+- Parquet/DuckDB/Sync/SchemaInfer 测试（146+）
+
+### Changed
+
+- **DataForge.Core** 0.2.1 → **0.3.0**
+- **DataForge.Core.DependencyInjection** 0.2.0 → **0.3.0**
+
+## [0.4.0] - 2026-07-08
+
+### Added
+
+- **DataForge.Sync v0.4** — v1.0 job subset
+  - SQL Server source/sink (`insert` / `upsert` with `keys`)
+  - YAML `validate.rules` (required, min, max, pattern) + `onError` + `badRowOutput`
+  - `schedule` field + `dataforge watch` cron runner (Cronos)
+  - 5 new Sync unit tests (validation, scheduler, SQL YAML)
+
+### Changed
+
+- Sync tool version 0.3.0 → 0.4.0; references `DataForge.Core.SqlServer`
+
+## [0.3.0] - 2026-07-08
+
+### Added
+
+- **DataForge.Sync v0.3** — YAML job execution: `dataforge run job.yaml [--var key=value]`
+  - Source: `csv` | `json`
+  - Transforms: `where`, `select`
+  - Sink: `csv` | `json`
+  - Variables: `${VAR}` (CLI / env), `@var` in `where` expressions
+
 ## [0.2.1] - 2026-07-08
 
 ### Added
