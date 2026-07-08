@@ -7,17 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-08
+
 ### Added
+
+- `ExternalSortOptions` + `WithExternalSort()` — 外部排序（磁盘 spill，DEC-02）
+- `PipelineCollectionExtensions.ToDataForge()` — 从集合 / 异步流创建管道
+- `tools/DataForge.Sync/` — YAML 同步 CLI 脚手架（DEC-03）
+- `SqlIdentifier.ValidateTableName()` — SQL 表名校验
+- 回归测试：`WithCounter`+`Where`、`ThenBy`、`ValidateWith`+`Select`、`FromExcel` 引导
 
 ### Changed
 
-### Deprecated
-
-### Removed
+- `WithCounter` / `WithProgress` 改为拦截器模型，链式中间操作不再丢失装饰器（R-01）
+- `OrderBy` / `ThenBy` 使用统一排序引擎；`ThenBy` 支持真正的多级排序（R-04 / D-09）
+- `Select` 在映射前先执行验证（R-03）
+- 核心库 `FromExcel` 改为抛出 `EXCEL_EXTENSION_REQUIRED`，真实实现仅在 `DataForge.Core.Excel`（DEC-01）
+- `HttpPipelineExtensions` / `ExcelPipelineExtensions` 提供静态入口，与 SqlServer 风格一致
+- `WithParallelization` 标记 `[Obsolete]`（原实现未并行化，R-02）
 
 ### Fixed
 
+- SqlServer Source 表名白名单校验 + `DefaultTypeConverter` 类型映射（R-06 / R-07）
+
+### Removed
+
+- 核心库内「CSV 冒充 Excel」的 `ExcelSource` 假实现
+
 ### Security
+
+- SqlServer `ReadAsync` 不再直接拼接未校验的表名
 
 ---
 

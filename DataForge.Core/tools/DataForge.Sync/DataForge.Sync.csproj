@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>dataforge</ToolCommandName>
+    <PackageId>DataForge.Sync</PackageId>
+    <Version>0.1.0</Version>
+    <Description>YAML-driven data sync CLI for DataForge.Core (DEC-03 scaffold)</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\DataForge.Core\DataForge.Core.csproj" />
+  </ItemGroup>
+
+</Project>

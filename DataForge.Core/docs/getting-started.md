@@ -32,10 +32,10 @@ dotnet add package DataForge.Core --version 0.1.0
 ### 验证安装
 
 ```csharp
-using DataForge;
+using DataForge.Core;
 
-Console.WriteLine(DataForgeVersion.Current);
-// 输出: DataForge.Core 0.1.0
+var pipeline = DataForgePipeline.FromMemory(new[] { 1, 2, 3 });
+Console.WriteLine("DataForge.Core ready");
 ```
 
 ## 5 分钟 Hello World
@@ -54,13 +54,13 @@ Id,Name,Email,City
 创建控制台项目并编写代码：
 
 ```csharp
-using DataForge;
+using DataForge.Core;
 
 var result = await DataForgePipeline
     .FromCsv<Customer>("customers.csv")
     .Where(c => c.City == "北京")
     .Select(c => new { c.Name, c.Email })
-    .ToJson("beijing-customers.json");
+    .ToJsonAsync("beijing-customers.json");
 
 Console.WriteLine($"处理完成：{result.RecordsWritten} 条记录");
 ```
@@ -101,20 +101,15 @@ DataForge.Core 的核心概念非常简洁：
 数据源是数据的入口，支持多种格式：
 
 ```csharp
-// SQL 数据库
-.FromSqlServer("connection-string")
-.FromMySql("connection-string")
-.FromSqlite("database.db")
-
 // 文件
 .FromCsv<T>("file.csv")
-.FromExcel<T>("file.xlsx")
 .FromJson<T>("file.json")
-.FromJsonArray<T>("file.json")
+.FromJsonString<T>(jsonContent)
+.FromMemory(collection)
 
-// 内存
-.FromCollection(collection)
-.FromEnumerable(enumerable)
+// Excel（需 DataForge.Core.Excel 扩展包）
+// using DataForge.Core.Excel;
+// ExcelPipelineExtensions.FromExcel<T>("file.xlsx")
 ```
 
 ### 2. 管道 (Pipeline)

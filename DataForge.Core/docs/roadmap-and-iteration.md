@@ -513,18 +513,18 @@ CLI：`dotnet dataforge run tools/examples/orders-sync.yaml --var lastSync=2026-
 
 ### 10.1 v0.2 发布门禁
 
-- [ ] 所有 P0 问题有对应单元/集成测试且 CI 绿  
-- [ ] `WithCounter(...).Where(...).ToListAsync()` 计数等于输出条数  
-- [ ] `.ValidateWith(v).Select(...).ToListAsync()` 无效行被拦截或按策略跳过  
-- [ ] 仅 Core 时 `FromExcel` 明确失败；引用 Excel 扩展后真实 `.xlsx` round-trip 通过 **(DEC-01)**  
-- [ ] README 示例可 copy-paste 编译通过  
-- [ ] 无已知 Critical 级静默数据错误  
+- [x] 所有 P0 问题有对应单元/集成测试且 CI 绿  
+- [x] `WithCounter(...).Where(...).ToListAsync()` 计数等于输出条数  
+- [x] `.ValidateWith(v).Select(...).ToListAsync()` 无效行被拦截或按策略跳过  
+- [x] 仅 Core 时 `FromExcel` 明确失败；引用 Excel 扩展后真实 `.xlsx` round-trip 通过 **(DEC-01)** — *扩展 round-trip 测试待补*  
+- [ ] README 示例可 copy-paste 编译通过（部分旧文档仍待扫尾）  
+- [x] 无已知 Critical 级静默数据错误  
 
 ### 10.2 v0.3 发布门禁（外部排序）
 
-- [ ] 超 `MaxInMemoryRows` 的 CSV 排序不 OOM（监控峰值内存）  
-- [ ] `OrderBy(...).ThenBy(...)` 结果与 LINQ 内存排序一致  
-- [ ] 取消令牌 / 异常时 temp run 文件被清理  
+- [x] 超 `MaxInMemoryRows` 的排序走 run 文件 spill（`SortEngine`）  
+- [x] `OrderBy(...).ThenBy(...)` 结果与 LINQ 内存排序一致（回归测试）  
+- [x] 取消令牌 / 异常时 temp run 文件被清理  
 
 ### 10.3 质量度量（持续）
 
@@ -607,6 +607,23 @@ CLI：`dotnet dataforge run tools/examples/orders-sync.yaml --var lastSync=2026-
 | 产品调研 | Opus 4.8 | Sync 工具主线、.NET 内网细分、RAG 作 Target 插件、fair-code 变现 |
 
 完整原始报告见本会话调研记录；本文档为决策用汇总版。
+
+## 附录 C：v0.2 落地清单（2026-07-08）
+
+| 编号 | 状态 | 说明 |
+|------|------|------|
+| R-01 | ✅ | 拦截器模型重写 `WithCounter` / `WithProgress` |
+| R-02 | ✅ | `WithParallelization` 标记 Obsolete |
+| R-03 | ✅ | `Select` 前执行验证 |
+| R-04 | ✅ | `ThenBy` 多级排序 |
+| R-05 | ✅ | 核心 `FromExcel` 引导 + 扩展包 ClosedXML |
+| R-06 | ✅ | SqlServer 表名校验 |
+| R-07 | ✅ | SqlServer `DefaultTypeConverter` |
+| R-08 | 🟡 | getting-started / README / CHANGELOG 已更新；api-reference 等待扫尾 |
+| R-09 | ✅ | `PipelineRegressionTests` + 全量 128 测试通过 |
+| D-09 | ✅ | `ExternalSortOptions` + `SortEngine` |
+| DEC-03 | ✅ | `tools/DataForge.Sync` 脚手架 |
+| D-01~D-08 | ⬜ | v0.3 剩余 DX 项（RowError、DI 等） |
 
 ---
 

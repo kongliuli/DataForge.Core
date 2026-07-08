@@ -1,0 +1,13 @@
+name: example-orders-sync
+# Scaffold only — execution planned for v1.0 (see docs/roadmap-and-iteration.md §8.5)
+
+source:
+  type: csv
+  path: ./orders.csv
+
+transforms:
+  - where: "Amount > 0"
+
+sink:
+  type: json
+  path: ./orders-clean.json
