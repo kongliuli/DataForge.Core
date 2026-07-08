@@ -109,6 +109,8 @@ public sealed class JobRunner
             "csv" => CreateCsvSource(job),
             "json" => CreateJsonSource(job),
             "sqlserver" => CreateSqlServerSource(job),
+            "parquet" => CreateParquetSource(job),
+            "duckdb" => CreateDuckDbSource(job),
             _ => throw new NotSupportedException($"Source type '{job.Source.Type}' is not supported.")
         };
     }
@@ -130,6 +132,18 @@ public sealed class JobRunner
     private static IDataPipeline<JobRow> CreateJsonSource(JobDefinition job)
     {
         var source = new JobRowJsonSource(job.Source.Path);
+        return new DataPipeline<JobRow>(source.ReadAsync());
+    }
+
+    private static IDataPipeline<JobRow> CreateParquetSource(JobDefinition job)
+    {
+        var source = new JobRowParquetSource(job.Source.Path);
+        return new DataPipeline<JobRow>(source.ReadAsync());
+    }
+
+    private static IDataPipeline<JobRow> CreateDuckDbSource(JobDefinition job)
+    {
+        var source = new JobRowDuckDbSource(job.Source.Path, job.Source.Query!);
         return new DataPipeline<JobRow>(source.ReadAsync());
     }
 

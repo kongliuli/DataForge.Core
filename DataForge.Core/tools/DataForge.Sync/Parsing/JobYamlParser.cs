@@ -40,6 +40,16 @@ public static class JobYamlParser
                 if (string.IsNullOrWhiteSpace(source.Table))
                     throw new InvalidOperationException("Job source.table is required for sqlserver.");
                 break;
+            case "parquet":
+                if (string.IsNullOrWhiteSpace(source.Path))
+                    throw new InvalidOperationException("Job source.path is required for parquet.");
+                break;
+            case "duckdb":
+                if (string.IsNullOrWhiteSpace(source.Path))
+                    throw new InvalidOperationException("Job source.path is required for duckdb.");
+                if (string.IsNullOrWhiteSpace(source.Query))
+                    throw new InvalidOperationException("Job source.query is required for duckdb.");
+                break;
             default:
                 throw new InvalidOperationException($"Unsupported source.type '{source.Type}'.");
         }
@@ -61,6 +71,16 @@ public static class JobYamlParser
                     throw new InvalidOperationException("Job sink.table is required for sqlserver.");
                 if (sink.Mode.Equals("upsert", StringComparison.OrdinalIgnoreCase) && sink.Keys.Count == 0)
                     throw new InvalidOperationException("Job sink.keys is required when mode is upsert.");
+                break;
+            case "parquet":
+                if (string.IsNullOrWhiteSpace(sink.Path))
+                    throw new InvalidOperationException("Job sink.path is required for parquet.");
+                break;
+            case "duckdb":
+                if (string.IsNullOrWhiteSpace(sink.Path))
+                    throw new InvalidOperationException("Job sink.path is required for duckdb (database file).");
+                if (string.IsNullOrWhiteSpace(sink.Table))
+                    throw new InvalidOperationException("Job sink.table is required for duckdb.");
                 break;
             default:
                 throw new InvalidOperationException($"Unsupported sink.type '{sink.Type}'.");

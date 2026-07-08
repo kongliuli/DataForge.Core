@@ -25,6 +25,8 @@ public sealed class SourceDefinition
 
     public string? Table { get; set; }
 
+    public string? Query { get; set; }
+
     public SourceOptionsDefinition? Options { get; set; }
 }
 

@@ -8,7 +8,7 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>dataforge</ToolCommandName>
     <PackageId>DataForge.Sync</PackageId>
-    <Version>0.4.0</Version>
+    <Version>0.5.0</Version>
     <Description>YAML-driven data sync CLI for DataForge.Core (DEC-03)</Description>
   </PropertyGroup>
 
@@ -20,6 +20,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\DataForge.Core\DataForge.Core.csproj" />
     <ProjectReference Include="..\..\src\DataForge.Core.SqlServer\DataForge.Core.SqlServer.csproj" />
+    <ProjectReference Include="..\..\src\DataForge.Core.Parquet\DataForge.Core.Parquet.csproj" />
+    <ProjectReference Include="..\..\src\DataForge.Core.DuckDB\DataForge.Core.DuckDB.csproj" />
   </ItemGroup>
 
 </Project>

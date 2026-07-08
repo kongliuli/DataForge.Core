@@ -115,10 +115,10 @@ static void PrintHelp()
           dataforge help
 
         Supported:
-          source: csv | json | sqlserver
+          source: csv | json | sqlserver | parquet | duckdb
           transforms: where, select
           validate: rules (required/min/max/pattern), onError, badRowOutput
-          sink: csv | json | sqlserver (insert | upsert)
+          sink: csv | json | sqlserver | parquet | duckdb
           schedule: cron (5-field, used by watch)
 
         Variables:

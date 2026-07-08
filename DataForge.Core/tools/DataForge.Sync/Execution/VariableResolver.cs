@@ -21,6 +21,7 @@ public static partial class VariableResolver
         job.Source.Path = ResolveText(job.Source.Path, variables);
         job.Source.Connection = ResolveText(job.Source.Connection ?? string.Empty, variables);
         job.Source.Table = ResolveText(job.Source.Table ?? string.Empty, variables);
+        job.Source.Query = ResolveText(job.Source.Query ?? string.Empty, variables);
 
         job.Sink.Path = ResolveText(job.Sink.Path, variables);
         job.Sink.Connection = ResolveText(job.Sink.Connection ?? string.Empty, variables);
