@@ -8,9 +8,13 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>dataforge</ToolCommandName>
     <PackageId>DataForge.Sync</PackageId>
-    <Version>0.1.0</Version>
-    <Description>YAML-driven data sync CLI for DataForge.Core (DEC-03 scaffold)</Description>
+    <Version>0.3.0</Version>
+    <Description>YAML-driven data sync CLI for DataForge.Core (DEC-03)</Description>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="YamlDotNet" Version="16.3.0" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\DataForge.Core\DataForge.Core.csproj" />

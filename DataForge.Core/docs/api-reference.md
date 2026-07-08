@@ -1,6 +1,38 @@
 # API 完整参考
 
-本文档提供 DataForge.Core 所有公共 API 的完整参考，按命名空间组织。
+> **注意（2026-07-08）**：下文部分章节仍描述早期双泛型 `IDataPipeline<TIn, TOut>` 与已移除的扩展入口。  
+> **以代码为准**：`DataForge.Core` v0.2+ 使用单泛型 `IDataPipeline<T>`，终端方法为 `ToJsonAsync` / `ToCsvAsync` 等。  
+> 快速上手见 [getting-started.md](./getting-started.md)；Sync CLI 见 [tools/DataForge.Sync/README.md](../tools/DataForge.Sync/README.md)。
+
+## 当前公共 API 摘要（v0.2.1）
+
+### 入口 — `DataForgePipeline`
+
+| 方法 | 说明 |
+|------|------|
+| `FromCsv<T>(path, options?)` | CSV → `IDataPipeline<T>` |
+| `FromJson<T>(path, options?)` | JSON → 管道 |
+| `FromMemory<T>(data)` | 内存集合 |
+| `FromExcel<T>(...)` | 抛出 `EXCEL_EXTENSION_REQUIRED`；请用 `DataForge.Core.Excel` |
+| `Merge<T>(sources...)` | 合并多个数据源 |
+
+扩展包：`ExcelPipelineExtensions.FromExcel`、`HttpPipelineExtensions.FromRestApi` 等。
+
+### 管道 — `IDataPipeline<T>`
+
+链式：`Select` / `Where` / `OrderBy`+`ThenBy`+`WithExternalSort` / `ValidateWith` / `WithBadRowOutput`。  
+终端：`ToJsonAsync` / `ToCsvAsync` / `ToListAsync` / `AsAsyncEnumerable`。
+
+### 其它
+
+- `RowError` + `ExportResults.RowErrors`；`.WithBadRowOutput(path)` 导出 NDJSON  
+- `DataForge.Core.DependencyInjection`：`AddDataForge()`
+
+---
+
+## 历史文档（待逐步对齐）
+
+以下章节保留早期设计参考，使用前请对照 `src/DataForge.Core` 源码。
 
 ## 目录
 

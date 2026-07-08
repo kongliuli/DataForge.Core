@@ -1,13 +1,19 @@
 name: example-orders-sync
-# Scaffold only — execution planned for v1.0 (see docs/roadmap-and-iteration.md §8.5)
 
 source:
   type: csv
   path: ./orders.csv
+  options:
+    hasHeader: true
 
 transforms:
   - where: "Amount > 0"
+  - select:
+      OrderId: OrderId
+      Amount: Amount
 
 sink:
   type: json
   path: ./orders-clean.json
+  options:
+    indented: true

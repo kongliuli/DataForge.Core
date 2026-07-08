@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **DataForge.Sync v0.3** — YAML job execution: `dataforge run job.yaml [--var key=value]`
+  - Source: `csv` | `json`
+  - Transforms: `where`, `select`
+  - Sink: `csv` | `json`
+  - Variables: `${VAR}` (CLI / env), `@var` in `where` expressions
+
 ## [0.2.1] - 2026-07-08
 
 ### Added

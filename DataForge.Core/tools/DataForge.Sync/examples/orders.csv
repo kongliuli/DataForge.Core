@@ -1,0 +1,4 @@
+OrderId,Amount,Status
+1001,120.50,OK
+1002,-5.00,VOID
+1003,88.00,OK
