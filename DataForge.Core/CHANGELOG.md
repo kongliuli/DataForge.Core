@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-07-08
+
+### Added
+
+- **DataForge.Sync v0.4** — v1.0 job subset
+  - SQL Server source/sink (`insert` / `upsert` with `keys`)
+  - YAML `validate.rules` (required, min, max, pattern) + `onError` + `badRowOutput`
+  - `schedule` field + `dataforge watch` cron runner (Cronos)
+  - 5 new Sync unit tests (validation, scheduler, SQL YAML)
+
+### Changed
+
+- Sync tool version 0.3.0 → 0.4.0; references `DataForge.Core.SqlServer`
+
+## [0.3.0] - 2026-07-08
+
 ### Added
 
 - **DataForge.Sync v0.3** — YAML job execution: `dataforge run job.yaml [--var key=value]`

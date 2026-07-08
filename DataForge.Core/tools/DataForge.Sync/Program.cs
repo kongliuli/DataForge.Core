@@ -6,7 +6,22 @@ if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
     return args.Length == 0 ? 1 : 0;
 }
 
-if (args[0] == "run")
+try
+{
+    return args[0] switch
+    {
+        "run" => await RunOnceAsync(args),
+        "watch" => await WatchAsync(args),
+        _ => UnknownCommand(args[0])
+    };
+}
+catch (Exception ex)
+{
+    Console.Error.WriteLine($"Error: {ex.Message}");
+    return 1;
+}
+
+static async Task<int> RunOnceAsync(string[] args)
 {
     if (args.Length < 2)
     {
@@ -16,8 +31,7 @@ if (args[0] == "run")
 
     var jobPath = args[1];
     var variables = ParseVariables(args.AsSpan(2));
-    var runner = new JobRunner();
-    var result = await runner.RunAsync(jobPath, variables).ConfigureAwait(false);
+    var result = await new JobRunner().RunAsync(jobPath, variables).ConfigureAwait(false);
 
     if (!result.Success)
     {
@@ -26,14 +40,37 @@ if (args[0] == "run")
     }
 
     var export = result.ExportResults!;
-    Console.WriteLine(
-        $"Job completed: {export.RecordsWritten} record(s) written to {export.OutputPath}");
+    Console.WriteLine($"Job completed: {export.RecordsWritten} record(s) written to {export.OutputPath}");
     return 0;
 }
 
-Console.Error.WriteLine($"Unknown command: {args[0]}");
-PrintHelp();
-return 1;
+static async Task<int> WatchAsync(string[] args)
+{
+    if (args.Length < 2)
+    {
+        Console.Error.WriteLine("Missing job file. Usage: dataforge watch <job.yaml> [--var key=value ...]");
+        return 1;
+    }
+
+    using var cts = new CancellationTokenSource();
+    Console.CancelKeyPress += (_, e) =>
+    {
+        e.Cancel = true;
+        cts.Cancel();
+    };
+
+    var jobPath = args[1];
+    var variables = ParseVariables(args.AsSpan(2));
+    await JobScheduler.WatchAsync(new JobRunner(), jobPath, variables, cts.Token).ConfigureAwait(false);
+    return 0;
+}
+
+static int UnknownCommand(string command)
+{
+    Console.Error.WriteLine($"Unknown command: {command}");
+    PrintHelp();
+    return 1;
+}
 
 static Dictionary<string, string> ParseVariables(ReadOnlySpan<string> args)
 {
@@ -52,9 +89,7 @@ static Dictionary<string, string> ParseVariables(ReadOnlySpan<string> args)
         }
 
         if (arg.StartsWith("--var=", StringComparison.Ordinal))
-        {
             AddVariable(variables, arg["--var=".Length..]);
-        }
     }
 
     return variables;
@@ -76,17 +111,20 @@ static void PrintHelp()
 
         Usage:
           dataforge run <job.yaml> [--var key=value ...]
+          dataforge watch <job.yaml> [--var key=value ...]
           dataforge help
 
-        Supported v0.3:
-          source: csv | json
+        Supported:
+          source: csv | json | sqlserver
           transforms: where, select
-          sink: csv | json
+          validate: rules (required/min/max/pattern), onError, badRowOutput
+          sink: csv | json | sqlserver (insert | upsert)
+          schedule: cron (5-field, used by watch)
 
         Variables:
           --var lastSync=2026-07-01
-          ${DB_CONN} in paths resolves CLI vars then environment variables
-          @lastSync in where expressions resolves --var values
+          ${VAR} in paths/connections — CLI vars then environment
+          @lastSync in where expressions — CLI vars only
 
         Docs: docs/roadmap-and-iteration.md §8.5
         """);

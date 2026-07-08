@@ -1,4 +1,5 @@
 name: example-orders-sync
+schedule: "0 2 * * *"
 
 source:
   type: csv
@@ -11,6 +12,15 @@ transforms:
   - select:
       OrderId: OrderId
       Amount: Amount
+
+validate:
+  onError: continue
+  badRowOutput: ./orders-errors.ndjson
+  rules:
+    - field: OrderId
+      required: true
+    - field: Amount
+      min: 0
 
 sink:
   type: json

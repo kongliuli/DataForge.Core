@@ -622,7 +622,7 @@ CLI：`dotnet dataforge run tools/examples/orders-sync.yaml --var lastSync=2026-
 | R-08 | ✅ | getting-started / README / CHANGELOG 已更新；api-reference 增加 v0.2 摘要头 |
 | R-09 | ✅ | `PipelineRegressionTests` + 全量 128 测试通过 |
 | D-09 | ✅ | `ExternalSortOptions` + `SortEngine` |
-| DEC-03 | ✅ | `tools/DataForge.Sync` YAML 执行引擎 v0.3（csv/json + where/select） |
+| DEC-03 | ✅ | `tools/DataForge.Sync` v0.4：csv/json/sql + validate + watch cron |
 | D-01~D-08 | 🟡 | RowError、WithBadRowOutput、SelectParallelAsync、DI 包、ToDataForge 已完成；Sync 调度/SQL sink 待 v1.0 |
 
 ---

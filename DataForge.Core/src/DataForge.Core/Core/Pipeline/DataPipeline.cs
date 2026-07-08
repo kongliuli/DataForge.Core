@@ -385,6 +385,9 @@ public class DataPipeline<T> : IDataPipeline<T>
         return result;
     }
 
+    internal Task<ExportResults> FinalizeExportResultsAsync(ExportResults result, CancellationToken cancellationToken) =>
+        FinalizeExportAsync(result, cancellationToken);
+
     private async IAsyncEnumerable<T> GetValidatedEnumerableWithoutInterceptors(
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {

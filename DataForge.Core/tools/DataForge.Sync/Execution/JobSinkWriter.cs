@@ -16,7 +16,8 @@ internal static class JobSinkWriter
         {
             "json" => await WriteJsonAsync(rows, sink, cancellationToken).ConfigureAwait(false),
             "csv" => await WriteCsvAsync(rows, sink, cancellationToken).ConfigureAwait(false),
-            _ => throw new NotSupportedException($"Sink type '{sink.Type}' is not supported in v0.3.")
+            "sqlserver" => await JobRowSqlServerSink.WriteAsync(rows, sink, cancellationToken).ConfigureAwait(false),
+            _ => throw new NotSupportedException($"Sink type '{sink.Type}' is not supported.")
         };
     }
 

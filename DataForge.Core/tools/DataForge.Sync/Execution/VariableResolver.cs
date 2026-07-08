@@ -19,7 +19,12 @@ public static partial class VariableResolver
     public static JobDefinition Apply(JobDefinition job, IReadOnlyDictionary<string, string> variables)
     {
         job.Source.Path = ResolveText(job.Source.Path, variables);
+        job.Source.Connection = ResolveText(job.Source.Connection ?? string.Empty, variables);
+        job.Source.Table = ResolveText(job.Source.Table ?? string.Empty, variables);
+
         job.Sink.Path = ResolveText(job.Sink.Path, variables);
+        job.Sink.Connection = ResolveText(job.Sink.Connection ?? string.Empty, variables);
+        job.Sink.Table = ResolveText(job.Sink.Table ?? string.Empty, variables);
 
         foreach (var step in job.Transforms)
         {
@@ -35,6 +40,9 @@ public static partial class VariableResolver
 
     public static string ResolveText(string text, IReadOnlyDictionary<string, string> variables)
     {
+        if (string.IsNullOrEmpty(text))
+            return text;
+
         return EnvPattern().Replace(text, match =>
         {
             var key = match.Groups[1].Value;
@@ -48,6 +56,9 @@ public static partial class VariableResolver
 
     public static string ResolvePath(string path, string jobDirectory)
     {
+        if (string.IsNullOrWhiteSpace(path))
+            return path;
+
         if (Path.IsPathRooted(path))
             return Path.GetFullPath(path);
 

@@ -1,5 +1,6 @@
 using DataForge.Sync.Execution;
 using DataForge.Sync.Parsing;
+using DataForge.Sync.Validation;
 using Xunit;
 
 namespace DataForge.Sync.Tests;
@@ -126,6 +127,93 @@ public class JobRunnerTests
     }
 }
 
+public class JobRowValidatorTests
+{
+    [Fact]
+    public void Validate_FailsRequiredField()
+    {
+        var validator = new JobRowValidator([
+            new Models.YamlValidationRule { Field = "OrderId", Required = true }
+        ]);
+
+        var result = validator.Validate(new JobRow { Values = { ["OrderId"] = "" } });
+        Assert.False(result.IsValid);
+        Assert.Equal("OrderId", result.Errors[0].PropertyName);
+    }
+
+    [Fact]
+    public void Validate_EnforcesMinValue()
+    {
+        var validator = new JobRowValidator([
+            new Models.YamlValidationRule { Field = "Amount", Min = 0 }
+        ]);
+
+        Assert.False(validator.Validate(new JobRow { Values = { ["Amount"] = "-1" } }).IsValid);
+        Assert.True(validator.Validate(new JobRow { Values = { ["Amount"] = "0" } }).IsValid);
+    }
+}
+
+public class JobRunnerValidationTests
+{
+    [Fact]
+    public async Task RunAsync_SkipsInvalidRowsOnContinue()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), "dataforge-sync-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+
+        try
+        {
+            var csvPath = Path.Combine(tempDir, "input.csv");
+            var outPath = Path.Combine(tempDir, "output.json");
+            var errPath = Path.Combine(tempDir, "errors.ndjson");
+            var jobPath = Path.Combine(tempDir, "job.yaml");
+
+            await File.WriteAllTextAsync(csvPath, """
+                OrderId,Amount
+                1,10
+                2,-5
+                """);
+
+            await File.WriteAllTextAsync(jobPath, $$"""
+                source:
+                  type: csv
+                  path: {{csvPath}}
+                validate:
+                  onError: continue
+                  badRowOutput: {{errPath}}
+                  rules:
+                    - field: Amount
+                      min: 0
+                sink:
+                  type: json
+                  path: {{outPath}}
+                """);
+
+            var result = await new JobRunner().RunAsync(jobPath);
+
+            Assert.True(result.Success, result.ErrorMessage);
+            Assert.Equal(1, result.ExportResults!.RecordsWritten);
+            Assert.True(File.Exists(errPath));
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, recursive: true);
+        }
+    }
+}
+
+public class JobSchedulerTests
+{
+    [Fact]
+    public void GetNextOccurrence_ReturnsFutureTime()
+    {
+        var next = JobScheduler.GetNextOccurrence("* * * * *", DateTimeOffset.UtcNow);
+        Assert.NotNull(next);
+        Assert.True(next > DateTimeOffset.UtcNow.AddSeconds(-1));
+    }
+}
+
 public class JobYamlParserTests
 {
     [Fact]
@@ -142,5 +230,40 @@ public class JobYamlParserTests
 
         Assert.Equal("csv", job.Source.Type);
         Assert.Equal("json", job.Sink.Type);
+    }
+
+    [Fact]
+    public void Parse_ReadsSqlServerSink()
+    {
+        var job = JobYamlParser.Parse("""
+            source:
+              type: csv
+              path: ./a.csv
+            sink:
+              type: sqlserver
+              connection: Server=.;Database=Test
+              table: Fact_Orders
+              mode: upsert
+              keys: [OrderId]
+            """);
+
+        Assert.Equal("sqlserver", job.Sink.Type);
+        Assert.Equal("Fact_Orders", job.Sink.Table);
+        Assert.Single(job.Sink.Keys);
+    }
+
+    [Fact]
+    public void Parse_RequiresKeysForUpsert()
+    {
+        Assert.Throws<InvalidOperationException>(() => JobYamlParser.Parse("""
+            source:
+              type: csv
+              path: ./a.csv
+            sink:
+              type: sqlserver
+              connection: Server=.
+              table: T
+              mode: upsert
+            """));
     }
 }

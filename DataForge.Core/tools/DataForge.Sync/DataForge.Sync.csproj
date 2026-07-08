@@ -8,16 +8,18 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>dataforge</ToolCommandName>
     <PackageId>DataForge.Sync</PackageId>
-    <Version>0.3.0</Version>
+    <Version>0.4.0</Version>
     <Description>YAML-driven data sync CLI for DataForge.Core (DEC-03)</Description>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Cronos" Version="0.8.4" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\DataForge.Core\DataForge.Core.csproj" />
+    <ProjectReference Include="..\..\src\DataForge.Core.SqlServer\DataForge.Core.SqlServer.csproj" />
   </ItemGroup>
 
 </Project>

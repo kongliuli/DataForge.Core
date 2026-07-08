@@ -4,9 +4,15 @@ Monorepo CLI tool for YAML-driven data sync jobs (**DEC-03**).
 
 ## Status
 
-**v0.3** — `dataforge run job.yaml` executes CSV/JSON source → `where` / `select` transforms → CSV/JSON sink.
+**v0.4** — full job lifecycle for file + SQL Server pipelines, YAML validation rules, and cron watch.
 
-Planned for later: SQL sinks, validators, cron scheduling (see [roadmap-and-iteration.md](../../docs/roadmap-and-iteration.md) §8.5).
+| Feature | Support |
+|---------|---------|
+| Source | `csv` · `json` · `sqlserver` |
+| Transforms | `where` · `select` |
+| Validate | `rules` (required/min/max/pattern) · `onError` · `badRowOutput` |
+| Sink | `csv` · `json` · `sqlserver` (`insert` / `upsert`) |
+| Schedule | 5-field cron via `dataforge watch` |
 
 ## Build
 
@@ -29,30 +35,56 @@ With variables:
 dataforge run job.yaml --var lastSync=2026-07-01
 ```
 
-- `${VAR}` in paths resolves `--var` values, then environment variables.
-- `@var` in `where` expressions resolves `--var` values only.
+Scheduled watch (Ctrl+C to stop):
 
-## YAML schema (v0.3 subset)
+```bash
+dataforge watch job.yaml
+```
+
+## YAML schema (v0.4)
 
 ```yaml
 name: orders-sync
+schedule: "0 2 * * *"          # optional; used by watch
+
 source:
-  type: csv          # csv | json
+  type: csv                    # csv | json | sqlserver
   path: ./orders.csv
-  options:
-    hasHeader: true
+  # sqlserver:
+  # connection: ${DB_CONN}
+  # table: Orders
+
 transforms:
   - where: "Amount > 0"
   - where: "OrderDate >= @lastSync"
   - select:
       OrderId: OrderId
       Amount: Amount
+
+validate:
+  onError: continue            # continue | fail
+  badRowOutput: ./errors.ndjson
+  rules:
+    - field: OrderId
+      required: true
+    - field: Amount
+      min: 0
+
 sink:
-  type: json         # json | csv
-  path: ./out.json
-  options:
-    indented: true
+  type: sqlserver              # json | csv | sqlserver
+  connection: ${DB_CONN}
+  table: Fact_Orders
+  mode: upsert                 # insert | upsert
+  keys: [OrderId]
+  # file sink:
+  # path: ./out.json
 ```
+
+Variables:
+
+- `--var key=value`
+- `${VAR}` in paths/connections — CLI vars, then environment
+- `@var` in `where` — CLI vars only
 
 ## Install as global tool
 

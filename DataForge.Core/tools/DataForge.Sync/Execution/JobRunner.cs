@@ -4,6 +4,7 @@ using DataForge.Core.Core.Models;
 using DataForge.Sync.Models;
 using DataForge.Sync.Parsing;
 using DataForge.Sync.Sources;
+using DataForge.Sync.Validation;
 
 namespace DataForge.Sync.Execution;
 
@@ -32,11 +33,7 @@ public sealed class JobRunner
             var vars = variables ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             VariableResolver.Apply(job, vars);
-            job.Source.Path = VariableResolver.ResolvePath(job.Source.Path, jobDirectory);
-            job.Sink.Path = VariableResolver.ResolvePath(job.Sink.Path, jobDirectory);
-
-            if (job.Validate?.BadRowOutput != null)
-                job.Validate.BadRowOutput = VariableResolver.ResolvePath(job.Validate.BadRowOutput, jobDirectory);
+            ResolvePaths(job, jobDirectory);
 
             var pipeline = BuildPipeline(job, vars);
             var results = await JobSinkWriter.WriteAsync(
@@ -44,12 +41,32 @@ public sealed class JobRunner
                 job.Sink,
                 cancellationToken).ConfigureAwait(false);
 
+            if (pipeline is DataPipeline<JobRow> dataPipeline &&
+                !string.IsNullOrWhiteSpace(job.Validate?.BadRowOutput))
+            {
+                results = await dataPipeline
+                    .FinalizeExportResultsAsync(results, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
             return new JobRunResult { Success = true, ExportResults = results };
         }
         catch (Exception ex)
         {
             return Fail(ex.Message);
         }
+    }
+
+    private static void ResolvePaths(JobDefinition job, string jobDirectory)
+    {
+        if (!string.IsNullOrWhiteSpace(job.Source.Path))
+            job.Source.Path = VariableResolver.ResolvePath(job.Source.Path, jobDirectory);
+
+        if (!string.IsNullOrWhiteSpace(job.Sink.Path))
+            job.Sink.Path = VariableResolver.ResolvePath(job.Sink.Path, jobDirectory);
+
+        if (job.Validate?.BadRowOutput != null)
+            job.Validate.BadRowOutput = VariableResolver.ResolvePath(job.Validate.BadRowOutput, jobDirectory);
     }
 
     private static IDataPipeline<JobRow> BuildPipeline(
@@ -67,9 +84,19 @@ public sealed class JobRunner
             }
 
             if (step.Select is { Count: > 0 })
-            {
                 pipeline = pipeline.Select(row => ProjectRow(row, step.Select));
-            }
+        }
+
+        if (job.Validate is { Rules.Count: > 0 })
+        {
+            pipeline = pipeline.ValidateWith(new JobRowValidator(job.Validate.Rules));
+
+            pipeline = job.Validate.OnError.Equals("continue", StringComparison.OrdinalIgnoreCase)
+                ? pipeline.ContinueOnValidationError()
+                : pipeline.FailOnValidationError();
+
+            if (!string.IsNullOrWhiteSpace(job.Validate.BadRowOutput))
+                pipeline = pipeline.WithBadRowOutput(job.Validate.BadRowOutput);
         }
 
         return pipeline;
@@ -81,7 +108,8 @@ public sealed class JobRunner
         {
             "csv" => CreateCsvSource(job),
             "json" => CreateJsonSource(job),
-            _ => throw new NotSupportedException($"Source type '{job.Source.Type}' is not supported in v0.3.")
+            "sqlserver" => CreateSqlServerSource(job),
+            _ => throw new NotSupportedException($"Source type '{job.Source.Type}' is not supported.")
         };
     }
 
@@ -105,13 +133,17 @@ public sealed class JobRunner
         return new DataPipeline<JobRow>(source.ReadAsync());
     }
 
+    private static IDataPipeline<JobRow> CreateSqlServerSource(JobDefinition job)
+    {
+        var source = new JobRowSqlServerSource(job.Source.Connection!, job.Source.Table!);
+        return new DataPipeline<JobRow>(source.ReadAsync());
+    }
+
     private static JobRow ProjectRow(JobRow row, Dictionary<string, string> mapping)
     {
         var projected = new JobRow();
         foreach (var (targetField, sourceField) in mapping)
-        {
             projected.Values[targetField] = row.Get(sourceField);
-        }
 
         return projected;
     }
