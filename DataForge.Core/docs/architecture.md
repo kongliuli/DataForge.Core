@@ -2,6 +2,8 @@
 
 本文档详细描述 DataForge.Core 的核心架构设计，包括核心抽象层、接口定义、扩展点设计和依赖关系。后续开发将严格遵循此文档执行。
 
+> **迭代规划**：版本路线图、调研汇总、P0 问题清单见 [roadmap-and-iteration.md](./roadmap-and-iteration.md)。
+
 ## 目录
 
 1. [整体架构](#整体架构)
