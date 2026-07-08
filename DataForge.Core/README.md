@@ -70,6 +70,19 @@ await ExcelPipelineExtensions.FromExcel<Order>("sales.xlsx")
     .ToCsvAsync("validated-orders.csv");
 ```
 
+### 坏行报告（v0.2.1）
+
+```csharp
+var result = await DataForgePipeline
+    .FromCsv<Order>("orders.csv")
+    .ValidateWith(new OrderValidator())
+    .ContinueOnValidationError()
+    .WithBadRowOutput("errors.ndjson")
+    .ToCsvAsync("valid-orders.csv");
+
+Console.WriteLine($"坏行: {result.RowErrors.Count}");
+```
+
 ### 性能监控
 
 ```csharp
@@ -91,6 +104,7 @@ Console.WriteLine($"处理速度: {counter.ItemsPerSecond:F2} 条/秒");
 | CSV | DataForge.Core | 内置支持 |
 | JSON | DataForge.Core | 内置支持 |
 | Excel | DataForge.Core.Excel | 需安装扩展包 |
+| DI 集成 | DataForge.Core.DependencyInjection | `AddDataForge()` |
 | SQL Server | DataForge.Core.SqlServer | 需安装扩展包 |
 | MySQL | DataForge.Core.MySql | 需安装扩展包 |
 | SQLite | DataForge.Core.Sqlite | 需安装扩展包 |

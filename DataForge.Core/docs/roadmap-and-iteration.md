@@ -516,7 +516,7 @@ CLI：`dotnet dataforge run tools/examples/orders-sync.yaml --var lastSync=2026-
 - [x] 所有 P0 问题有对应单元/集成测试且 CI 绿  
 - [x] `WithCounter(...).Where(...).ToListAsync()` 计数等于输出条数  
 - [x] `.ValidateWith(v).Select(...).ToListAsync()` 无效行被拦截或按策略跳过  
-- [x] 仅 Core 时 `FromExcel` 明确失败；引用 Excel 扩展后真实 `.xlsx` round-trip 通过 **(DEC-01)** — *扩展 round-trip 测试待补*  
+- [x] 仅 Core 时 `FromExcel` 明确失败；引用 Excel 扩展后真实 `.xlsx` round-trip 通过 **(DEC-01)**  
 - [ ] README 示例可 copy-paste 编译通过（部分旧文档仍待扫尾）  
 - [x] 无已知 Critical 级静默数据错误  
 
@@ -616,14 +616,14 @@ CLI：`dotnet dataforge run tools/examples/orders-sync.yaml --var lastSync=2026-
 | R-02 | ✅ | `WithParallelization` 标记 Obsolete |
 | R-03 | ✅ | `Select` 前执行验证 |
 | R-04 | ✅ | `ThenBy` 多级排序 |
-| R-05 | ✅ | 核心 `FromExcel` 引导 + 扩展包 ClosedXML |
+| R-05 | ✅ | 核心 `FromExcel` 引导 + 扩展包 ClosedXML + round-trip 测试 |
 | R-06 | ✅ | SqlServer 表名校验 |
 | R-07 | ✅ | SqlServer `DefaultTypeConverter` |
 | R-08 | 🟡 | getting-started / README / CHANGELOG 已更新；api-reference 等待扫尾 |
 | R-09 | ✅ | `PipelineRegressionTests` + 全量 128 测试通过 |
 | D-09 | ✅ | `ExternalSortOptions` + `SortEngine` |
 | DEC-03 | ✅ | `tools/DataForge.Sync` 脚手架 |
-| D-01~D-08 | ⬜ | v0.3 剩余 DX 项（RowError、DI 等） |
+| D-01~D-08 | 🟡 | 部分完成：RowError、WithBadRowOutput、SelectParallelAsync、DI 包、ToDataForge |
 
 ---
 

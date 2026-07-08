@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-07-08
+
+### Added
+
+- `RowError` + `ExportResults.RowErrors` 结构化错误（D-03）
+- `.WithBadRowOutput(path)` 验证失败行导出 NDJSON（D-04）
+- `SelectParallelAsync(selector, maxDop)` 有界并行映射（D-05）
+- `DataForge.Core.DependencyInjection` 包：`AddDataForge()`（D-06）
+- Excel 扩展 `.xlsx` round-trip 集成测试（DEC-01）
+
 ## [0.2.0] - 2026-07-08
 
 ### Added
