@@ -1,5 +1,6 @@
 using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Pipeline;
+using DataForge.Jobs.Catalog;
 using DataForge.Jobs.Models;
 using DataForge.Jobs.Providers;
 
@@ -12,6 +13,7 @@ public static class JobMySqlRegistration
         var provider = new MySqlJobProvider();
         JobProviderRegistry.Register((IJobSourceProvider)provider);
         JobProviderRegistry.Register((IJobSinkProvider)provider);
+        JobCatalog.Register(new MySqlCatalogProvider());
     }
 }
 

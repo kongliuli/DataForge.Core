@@ -1,13 +1,14 @@
 # DataForge.Jobs
 
 声明式作业引擎（薄核心）：YAML → source → transforms → validate → sink。
+另提供 LocalDts 风格的 **Catalog** API（探活 / 列表 / 结构 / 预览）。
 
 - **目标框架**：`net8.0`
 - **版本**：`0.5.0`
 - **内置 provider**：`csv` / `json`
-- **适配包**：`DataForge.Jobs.Sqlite` / `.PostgreSql` / `.SqlServer` / `.Parquet` / `.DuckDB`
+- **适配包**：`DataForge.Jobs.Sqlite` / `.PostgreSql` / `.SqlServer` / `.MySql` / `.Excel` / `.Http` / `.Parquet` / `.DuckDB`
 
-使用数据库或 Parquet 前，引用对应适配包并调用 `AddDataForgeJobs*()` 注册 provider。
+## 作业
 
 ```csharp
 using DataForge.Jobs.Execution;
@@ -20,4 +21,19 @@ JobPostgreSqlRegistration.AddDataForgeJobsPostgreSql();
 var result = await new JobRunner().RunAsync("job.yaml");
 ```
 
-CLI 宿主：`tools/DataForge.Sync`（已注册全部适配包）。
+## Catalog（替代 LocalDts DatabaseHelper）
+
+关系库适配包在 `AddDataForgeJobs*()` 时自动注册 Catalog：
+
+```csharp
+using DataForge.Jobs.Catalog;
+
+var ok = await JobCatalog.TestConnectionAsync("sqlite", conn);
+var tables = await JobCatalog.ListTablesAsync("sqlite", conn);
+var cols = await JobCatalog.DescribeTableAsync("sqlite", conn, "orders");
+var rows = await JobCatalog.PreviewAsync("sqlite", conn, "orders", 20);
+```
+
+已支持：`sqlite` / `postgresql` / `sqlserver` / `mysql`。
+
+CLI：`tools/DataForge.Sync`　Web：`tools/DataForge.Web`　模板：`templates/DataForge.Templates`。

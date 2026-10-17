@@ -2,17 +2,53 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8" />
-  <title>DataForge Web</title>
+  <title>DataForge Local DTS</title>
   <style>
-    body { font-family: sans-serif; max-width: 52rem; margin: 2rem auto; padding: 0 1rem; }
-    textarea { width: 100%; min-height: 16rem; font-family: ui-monospace, monospace; }
+    body { font-family: sans-serif; max-width: 56rem; margin: 2rem auto; padding: 0 1rem; }
+    textarea, input, select { width: 100%; font-family: ui-monospace, monospace; }
+    textarea { min-height: 14rem; }
     pre { background: #f4f4f4; padding: 1rem; overflow: auto; }
+    section { border: 1px solid #ddd; padding: 1rem; margin: 1rem 0; border-radius: 8px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; }
+    button { margin-right: .5rem; margin-top: .5rem; }
   </style>
 </head>
 <body>
-  <h1>DataForge 迁移</h1>
-  <p>源：csv / json / sqlite / postgresql / sqlserver / parquet / duckdb / mysql / excel / http。</p>
-  <textarea id="yaml">name: hello
+  <h1>DataForge Local DTS</h1>
+  <p>替代 LocalDts：连接档案 + 对象浏览 + YAML 作业运行。NuGet 目录能力：sqlite / postgresql / sqlserver / mysql。</p>
+
+  <section>
+    <h2>连接档案</h2>
+    <div class="row">
+      <div>
+        <label>名称</label>
+        <input id="connName" value="demo-sqlite" />
+      </div>
+      <div>
+        <label>类型</label>
+        <select id="connType">
+          <option>sqlite</option>
+          <option>postgresql</option>
+          <option>sqlserver</option>
+          <option>mysql</option>
+        </select>
+      </div>
+    </div>
+    <label>连接串</label>
+    <input id="connString" value="Data Source=./demo.db" />
+    <button id="saveConn">保存连接</button>
+    <button id="testConn">探活</button>
+    <button id="listTables">列出表</button>
+    <pre id="connOut">等待操作</pre>
+    <label>表名（结构/预览）</label>
+    <input id="tableName" value="orders" />
+    <button id="describe">表结构</button>
+    <button id="preview">预览</button>
+  </section>
+
+  <section>
+    <h2>运行作业</h2>
+    <textarea id="yaml">name: hello
 source:
   type: csv
   path: ./input.csv
@@ -20,23 +56,70 @@ sink:
   type: json
   path: ./output.json
 </textarea>
-  <p><button id="run">运行</button></p>
-  <pre id="out">等待运行</pre>
-  <h2>历史</h2>
-  <pre id="history">尚无</pre>
+    <button id="run">运行</button>
+    <pre id="out">等待运行</pre>
+    <h3>历史</h3>
+    <pre id="history">加载中</pre>
+  </section>
+
   <script>
+    const connPayload = () => ({
+      type: document.getElementById('connType').value,
+      connectionString: document.getElementById('connString').value
+    });
+
+    async function post(url, body) {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      return { ok: res.ok, json: await res.json() };
+    }
+
+    document.getElementById('saveConn').onclick = async () => {
+      const body = {
+        id: '',
+        name: document.getElementById('connName').value,
+        type: document.getElementById('connType').value,
+        connectionString: document.getElementById('connString').value
+      };
+      const res = await post('/api/connections', body);
+      document.getElementById('connOut').textContent = JSON.stringify(res.json, null, 2);
+    };
+
+    document.getElementById('testConn').onclick = async () => {
+      const res = await post('/api/catalog/test', connPayload());
+      document.getElementById('connOut').textContent = JSON.stringify(res.json, null, 2);
+    };
+
+    document.getElementById('listTables').onclick = async () => {
+      const res = await post('/api/catalog/tables', connPayload());
+      document.getElementById('connOut').textContent = JSON.stringify(res.json, null, 2);
+    };
+
+    document.getElementById('describe').onclick = async () => {
+      const res = await post('/api/catalog/describe', { ...connPayload(), table: document.getElementById('tableName').value });
+      document.getElementById('connOut').textContent = JSON.stringify(res.json, null, 2);
+    };
+
+    document.getElementById('preview').onclick = async () => {
+      const res = await post('/api/catalog/preview', { ...connPayload(), table: document.getElementById('tableName').value, limit: 20 });
+      document.getElementById('connOut').textContent = JSON.stringify(res.json, null, 2);
+    };
+
     document.getElementById('run').onclick = async () => {
       const out = document.getElementById('out');
       out.textContent = '运行中…';
-      const res = await fetch('/api/jobs/run', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ yaml: document.getElementById('yaml').value })
-      });
-      out.textContent = JSON.stringify(await res.json(), null, 2);
+      const res = await post('/api/jobs/run', { yaml: document.getElementById('yaml').value });
+      out.textContent = JSON.stringify(res.json, null, 2);
       const hist = await fetch('/api/jobs/history');
       document.getElementById('history').textContent = JSON.stringify(await hist.json(), null, 2);
     };
+
+    fetch('/api/jobs/history').then(r => r.json()).then(j => {
+      document.getElementById('history').textContent = JSON.stringify(j, null, 2);
+    });
   </script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 using DataForge.Jobs;
 using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Pipeline;
+using DataForge.Jobs.Catalog;
 using DataForge.Jobs.Models;
 using DataForge.Jobs.Providers;
 
@@ -13,6 +14,7 @@ public static class JobPostgreSqlRegistration
         var provider = new PostgreSqlJobProvider();
         JobProviderRegistry.Register((IJobSourceProvider)provider);
         JobProviderRegistry.Register((IJobSinkProvider)provider);
+        JobCatalog.Register(new PostgreSqlCatalogProvider());
     }
 }
 
