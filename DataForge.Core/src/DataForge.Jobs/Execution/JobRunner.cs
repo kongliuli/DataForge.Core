@@ -10,9 +10,6 @@ namespace DataForge.Jobs.Execution;
 
 public sealed class JobRunner
 {
-    [ThreadStatic]
-    private static string? _pendingWatermark;
-
     public async Task<JobRunResult> RunAsync(
         string jobFilePath,
         IReadOnlyDictionary<string, string>? variables = null,
@@ -59,7 +56,6 @@ public sealed class JobRunner
                 ? null
                 : await JobWatermark.ReadAsync(job.Watermark, cancellationToken).ConfigureAwait(false);
             string? nextWatermark = watermarkValue;
-            _pendingWatermark = watermarkValue;
 
             ExportResults results;
             if (job.Sources.Count > 0)
@@ -74,7 +70,7 @@ public sealed class JobRunner
             }
             else
             {
-                var pipeline = BuildPipeline(job, vars);
+                var pipeline = BuildPipeline(job, vars, watermarkValue);
                 var rows = WithProgress(
                     pipeline.AsAsyncEnumerable(cancellationToken),
                     jobName,
@@ -201,9 +197,10 @@ public sealed class JobRunner
 
     private static IDataPipeline<JobRow> BuildPipeline(
         JobDefinition job,
-        IReadOnlyDictionary<string, string> variables)
+        IReadOnlyDictionary<string, string> variables,
+        string? watermarkValue)
     {
-        var pipeline = CreateSource(job);
+        var pipeline = CreateSource(job, watermarkValue);
 
         foreach (var step in job.Transforms)
         {
@@ -261,13 +258,13 @@ public sealed class JobRunner
             yield return row;
     }
 
-    private static IDataPipeline<JobRow> CreateSource(JobDefinition job)
+    private static IDataPipeline<JobRow> CreateSource(JobDefinition job, string? watermarkValue)
     {
         if (!JobProviderRegistry.TryGetSource(job.Source.Type, out var provider))
             throw new NotSupportedException(
                 $"Source type '{job.Source.Type}' is not registered. Reference the matching DataForge.Jobs.* adapter and call its registration method.");
 
-        return provider.Create(job, _pendingWatermark);
+        return provider.Create(job, watermarkValue);
     }
 
     private static JobRow ProjectRow(JobRow row, Dictionary<string, string> mapping)
