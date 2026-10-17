@@ -1,6 +1,9 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
+using DataForge.Web;
+using DataForge.Jobs.Scheduling;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 
@@ -8,6 +11,46 @@ namespace DataForge.Web.Tests;
 
 public class ScheduleRestartTests
 {
+    [Fact]
+    public async Task FailedSave_DoesNotActivateOrRemoveRegistrations()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "df-store-failure-" + Guid.NewGuid().ToString("N"));
+        var path = Path.Combine(dir, "schedules.json");
+        Directory.CreateDirectory(dir);
+        try
+        {
+            await using var factory = new WebApplicationFactory<Program>()
+                .WithWebHostBuilder(builder => builder.UseSetting("Schedules:Path", path));
+            using var client = factory.CreateClient();
+            var store = factory.Services.GetRequiredService<PersistentSchedules>();
+            var service = factory.Services.GetRequiredService<JobScheduleService>();
+            const string yaml = "name: failure\nschedule: '0 0 1 1 *'\nsource:\n  type: csv\n  path: ./in.csv\nsink:\n  type: json\n  path: ./out.json";
+            await store.AddAsync(new RegisterScheduleRequest(yaml, "existing", false, null), default);
+            // A directory at the destination makes replacement fail on every platform.
+            var backup = path + ".backup";
+            File.Move(path, backup);
+            Directory.CreateDirectory(path);
+            try
+            {
+                var addError = await Record.ExceptionAsync(() => store.AddAsync(
+                    new RegisterScheduleRequest(yaml, "rejected", true, null), default));
+                Assert.True(addError is IOException or UnauthorizedAccessException, addError?.ToString());
+                Assert.Null(service.Get("rejected"));
+                var removeError = await Record.ExceptionAsync(() => store.RemoveAsync("existing", default));
+                Assert.True(removeError is IOException or UnauthorizedAccessException, removeError?.ToString());
+                Assert.NotNull(service.Get("existing"));
+            }
+            finally
+            {
+                Directory.Delete(path);
+                File.Move(backup, path);
+            }
+            Assert.Equal("existing", Assert.Single(await ScheduleFileStore.LoadAsync(path)).Id);
+            Assert.Empty(Directory.GetFiles(dir, "*.tmp"));
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
     [Fact]
     public async Task RegistrationAndDeletionSurviveHostRestart()
     {
