@@ -139,7 +139,8 @@ public sealed class JobScheduler
         }
     }
 
-    /// <summary>Reads the job file, then schedules it.</summary>
+    /// <summary>Uses the initial cron schedule, reloading the job file before every execution.
+    /// Restart the watcher to apply changes to the cron expression.</summary>
     public async Task WatchFileAsync(
         string jobFilePath,
         IReadOnlyDictionary<string, string>? variables = null,
@@ -147,7 +148,22 @@ public sealed class JobScheduler
     {
         var yaml = await File.ReadAllTextAsync(jobFilePath, cancellationToken).ConfigureAwait(false);
         var job = JobYamlParser.Parse(yaml);
-        await WatchAsync(job, jobFilePath, variables, cancellationToken).ConfigureAwait(false);
+        var watcher = new JobScheduler(_runner, TimeZone, _progress)
+        {
+            Clock = Clock,
+            DelayAsync = DelayAsync,
+            MaxRuns = MaxRuns,
+            OnTick = OnTick,
+            OnWaiting = OnWaiting,
+            Executor = async (_, path, vars, token) =>
+            {
+                if (Executor is null)
+                    return await _runner.RunAsync(path, vars, token, _progress).ConfigureAwait(false);
+                var currentYaml = await File.ReadAllTextAsync(path, token).ConfigureAwait(false);
+                return await Executor(JobYamlParser.Parse(currentYaml), path, vars, token).ConfigureAwait(false);
+            }
+        };
+        await watcher.WatchAsync(job, jobFilePath, variables, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Returns the next due instant of a job file, or null when it has no schedule.</summary>

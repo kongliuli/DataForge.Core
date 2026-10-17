@@ -7,6 +7,41 @@ namespace DataForge.Sync.Tests;
 public class SchedulePersistenceTests
 {
     [Fact]
+    public async Task WatchFile_ReloadsDefinitionBetweenRuns()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(dir, "a.csv"), "Id,Name\n1,First\n");
+            await File.WriteAllTextAsync(Path.Combine(dir, "b.csv"), "Id,Name\n2,Second\n");
+            var path = Path.Combine(dir, "job.yaml");
+            var yaml = "name: reload\nschedule: '* * * * *'\nsource:\n  type: csv\n  path: ./a.csv\nsink:\n  type: json\n  path: ./out.json\n";
+            await File.WriteAllTextAsync(path, yaml);
+            var now = DateTimeOffset.UtcNow;
+            var waits = 0;
+            var ticks = new List<JobScheduleTick>();
+            var scheduler = new JobScheduler
+            {
+                MaxRuns = 2,
+                Clock = () => now,
+                DelayAsync = async (delay, token) =>
+                {
+                    now += delay;
+                    if (++waits == 2)
+                        await File.WriteAllTextAsync(path, yaml.Replace("a.csv", "b.csv"), token);
+                },
+                OnTick = ticks.Add
+            };
+            await scheduler.WatchFileAsync(path);
+            Assert.Equal(2, ticks.Count);
+            Assert.All(ticks, tick => Assert.True(tick.Success, tick.Error));
+            Assert.Contains("Second", await File.ReadAllTextAsync(Path.Combine(dir, "out.json")));
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
     public async Task RepeatedRuns_ResolveEnvironmentFromOriginalYaml()
     {
         var dir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
