@@ -1,0 +1,22 @@
+name: join-customers-orders
+sources:
+  - type: sqlite
+    alias: c
+    connection: Data Source=showcase.db
+    table: customers
+  - type: sqlite
+    alias: o
+    connection: Data Source=showcase.db
+    table: orders
+    on: c_Id = o_CustomerId
+transforms:
+  - select:
+      Buyer: c_Name
+      OrderTotal: o_Amount
+sink:
+  type: sqlite
+  connection: Data Source=showcase-out.db
+  table: customer_order_summary
+  createTable: true
+  mode: upsert
+  keys: [Buyer, OrderTotal]

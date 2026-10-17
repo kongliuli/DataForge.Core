@@ -35,7 +35,7 @@ public static class JobRowSqliteSink
             batch.Add(row);
             if (batch.Count >= batchSize)
             {
-                count += await WriteBatchAsync(batch, connectionString, quotedTable, upsert, keyColumns, cancellationToken)
+                count += await WriteBatchAsync(batch, connectionString, quotedTable, upsert, keyColumns, sink.CreateTable, cancellationToken)
                     .ConfigureAwait(false);
                 batch.Clear();
             }
@@ -43,7 +43,7 @@ public static class JobRowSqliteSink
 
         if (batch.Count > 0)
         {
-            count += await WriteBatchAsync(batch, connectionString, quotedTable, upsert, keyColumns, cancellationToken)
+            count += await WriteBatchAsync(batch, connectionString, quotedTable, upsert, keyColumns, sink.CreateTable, cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -62,6 +62,7 @@ public static class JobRowSqliteSink
         string quotedTable,
         bool upsert,
         string[] keyColumns,
+        bool createTable,
         CancellationToken cancellationToken)
     {
         if (batch.Count == 0)
@@ -69,6 +70,8 @@ public static class JobRowSqliteSink
 
         await using var connection = new SqliteConnection(connectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        if (createTable)
+            await EnsureTableAsync(connection, quotedTable, batch[0], keyColumns, cancellationToken).ConfigureAwait(false);
         await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(cancellationToken)
             .ConfigureAwait(false);
 
@@ -126,5 +129,24 @@ public static class JobRowSqliteSink
             await transaction.RollbackAsync(cancellationToken).ConfigureAwait(false);
             throw;
         }
+    }
+
+    private static async Task EnsureTableAsync(
+        SqliteConnection connection,
+        string quotedTable,
+        JobRow sample,
+        string[] keyColumns,
+        CancellationToken cancellationToken)
+    {
+        var columns = sample.Values.Keys.Select(SqlIdentifier.ValidateTableName).ToArray();
+        var defs = columns.Select(column =>
+        {
+            var quoted = SqlIdentifiers.QuoteSqlite(column);
+            var pk = keyColumns.Contains(column, StringComparer.OrdinalIgnoreCase) ? " PRIMARY KEY" : "";
+            return $"{quoted} TEXT{pk}";
+        });
+        await using var command = connection.CreateCommand();
+        command.CommandText = $"CREATE TABLE IF NOT EXISTS {quotedTable} ({string.Join(", ", defs)})";
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 }

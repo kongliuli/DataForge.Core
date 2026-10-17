@@ -9,6 +9,8 @@
 | `jobs/01-homo.yaml` | 同构：SQLite `orders` → PostgreSQL `orders` |
 | `jobs/02-split-headers.yaml` + `02-split-lines.yaml` | 单表拆多表（两个 job） |
 | `jobs/03-merge.yaml` | 异构投影：列重命名后写入 SQLite 摘要表 |
+| `jobs/04-join.yaml` | 多源等值 JOIN（N→1）+ `createTable` + upsert |
+| `jobs/05-batch.yaml` | `jobs:` 顺序编排，失败即停 |
 
 ## 准备
 

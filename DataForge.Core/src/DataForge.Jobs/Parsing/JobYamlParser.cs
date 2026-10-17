@@ -11,18 +11,48 @@ public static class JobYamlParser
         .IgnoreUnmatchedProperties()
         .Build();
 
-    public static JobDefinition Parse(string yaml)
+    public static JobDefinition Parse(string yaml) => ParseMany(yaml)[0];
+
+    public static IReadOnlyList<JobDefinition> ParseMany(string yaml)
     {
-        var job = Deserializer.Deserialize<JobDefinition>(yaml)
+        if (yaml.Contains("jobs:", StringComparison.Ordinal))
+        {
+            var file = Deserializer.Deserialize<JobFile>(yaml)
+                ?? throw new InvalidOperationException("Job YAML deserialized to null.");
+            if (file.Jobs.Count > 0)
+            {
+                foreach (var job in file.Jobs)
+                    ValidateJob(job);
+                return file.Jobs;
+            }
+        }
+
+        var single = Deserializer.Deserialize<JobDefinition>(yaml)
             ?? throw new InvalidOperationException("Job YAML deserialized to null.");
+        ValidateJob(single);
+        return [single];
+    }
 
-        if (string.IsNullOrWhiteSpace(job.Source.Type))
-            throw new InvalidOperationException("Job source.type is required.");
+    private static void ValidateJob(JobDefinition job)
+    {
+        if (job.Sources.Count > 0)
+        {
+            ValidateSource(job.Sources[0].ToSource());
+            for (var i = 1; i < job.Sources.Count; i++)
+            {
+                ValidateSource(job.Sources[i].ToSource());
+                if (string.IsNullOrWhiteSpace(job.Sources[i].On))
+                    throw new InvalidOperationException($"Job sources[{i}].on is required for joins.");
+            }
+        }
+        else
+        {
+            if (string.IsNullOrWhiteSpace(job.Source.Type))
+                throw new InvalidOperationException("Job source.type is required.");
+            ValidateSource(job.Source);
+        }
 
-        ValidateSource(job.Source);
         ValidateSink(job.Sink);
-
-        return job;
     }
 
     private static void ValidateSource(SourceDefinition source)

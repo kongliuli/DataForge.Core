@@ -43,19 +43,29 @@ static async Task<int> RunOnceAsync(string[] args)
 
     var jobPath = args[1];
     var (variables, reportPath) = ParseRunOptions(args.AsSpan(2));
-    var result = await new JobRunner().RunAsync(jobPath, variables).ConfigureAwait(false);
+    var results = await JobBatch.RunFileAsync(jobPath, variables).ConfigureAwait(false);
 
-    if (!string.IsNullOrWhiteSpace(reportPath))
-        await JobRunReportWriter.WriteAsync(result, reportPath).ConfigureAwait(false);
-
-    if (!result.Success)
+    foreach (var result in results)
     {
-        Console.Error.WriteLine($"Job failed: {result.ErrorMessage}");
-        return 1;
-    }
+        if (!string.IsNullOrWhiteSpace(reportPath))
+        {
+            var report = results.Count == 1
+                ? reportPath
+                : Path.Combine(
+                    Path.GetDirectoryName(reportPath) ?? ".",
+                    Path.GetFileNameWithoutExtension(reportPath) + "-" + (result.JobName ?? "job") + Path.GetExtension(reportPath));
+            await JobRunReportWriter.WriteAsync(result, report).ConfigureAwait(false);
+        }
 
-    var export = result.ExportResults!;
-    Console.WriteLine($"Job completed: {export.RecordsWritten} record(s) written to {export.OutputPath}");
+        if (!result.Success)
+        {
+            Console.Error.WriteLine($"Job failed: {result.ErrorMessage}");
+            return 1;
+        }
+
+        var export = result.ExportResults!;
+        Console.WriteLine($"Job completed: {export.RecordsWritten} record(s) written to {export.OutputPath}");
+    }
     if (!string.IsNullOrWhiteSpace(reportPath))
         Console.WriteLine($"Report written to {Path.GetFullPath(reportPath)}");
     return 0;

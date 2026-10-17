@@ -36,7 +36,7 @@ public static class JobRowPostgreSqlSink
             batch.Add(row);
             if (batch.Count >= batchSize)
             {
-                count += await WriteBatchAsync(batch, connectionString, quotedTable, upsert, keyColumns, cancellationToken)
+                count += await WriteBatchAsync(batch, connectionString, quotedTable, upsert, keyColumns, sink.CreateTable, cancellationToken)
                     .ConfigureAwait(false);
                 batch.Clear();
             }
@@ -44,7 +44,7 @@ public static class JobRowPostgreSqlSink
 
         if (batch.Count > 0)
         {
-            count += await WriteBatchAsync(batch, connectionString, quotedTable, upsert, keyColumns, cancellationToken)
+            count += await WriteBatchAsync(batch, connectionString, quotedTable, upsert, keyColumns, sink.CreateTable, cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -63,6 +63,7 @@ public static class JobRowPostgreSqlSink
         string quotedTable,
         bool upsert,
         string[] keyColumns,
+        bool createTable,
         CancellationToken cancellationToken)
     {
         if (batch.Count == 0)
@@ -70,6 +71,8 @@ public static class JobRowPostgreSqlSink
 
         await using var connection = new NpgsqlConnection(connectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
+        if (createTable)
+            await EnsureTableAsync(connection, quotedTable, batch[0], keyColumns, cancellationToken).ConfigureAwait(false);
         await using var transaction = await connection.BeginTransactionAsync(cancellationToken).ConfigureAwait(false);
 
         try
@@ -150,5 +153,24 @@ public static class JobRowPostgreSqlSink
             return dt;
 
         return value;
+    }
+
+    private static async Task EnsureTableAsync(
+        NpgsqlConnection connection,
+        string quotedTable,
+        JobRow sample,
+        string[] keyColumns,
+        CancellationToken cancellationToken)
+    {
+        var columns = sample.Values.Keys.Select(SqlIdentifier.ValidateTableName).ToArray();
+        var defs = columns.Select(column =>
+        {
+            var quoted = SqlIdentifiers.QuotePostgreSql(column);
+            var pk = keyColumns.Contains(column, StringComparer.OrdinalIgnoreCase) ? " PRIMARY KEY" : "";
+            return $"{quoted} text{pk}";
+        });
+        await using var command = connection.CreateCommand();
+        command.CommandText = $"CREATE TABLE IF NOT EXISTS {quotedTable} ({string.Join(", ", defs)})";
+        await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);
     }
 }

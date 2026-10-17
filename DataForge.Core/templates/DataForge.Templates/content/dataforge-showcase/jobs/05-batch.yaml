@@ -1,0 +1,34 @@
+name: ordered-migration
+jobs:
+  - name: headers
+    source:
+      type: sqlite
+      connection: Data Source=showcase.db
+      table: sales_flat
+    transforms:
+      - select:
+          OrderId: OrderId
+          Customer: Customer
+    sink:
+      type: postgresql
+      connection: Host=127.0.0.1;Port=5433;Username=dataforge;Password=dataforge;Database=dataforge
+      table: order_headers
+      createTable: true
+      mode: upsert
+      keys: [OrderId]
+  - name: lines
+    source:
+      type: sqlite
+      connection: Data Source=showcase.db
+      table: sales_flat
+    transforms:
+      - select:
+          OrderId: OrderId
+          Sku: Sku
+          Qty: Qty
+    sink:
+      type: postgresql
+      connection: Host=127.0.0.1;Port=5433;Username=dataforge;Password=dataforge;Database=dataforge
+      table: order_lines
+      createTable: true
+      mode: insert
