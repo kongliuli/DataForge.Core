@@ -16,6 +16,7 @@
 | [export.md](./export.md) | 导出（真实选项 / `ExportResults`） |
 | [scenarios.md](./scenarios.md) | 4 个可运行场景 |
 | [scenarios-sqlite-postgresql.md](./scenarios-sqlite-postgresql.md) | SQLite ↔ PostgreSQL 跨库（同构/拆表/合表） |
+| [product-vision-local-dts.md](./product-vision-local-dts.md) | **最终目标**：Jobs 引擎底座 + Local DTS 控制台（对照阿里云 DTS / LocalDts） |
 | [design-migration-nuget-foundation.md](./design-migration-nuget-foundation.md) | 模板化迁移：Jobs 引擎 NuGet + 模板包分层（提案） |
 | [faq.md](./faq.md) | 常见问题 |
 
