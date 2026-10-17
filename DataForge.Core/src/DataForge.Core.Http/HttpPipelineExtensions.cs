@@ -1,3 +1,4 @@
+using DataForge.Core;
 using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Pipeline;
 using System.Net.Http;
@@ -9,9 +10,6 @@ namespace DataForge.Core.Http;
 
 public static class HttpPipelineExtensions
 {
-    public static IDataPipeline<T> FromRestApi<T>(this DataForgePipeline builder, string baseUrl, string endpoint, RestApiSourceOptions? options = null)
-        => FromRestApi<T>(baseUrl, endpoint, options);
-
     public static IDataPipeline<T> FromRestApi<T>(string baseUrl, string endpoint, RestApiSourceOptions? options = null)
     {
         var sourceOptions = options ?? new RestApiSourceOptions();
@@ -20,9 +18,6 @@ public static class HttpPipelineExtensions
         var source = new RestApiSource<T>(null, sourceOptions);
         return new DataPipeline<T>(EnumerateAndDispose(source, paginated: false));
     }
-
-    public static IDataPipeline<T> FromRestApi<T>(this DataForgePipeline builder, HttpClient httpClient, string endpoint, RestApiSourceOptions? options = null)
-        => FromRestApi<T>(httpClient, endpoint, options);
 
     public static IDataPipeline<T> FromRestApi<T>(HttpClient httpClient, string endpoint, RestApiSourceOptions? options = null)
     {
@@ -37,8 +32,11 @@ public static class HttpPipelineExtensions
         return new DataPipeline<T>(source.ReadAsync());
     }
 
-    public static IDataPipeline<T> FromRestApiWithPagination<T>(this DataForgePipeline builder, string baseUrl, string endpoint, RestApiSourceOptions? options = null)
-        => FromRestApiWithPagination<T>(baseUrl, endpoint, options);
+    public static IDataPipeline<T> FromRestApi<T>(this DataForgePipeline _, string baseUrl, string endpoint, RestApiSourceOptions? options = null)
+        => FromRestApi<T>(baseUrl, endpoint, options);
+
+    public static IDataPipeline<T> FromRestApi<T>(this DataForgePipeline _, HttpClient httpClient, string endpoint, RestApiSourceOptions? options = null)
+        => FromRestApi<T>(httpClient, endpoint, options);
 
     public static IDataPipeline<T> FromRestApiWithPagination<T>(string baseUrl, string endpoint, RestApiSourceOptions? options = null)
     {
@@ -48,6 +46,9 @@ public static class HttpPipelineExtensions
         var source = new RestApiSource<T>(null, sourceOptions);
         return new DataPipeline<T>(EnumerateAndDispose(source, paginated: true));
     }
+
+    public static IDataPipeline<T> FromRestApiWithPagination<T>(this DataForgePipeline _, string baseUrl, string endpoint, RestApiSourceOptions? options = null)
+        => FromRestApiWithPagination<T>(baseUrl, endpoint, options);
 
     public static async Task<ExportResults> ToRestApi<T>(this IDataPipeline<T> pipeline, string baseUrl, string endpoint, RestApiTargetOptions? options = null, CancellationToken cancellationToken = default)
     {

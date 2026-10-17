@@ -88,6 +88,12 @@ public interface IDataPipeline<T>
     Task<ExportResults> ToConsoleAsync(Func<T, string>? formatter = null, CancellationToken cancellationToken = default);
 
     Task<ExportResults> ToStreamAsync(Stream stream, ExportFormat format, CancellationToken cancellationToken = default);
+
+    IDataPipeline<T> WithExternalSort(ExternalSortOptions? options = null);
+
+    IDataPipeline<TResult> SelectParallelAsync<TResult>(Func<T, Task<TResult>> selector, int maxDegreeOfParallelism = 4);
+
+    IDataPipeline<T> WithBadRowOutput(string filePath);
 }
 
 public interface IGroupedDataPipeline<TKey, TElement> where TKey : notnull

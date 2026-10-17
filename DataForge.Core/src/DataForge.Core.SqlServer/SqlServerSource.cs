@@ -12,6 +12,7 @@ namespace DataForge.Core.SqlServer;
 
 public class SqlServerSource<T> : IRelationalDataSource<T> where T : new()
 {
+    private static readonly ITypeConverter TypeConverter = new DefaultTypeConverter();
     private readonly string _connectionString;
     private readonly string _tableName;
     private readonly string _quotedTableName;
@@ -29,13 +30,7 @@ public class SqlServerSource<T> : IRelationalDataSource<T> where T : new()
 
     public async IAsyncEnumerable<T> ReadAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        using var connection = new SqlConnection(_connectionString);
-        await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-        using var command = connection.CreateCommand();
-        command.CommandText = $"SELECT * FROM {_quotedTableName}";
-        using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-
-        await foreach (var item in MapReaderAsync(reader, cancellationToken).ConfigureAwait(false))
+        await foreach (var item in QueryAsync($"SELECT * FROM {_quotedTableName}", null, cancellationToken).ConfigureAwait(false))
         {
             yield return item;
         }
@@ -90,12 +85,9 @@ public class SqlServerSource<T> : IRelationalDataSource<T> where T : new()
 
     private static async IAsyncEnumerable<T> MapReaderAsync(
         SqlDataReader reader,
-        [EnumeratorCancellation] CancellationToken cancellationToken)
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-        var columns = new HashSet<string>(
-            Enumerable.Range(0, reader.FieldCount).Select(reader.GetName),
-            StringComparer.OrdinalIgnoreCase);
 
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
@@ -103,28 +95,18 @@ public class SqlServerSource<T> : IRelationalDataSource<T> where T : new()
             var item = new T();
             foreach (var prop in properties)
             {
-                if (!columns.Contains(prop.Name) || !prop.CanWrite)
-                {
-                    continue;
-                }
-
-                var ordinal = reader.GetOrdinal(prop.Name);
-                if (reader.IsDBNull(ordinal))
-                {
-                    continue;
-                }
-
                 try
                 {
-                    var raw = reader.GetValue(ordinal);
-                    var converted = new DefaultTypeConverter().Convert(raw, prop.PropertyType);
-                    prop.SetValue(item, converted);
+                    var ordinal = reader.GetOrdinal(prop.Name);
+                    if (!reader.IsDBNull(ordinal))
+                    {
+                        var raw = reader.GetValue(ordinal);
+                        prop.SetValue(item, TypeConverter.Convert(raw, prop.PropertyType));
+                    }
                 }
-                catch (Exception ex)
+                catch
                 {
-                    throw new InvalidOperationException(
-                        $"Failed to map SQL Server column '{prop.Name}' onto {typeof(T).Name}.{prop.Name}.",
-                        ex);
+                    // skip unmapped columns
                 }
             }
 

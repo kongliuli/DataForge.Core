@@ -24,7 +24,7 @@ public class ExcelRoundTripTests
                     new Row { Id = 1, Name = "Alpha" },
                     new Row { Id = 2, Name = "Beta" }
                 })
-                .ToExcelAsync(path, new ExcelExportOptions { SheetName = "Items", IncludeHeader = true });
+                .ToExcel(path, new ExcelExportOptions { SheetName = "Items", IncludeHeader = true });
 
             written.RecordsWritten.Should().Be(2);
             File.Exists(path).Should().BeTrue();

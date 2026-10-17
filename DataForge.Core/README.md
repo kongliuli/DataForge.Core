@@ -8,7 +8,7 @@ DataForge.Core 是一个面向 .NET 开发者的轻量级数据处理核心库�
 
 ## ✨ 核心特性
 
-- **统一数据源抽象**: 支持 CSV、JSON、数据库、REST API 等多种数据源的统一接入；核心包含 Excel 占位实现，真实 `.xlsx` 读写需安装 `DataForge.Core.Excel`
+- **统一数据源抽象**: 支持 CSV、JSON、Excel、数据库、REST API 等多种数据源的统一接入
 - **管道式处理**: 链式 API 设计，支持延迟执行和流式处理
 - **内置数据验证**: 支持 FluentValidation 集成和自定义验证规则
 - **高性能导出**: 批量写入、内存流处理、大文件分片导出
@@ -61,12 +61,26 @@ public class OrderValidator : DataValidator<Order>
     }
 }
 
-// 真实 Excel（.xlsx）请安装 DataForge.Core.Excel；核心 FromExcel/ToExcelAsync 仅为无依赖占位实现
-await DataForgePipeline
-    .FromExcel<Order>("sales.xlsx")
+```csharp
+using DataForge.Core.Excel;
+
+await ExcelPipelineExtensions.FromExcel<Order>("sales.xlsx")
     .ValidateWith(new OrderValidator())
     .ContinueOnValidationError()
     .ToCsvAsync("validated-orders.csv");
+```
+
+### 坏行报告（v0.2.1）
+
+```csharp
+var result = await DataForgePipeline
+    .FromCsv<Order>("orders.csv")
+    .ValidateWith(new OrderValidator())
+    .ContinueOnValidationError()
+    .WithBadRowOutput("errors.ndjson")
+    .ToCsvAsync("valid-orders.csv");
+
+Console.WriteLine($"坏行: {result.RowErrors.Count}");
 ```
 
 ### 性能监控
@@ -88,8 +102,9 @@ Console.WriteLine($"处理速度: {counter.ItemsPerSecond:F2} 条/秒");
 | 数据源 | 包名 | 说明 |
 |--------|------|------|
 | CSV | DataForge.Core | 内置支持 |
-| JSON | DataForge.Core | 核心内置 `FromJson` / `ToJsonAsync`（`System.Text.Json`）；`DataForge.Core.Json` 为扩展包，提供额外选项与扩展方法 |
-| Excel | DataForge.Core（占位） / DataForge.Core.Excel | 核心 `FromExcel` / `ToExcelAsync` 仅为无依赖占位（按逗号分隔文本读写）；真实 `.xlsx` 需安装 `DataForge.Core.Excel`（ClosedXML） |
+| JSON | DataForge.Core | 内置支持 |
+| Excel | DataForge.Core.Excel | 需安装扩展包 |
+| DI 集成 | DataForge.Core.DependencyInjection | `AddDataForge()` |
 | SQL Server | DataForge.Core.SqlServer | 需安装扩展包 |
 | MySQL | DataForge.Core.MySql | 需安装扩展包 |
 | SQLite | DataForge.Core.Sqlite | 需安装扩展包 |
@@ -115,13 +130,15 @@ DataForge.Core/
 │   ├── DataForge.Core.SqlServer/    # SQL Server 支持
 │   ├── DataForge.Core.MySql/        # MySQL 支持
 │   ├── DataForge.Core.Sqlite/       # SQLite 支持
-│   ├── DataForge.Core.Excel/        # 真实 Excel（ClosedXML）；核心另有占位实现
-│   ├── DataForge.Core.Json/         # JSON 扩展包（核心已内置基础 JSON）
+│   ├── DataForge.Core.Excel/        # Excel 支持（使用 ClosedXML）
+│   ├── DataForge.Core.Json/         # JSON 扩展包
 │   ├── DataForge.Core.Http/         # REST API 支持
 │   └── DataForge.Core.FluentValidation/  # FluentValidation 集成
 ├── tests/
 │   ├── DataForge.Core.Tests/        # 单元测试
 │   └── DataForge.Core.IntegrationTests/  # 集成测试
+├── tools/
+│   └── DataForge.Sync/              # YAML 同步 CLI（DEC-03 脚手架）
 ├── docs/                            # 文档
 ├── README.md
 ├── CHANGELOG.md
@@ -134,13 +151,11 @@ DataForge.Core/
 ### 多源数据合并
 
 ```csharp
-using DataForge.Core.Core.Sources.Implementations;
-
 var customers = await DataForgePipeline
     .Merge(
-        new CsvSource<Customer>("customers.csv"),
-        new JsonSource<Customer>("new-customers.json"),
-        new MemorySource<Customer>(existingCustomers)
+        DataForgePipeline.FromCsv<Customer>("customers.csv").Source,
+        DataForgePipeline.FromJson<Customer>("new-customers.json").Source,
+        DataForgePipeline.FromMemory(existingCustomers).Source
     )
     .Select(c => new CustomerDto
     {
@@ -155,17 +170,16 @@ var customers = await DataForgePipeline
 ### 增量数据同步
 
 ```csharp
-using DataForge.Core.SqlServer;
-
 public async Task<ExportResults> SyncOrders(DateTime lastSyncTime)
 {
-    return await SqlServerPipelineExtensions
-        .FromSqlServer<Order>(connectionString, "Orders")
+    return await DataForgePipeline
+        .FromSqlServer<Order>(connectionString)
         .Where(o => o.UpdatedAt > lastSyncTime)
         .ToSqlServer(targetConnection, "Fact_Orders", new SqlServerExportOptions
         {
-            BatchSize = 2000
-            // InsertMode / Upsert 选项以扩展包 SqlServerExportOptions 实际字段为准
+            BatchSize = 2000,
+            InsertMode = InsertMode.Upsert,
+            UpsertKeyColumns = new[] { "OrderId" }
         });
 }
 ```
@@ -173,16 +187,15 @@ public async Task<ExportResults> SyncOrders(DateTime lastSyncTime)
 ### REST API 数据同步
 
 ```csharp
-using DataForge.Core.Http;
-
-// FromRestApi 是 DataForgePipeline 实例扩展（需 using DataForge.Core.Http）
-var results = await new DataForgePipeline()
+// 从 REST API 读取数据并处理
+var results = await DataForgePipeline
     .FromRestApi<Product>("https://api.example.com", "/products",
-        new RestApiSourceOptions { /* 字段以源码 RestApiSourceOptions 为准 */ })
+        new RestApiSourceOptions { PageSize = 100, PageParam = "page" })
     .Where(p => p.IsActive)
     .Select(p => new { p.Id, p.Name, p.Price })
-    .ToJsonAsync("products.json");
+    .ToExcel("products.xlsx");
 
+// 导出数据到 REST API
 await DataForgePipeline
     .FromCsv<Order>("orders.csv")
     .Where(o => o.Status == "Pending")
@@ -225,14 +238,15 @@ await pipeline
 
 ## 📖 文档
 
+- [调研汇总与迭代设计（v0.2 规划）](docs/roadmap-and-iteration.md)
+- [架构设计](docs/architecture.md)
 - [快速上手](docs/getting-started.md)
 - [管道编程指南](docs/pipeline-guide.md)
 - [数据源配置](docs/data-sources.md)
 - [转换器使用](docs/transforms.md)
 - [数据验证](docs/validation.md)
 - [导出指南](docs/export.md)
-- [API 参考索引](docs/api-reference.md) → [已实现](docs/api-implemented.md) / [规划中](docs/api-roadmap.md)
-- [架构说明](docs/architecture.md)
+- [API 参考](docs/api-reference.md)
 - [常见问题](docs/faq.md)
 
 ## 🤝 贡献

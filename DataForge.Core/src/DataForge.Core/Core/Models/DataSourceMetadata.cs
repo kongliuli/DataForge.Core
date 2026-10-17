@@ -26,6 +26,10 @@ public class ExportResults
     public TimeSpan Duration { get; set; }
     
     public List<string> Errors { get; } = [];
+
+    public List<RowError> RowErrors { get; } = [];
     
-    public bool HasErrors => Errors.Count > 0;
+    public bool HasErrors => Errors.Count > 0 || RowErrors.Count > 0;
+
+    public bool HasRowErrors => RowErrors.Count > 0;
 }

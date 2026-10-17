@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>DataForge.Core.Parquet</PackageId>
+    <PackageVersion>0.1.0</PackageVersion>
+    <Authors>DataForge Team</Authors>
+    <Description>Parquet read/write support for DataForge.Core (A-01)</Description>
+    <PackageTags>data processing;ETL;parquet</PackageTags>
+    <RepositoryUrl>https://github.com/kongliuli/DataForge.Core</RepositoryUrl>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Parquet.Net" Version="6.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DataForge.Core\DataForge.Core.csproj" />
+  </ItemGroup>
+
+</Project>

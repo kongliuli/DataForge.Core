@@ -1,3 +1,4 @@
+using DataForge.Core.Core.Infrastructure;
 using DataForge.Core.Core.Pipeline;
 using DataForge.Core.Core.Sources;
 using DataForge.Core.Core.Sources.Implementations;
@@ -29,8 +30,11 @@ public class DataForgePipeline
     [Obsolete("Core FromExcel is a CSV-style placeholder and does not read real .xlsx. Install DataForge.Core.Excel and use ExcelPipelineExtensions.FromExcel.")]
     public static IDataPipeline<T> FromExcel<T>(string filePath, string sheetName = "Sheet1")
     {
-        var source = new ExcelSource<T>(filePath, sheetName);
-        return new DataPipeline<T>(source.ReadAsync());
+        throw new DataForgeException(
+            "Reading Excel requires the DataForge.Core.Excel package. " +
+            "Install it with: dotnet add package DataForge.Core.Excel, " +
+            "then use: using DataForge.Core.Excel; ExcelPipelineExtensions.FromExcel<T>(filePath).",
+            "EXCEL_EXTENSION_REQUIRED");
     }
 
     public static IDataPipeline<T> FromJsonString<T>(string jsonContent)
