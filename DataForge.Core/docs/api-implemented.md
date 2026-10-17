@@ -77,6 +77,7 @@ public interface IDataPipeline<T>
     IGroupedDataPipeline<TKey, T> GroupBy<TKey>(Func<T, TKey> keySelector) where TKey : notnull;
     IDataPipeline<(T First, TSecond Second)> Zip<TSecond>(IDataPipeline<TSecond> second);
     IDataPipeline<TResult> TransformWith<TResult>(IDataTransform<T, TResult> transform);
+    IDataPipeline<TResult> TransformWithAsync<TResult>(IAsyncDataTransform<T, TResult> transform);
 
     IDataPipeline<T> ValidateWith(IValidator<T> validator);
     IDataPipeline<T> ContinueOnValidationError();
@@ -116,6 +117,7 @@ public interface IDataPipeline<T>
 ### 转换 / 验证 / 错误
 
 - `TransformWith(IDataTransform<T, TResult>)`
+- `TransformWithAsync(IAsyncDataTransform<T, TResult>)`（含 OnError 安全路径）
 - `ValidateWith(IValidator<T>)`（非泛型约束方法形态）
 - `ContinueOnValidationError` / `FailOnValidationError`
 - `OnErrorContinue` / `OnErrorStop` / `OnErrorSkip` / `OnError(...)`

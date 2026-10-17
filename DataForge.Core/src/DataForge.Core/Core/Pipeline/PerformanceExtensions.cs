@@ -104,6 +104,7 @@ internal class ProgressReportingPipeline<T> : IDataPipeline<T>
     public IGroupedDataPipeline<TKey, T> GroupBy<TKey>(Func<T, TKey> keySelector) where TKey : notnull => _inner.GroupBy(keySelector);
     public IDataPipeline<(T First, TSecond Second)> Zip<TSecond>(IDataPipeline<TSecond> second) => _inner.Zip(second);
     public IDataPipeline<TResult> TransformWith<TResult>(IDataTransform<T, TResult> transform) => _inner.TransformWith(transform);
+    public IDataPipeline<TResult> TransformWithAsync<TResult>(IAsyncDataTransform<T, TResult> transform) => _inner.TransformWithAsync(transform);
     public IDataPipeline<T> ValidateWith(IValidator<T> validator) => _inner.ValidateWith(validator);
     public IDataPipeline<T> ContinueOnValidationError() => _inner.ContinueOnValidationError();
     public IDataPipeline<T> FailOnValidationError() => _inner.FailOnValidationError();
@@ -165,6 +166,7 @@ internal class CounterReportingPipeline<T> : IDataPipeline<T>
     public IGroupedDataPipeline<TKey, T> GroupBy<TKey>(Func<T, TKey> keySelector) where TKey : notnull => _inner.GroupBy(keySelector);
     public IDataPipeline<(T First, TSecond Second)> Zip<TSecond>(IDataPipeline<TSecond> second) => _inner.Zip(second);
     public IDataPipeline<TResult> TransformWith<TResult>(IDataTransform<T, TResult> transform) => _inner.TransformWith(transform);
+    public IDataPipeline<TResult> TransformWithAsync<TResult>(IAsyncDataTransform<T, TResult> transform) => _inner.TransformWithAsync(transform);
     public IDataPipeline<T> ValidateWith(IValidator<T> validator) => _inner.ValidateWith(validator);
     public IDataPipeline<T> ContinueOnValidationError() => _inner.ContinueOnValidationError();
     public IDataPipeline<T> FailOnValidationError() => _inner.FailOnValidationError();
@@ -286,6 +288,7 @@ internal class ParallelPipeline<T> : IDataPipeline<T>
     public IGroupedDataPipeline<TKey, T> GroupBy<TKey>(Func<T, TKey> keySelector) where TKey : notnull => _inner.GroupBy(keySelector);
     public IDataPipeline<(T First, TSecond Second)> Zip<TSecond>(IDataPipeline<TSecond> second) => _inner.Zip(second);
     public IDataPipeline<TResult> TransformWith<TResult>(IDataTransform<T, TResult> transform) => _inner.TransformWith(transform);
+    public IDataPipeline<TResult> TransformWithAsync<TResult>(IAsyncDataTransform<T, TResult> transform) => _inner.TransformWithAsync(transform);
     public IDataPipeline<T> ValidateWith(IValidator<T> validator) => _inner.ValidateWith(validator);
     public IDataPipeline<T> ContinueOnValidationError() => _inner.ContinueOnValidationError();
     public IDataPipeline<T> FailOnValidationError() => _inner.FailOnValidationError();

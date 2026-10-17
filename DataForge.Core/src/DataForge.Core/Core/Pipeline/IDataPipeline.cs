@@ -48,6 +48,8 @@ public interface IDataPipeline<T>
 
     IDataPipeline<TResult> TransformWith<TResult>(IDataTransform<T, TResult> transform);
 
+    IDataPipeline<TResult> TransformWithAsync<TResult>(IAsyncDataTransform<T, TResult> transform);
+
     IDataPipeline<T> ValidateWith(IValidator<T> validator);
 
     IDataPipeline<T> ContinueOnValidationError();

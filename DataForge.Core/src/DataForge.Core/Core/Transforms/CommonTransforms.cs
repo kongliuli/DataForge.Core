@@ -65,7 +65,10 @@ public class DefaultIfEmptyTransform<T> : IDataTransform<T, T>
 }
 
 /// <summary>
-/// 空值跳过转换器
+/// 空值拒绝转换器（名称历史遗留）。
+/// 单条 <see cref="IDataTransform{TSource,TResult}"/> 无法真正“跳过”元素；
+/// 遇到 null 会抛 <see cref="ArgumentNullException"/>。
+/// 若要过滤 null，请用 <c>Where(x => x is not null)</c>，或配合 <c>OnErrorContinue()</c>。
 /// </summary>
 public class SkipNullsTransform<T> : IDataTransform<T?, T> where T : class
 {

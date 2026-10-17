@@ -100,8 +100,16 @@ public class DataPipeline<T> : IDataPipeline<T>
 
     public IDataPipeline<T> WhereAsync(Func<T, Task<bool>> predicate)
     {
+        if (_errorHandler != null || _onErrorContinue)
+        {
+            return new DataPipeline<T>((ct) =>
+                WhereAsyncSafeInternal(_sourceFactory(ct), predicate, _errorHandler, ct),
+                _validator, _continueOnValidationError, _failOnValidationError, _errorHandler, true);
+        }
+
         return new DataPipeline<T>((ct) =>
-            WhereAsyncInternal(_sourceFactory(ct), predicate, ct));
+            WhereAsyncInternal(_sourceFactory(ct), predicate, ct),
+            _validator, _continueOnValidationError, _failOnValidationError, _errorHandler, _onErrorContinue);
     }
 
     public IDataPipeline<T> OrderBy<TKey>(Func<T, TKey> keySelector)
@@ -207,6 +215,18 @@ public class DataPipeline<T> : IDataPipeline<T>
 
         return new DataPipeline<TResult>((ct) =>
             TransformWithInternal(GetValidatedEnumerable(ct), transform));
+    }
+
+    public IDataPipeline<TResult> TransformWithAsync<TResult>(IAsyncDataTransform<T, TResult> transform)
+    {
+        if (_errorHandler != null || _onErrorContinue)
+        {
+            return new DataPipeline<TResult>((ct) =>
+                TransformWithAsyncSafeInternal(GetValidatedEnumerable(ct), transform, _errorHandler, ct));
+        }
+
+        return new DataPipeline<TResult>((ct) =>
+            TransformWithAsyncInternal(GetValidatedEnumerable(ct), transform, ct));
     }
 
     public IDataPipeline<T> ValidateWith(IValidator<T> validator)
@@ -647,6 +667,45 @@ public class DataPipeline<T> : IDataPipeline<T>
         }
     }
 
+    private static async IAsyncEnumerable<T> WhereAsyncSafeInternal(
+        IAsyncEnumerable<T> source,
+        Func<T, Task<bool>> predicate,
+        Func<Exception, T, ErrorAction>? errorHandler,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await foreach (var item in source.WithCancellation(ct).ConfigureAwait(false))
+        {
+            var shouldYield = false;
+            Exception? caughtException = null;
+            try
+            {
+                if (await predicate(item).ConfigureAwait(false))
+                {
+                    shouldYield = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                caughtException = ex;
+            }
+
+            if (caughtException != null)
+            {
+                var action = errorHandler?.Invoke(caughtException, item) ?? ErrorAction.Skip;
+                if (action == ErrorAction.Stop || action == ErrorAction.Throw)
+                {
+                    throw caughtException;
+                }
+                continue;
+            }
+
+            if (shouldYield)
+            {
+                yield return item;
+            }
+        }
+    }
+
     private static async IAsyncEnumerable<T> SortInternal(
         IAsyncEnumerable<T> source,
         IReadOnlyList<IPipelineSortStep<T>> steps,
@@ -796,6 +855,45 @@ public class DataPipeline<T> : IDataPipeline<T>
             try
             {
                 result = transform.Transform(item);
+            }
+            catch (Exception ex)
+            {
+                var action = errorHandler?.Invoke(ex, item) ?? ErrorAction.Skip;
+                if (action == ErrorAction.Skip || action == ErrorAction.Continue)
+                {
+                    continue;
+                }
+
+                throw;
+            }
+
+            yield return result;
+        }
+    }
+
+    private static async IAsyncEnumerable<TResult> TransformWithAsyncInternal<TResult>(
+        IAsyncEnumerable<T> source,
+        IAsyncDataTransform<T, TResult> transform,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await foreach (var item in source.WithCancellation(ct).ConfigureAwait(false))
+        {
+            yield return await transform.TransformAsync(item).ConfigureAwait(false);
+        }
+    }
+
+    private static async IAsyncEnumerable<TResult> TransformWithAsyncSafeInternal<TResult>(
+        IAsyncEnumerable<T> source,
+        IAsyncDataTransform<T, TResult> transform,
+        Func<Exception, T, ErrorAction>? errorHandler,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await foreach (var item in source.WithCancellation(ct).ConfigureAwait(false))
+        {
+            TResult result;
+            try
+            {
+                result = await transform.TransformAsync(item).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
