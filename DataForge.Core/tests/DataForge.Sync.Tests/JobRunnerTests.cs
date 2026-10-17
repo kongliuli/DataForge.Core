@@ -227,6 +227,32 @@ public class JobRunnerValidationTests
 public class JobSchedulerTests
 {
     [Fact]
+    public async Task WatchAsync_LongRunReportsNextOccurrenceAfterCompletion()
+    {
+        var now = new DateTimeOffset(2026, 10, 18, 0, 0, 0, TimeSpan.Zero);
+        JobScheduleTick? tick = null;
+        var scheduler = new JobScheduler(timeZone: TimeZoneInfo.Utc)
+        {
+            MaxRuns = 1,
+            Clock = () => now,
+            DelayAsync = (delay, _) => { now += delay; return Task.CompletedTask; },
+            Executor = (_, _, _, _) =>
+            {
+                now += TimeSpan.FromMinutes(3);
+                return Task.FromResult(new JobRunResult { Success = true });
+            },
+            OnTick = value => tick = value
+        };
+
+        await scheduler.WatchAsync(new JobDefinition { Schedule = "* * * * *" }, "job.yaml");
+
+        Assert.NotNull(tick);
+        Assert.Equal(new DateTimeOffset(2026, 10, 18, 0, 1, 0, TimeSpan.Zero), tick.StartedAt);
+        Assert.Equal(new DateTimeOffset(2026, 10, 18, 0, 5, 0, TimeSpan.Zero), tick.NextDueAt);
+        Assert.True(tick.NextDueAt > now);
+    }
+
+    [Fact]
     public void GetNextOccurrence_ReturnsFutureTime()
     {
         var next = JobScheduler.GetNextOccurrence("* * * * *", DateTimeOffset.UtcNow);

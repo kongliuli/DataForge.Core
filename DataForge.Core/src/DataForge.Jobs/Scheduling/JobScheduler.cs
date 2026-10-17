@@ -131,7 +131,7 @@ public sealed class JobScheduler
             {
                 StartedAt = startedAt,
                 DueAt = due.Value,
-                NextDueAt = cron.GetNextOccurrence(startedAt, TimeZone),
+                NextDueAt = cron.GetNextOccurrence(Clock(), TimeZone),
                 Result = result,
                 Error = result.Success ? null : result.ErrorMessage
             });
