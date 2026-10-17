@@ -8,6 +8,9 @@ namespace DataForge.Core.Excel;
 public static class ExcelPipelineExtensions
 {
     public static IDataPipeline<T> FromExcel<T>(this DataForgePipeline builder, string filePath, ExcelSourceOptions? options = null) where T : new()
+        => FromExcel<T>(filePath, options);
+
+    public static IDataPipeline<T> FromExcel<T>(string filePath, ExcelSourceOptions? options = null) where T : new()
     {
         var source = new ExcelSource<T>(filePath, options);
         return new DataPipeline<T>(source.ReadAsync());

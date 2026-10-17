@@ -353,18 +353,22 @@ public class ExcelExportOptions
 
 | 包 | 入口 | 说明 |
 |---|---|---|
-| `DataForge.Core.Excel` | `FromExcel(this DataForgePipeline, ...)` / `ToExcel` / `ToExcelAsync`（别名） | ClosedXML；核心 `FromExcel`/`ToExcelAsync` 已 Obsolete |
-| `DataForge.Core.Json` | `FromJson(this DataForgePipeline, ...)` / `ToJson` | 与核心 `FromJson`/`ToJsonAsync` 并存 |
-| `DataForge.Core.Http` | `FromRestApi` / `FromRestApiWithPagination` / `ToRestApi` | `this DataForgePipeline`；返回 `IDataPipeline<T>` |
-| `DataForge.Core.SqlServer` | `FromSqlServer(connectionString, tableName)` / `ToSqlServer` | **静态**工厂 |
-| `DataForge.Core.MySql` | `FromMySql(...)` / `ToMySql` | 同上 |
-| `DataForge.Core.Sqlite` | `FromSqlite(...)` / `ToSqlite` | 同上 |
+| `DataForge.Core.Excel` | 静态 `FromExcel(...)` **与** `this DataForgePipeline.FromExcel`；`ToExcel` / `ToExcelAsync` | ClosedXML；核心占位 `FromExcel`/`ToExcelAsync` 已 Obsolete |
+| `DataForge.Core.Json` | 静态 `FromJson(...)` **与** builder 扩展；`ToJson` / `ToJsonAsync` | 与核心 `FromJson`/`ToJsonAsync` 并存 |
+| `DataForge.Core.Http` | 静态 + builder：`FromRestApi` / `FromRestApiWithPagination`；`ToRestApi` / `ToRestApiAsync` | 返回 `IDataPipeline<T>` |
+| `DataForge.Core.SqlServer` | 静态 + builder：`FromSqlServer`；`ToSqlServer` / `ToSqlServerAsync` | `(connectionString, tableName)` |
+| `DataForge.Core.MySql` | 同上形 `FromMySql` / `ToMySql` / `ToMySqlAsync` | |
+| `DataForge.Core.Sqlite` | 同上形 `FromSqlite` / `ToSqlite` / `ToSqliteAsync` | |
+
+> **双轨约定**：扩展包 `From*` 同时提供静态工厂与 `this DataForgePipeline` 扩展；`To*` 提供同步名与 `*Async` 别名。二者等价，任选其一。
 
 ### Excel
 
 ```csharp
+public static IDataPipeline<T> FromExcel<T>(string filePath, ExcelSourceOptions? options = null) where T : new();
 public static IDataPipeline<T> FromExcel<T>(this DataForgePipeline builder, string filePath, ExcelSourceOptions? options = null) where T : new();
 public static Task<ExportResults> ToExcel<T>(this IDataPipeline<T> pipeline, string filePath, ExcelExportOptions? options = null, CancellationToken cancellationToken = default);
+public static Task<ExportResults> ToExcelAsync<T>(...); // alias
 
 public class ExcelSourceOptions
 {
@@ -378,18 +382,24 @@ public class ExcelSourceOptions
 ### Json
 
 ```csharp
+public static IDataPipeline<T> FromJson<T>(string filePath, JsonSourceOptions? options = null);
 public static IDataPipeline<T> FromJson<T>(this DataForgePipeline builder, string filePath, JsonSourceOptions? options = null);
 public static Task<ExportResults> ToJson<T>(this IDataPipeline<T> pipeline, string filePath, JsonExportOptions? options = null, CancellationToken cancellationToken = default);
+public static Task<ExportResults> ToJsonAsync<T>(...); // alias
 ```
 
 ### Http
 
 ```csharp
+public static IDataPipeline<T> FromRestApi<T>(string baseUrl, string endpoint, RestApiSourceOptions? options = null);
 public static IDataPipeline<T> FromRestApi<T>(this DataForgePipeline builder, string baseUrl, string endpoint, RestApiSourceOptions? options = null);
+public static IDataPipeline<T> FromRestApi<T>(HttpClient httpClient, string endpoint, RestApiSourceOptions? options = null);
 public static IDataPipeline<T> FromRestApi<T>(this DataForgePipeline builder, HttpClient httpClient, string endpoint, RestApiSourceOptions? options = null);
+public static IDataPipeline<T> FromRestApiWithPagination<T>(string baseUrl, string endpoint, RestApiSourceOptions? options = null);
 public static IDataPipeline<T> FromRestApiWithPagination<T>(this DataForgePipeline builder, string baseUrl, string endpoint, RestApiSourceOptions? options = null);
 public static Task<ExportResults> ToRestApi<T>(this IDataPipeline<T> pipeline, string baseUrl, string endpoint, RestApiTargetOptions? options = null, CancellationToken cancellationToken = default);
 public static Task<ExportResults> ToRestApi<T>(this IDataPipeline<T> pipeline, HttpClient httpClient, string endpoint, RestApiTargetOptions? options = null, CancellationToken cancellationToken = default);
+public static Task<ExportResults> ToRestApiAsync<T>(...); // aliases
 
 public class RestApiSourceOptions
 {
@@ -420,8 +430,10 @@ public class RestApiTargetOptions
 
 ```csharp
 public static IDataPipeline<T> FromSqlServer<T>(string connectionString, string tableName) where T : new();
+public static IDataPipeline<T> FromSqlServer<T>(this DataForgePipeline builder, string connectionString, string tableName) where T : new();
 public static Task<ExportResults> ToSqlServer<T>(this IDataPipeline<T> pipeline, string connectionString, string tableName, SqlServerExportOptions? options = null, CancellationToken cancellationToken = default);
-// FromMySql / ToMySql、FromSqlite / ToSqlite 同形
+public static Task<ExportResults> ToSqlServerAsync<T>(...); // alias
+// FromMySql / ToMySql(/Async)、FromSqlite / ToSqlite(/Async) 同形
 
 public class SqlServerExportOptions // MySqlExportOptions / SqliteExportOptions 同形
 {

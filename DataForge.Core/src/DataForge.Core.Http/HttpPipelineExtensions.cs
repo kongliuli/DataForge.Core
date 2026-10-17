@@ -10,6 +10,9 @@ namespace DataForge.Core.Http;
 public static class HttpPipelineExtensions
 {
     public static IDataPipeline<T> FromRestApi<T>(this DataForgePipeline builder, string baseUrl, string endpoint, RestApiSourceOptions? options = null)
+        => FromRestApi<T>(baseUrl, endpoint, options);
+
+    public static IDataPipeline<T> FromRestApi<T>(string baseUrl, string endpoint, RestApiSourceOptions? options = null)
     {
         var sourceOptions = options ?? new RestApiSourceOptions();
         sourceOptions.BaseUrl = string.IsNullOrWhiteSpace(sourceOptions.BaseUrl) ? baseUrl : sourceOptions.BaseUrl;
@@ -19,6 +22,9 @@ public static class HttpPipelineExtensions
     }
 
     public static IDataPipeline<T> FromRestApi<T>(this DataForgePipeline builder, HttpClient httpClient, string endpoint, RestApiSourceOptions? options = null)
+        => FromRestApi<T>(httpClient, endpoint, options);
+
+    public static IDataPipeline<T> FromRestApi<T>(HttpClient httpClient, string endpoint, RestApiSourceOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(httpClient);
         var sourceOptions = options ?? new RestApiSourceOptions { Endpoint = endpoint };
@@ -32,6 +38,9 @@ public static class HttpPipelineExtensions
     }
 
     public static IDataPipeline<T> FromRestApiWithPagination<T>(this DataForgePipeline builder, string baseUrl, string endpoint, RestApiSourceOptions? options = null)
+        => FromRestApiWithPagination<T>(baseUrl, endpoint, options);
+
+    public static IDataPipeline<T> FromRestApiWithPagination<T>(string baseUrl, string endpoint, RestApiSourceOptions? options = null)
     {
         var sourceOptions = options ?? new RestApiSourceOptions();
         sourceOptions.BaseUrl = string.IsNullOrWhiteSpace(sourceOptions.BaseUrl) ? baseUrl : sourceOptions.BaseUrl;
@@ -61,6 +70,14 @@ public static class HttpPipelineExtensions
         var target = new RestApiTarget<T>(httpClient, targetOptions);
         return target.ExportAsync(pipeline.AsAsyncEnumerable(cancellationToken), endpoint, cancellationToken);
     }
+
+    /// <summary>Alias aligned with core <c>To*Async</c> naming.</summary>
+    public static Task<ExportResults> ToRestApiAsync<T>(this IDataPipeline<T> pipeline, string baseUrl, string endpoint, RestApiTargetOptions? options = null, CancellationToken cancellationToken = default)
+        => ToRestApi(pipeline, baseUrl, endpoint, options, cancellationToken);
+
+    /// <summary>Alias aligned with core <c>To*Async</c> naming.</summary>
+    public static Task<ExportResults> ToRestApiAsync<T>(this IDataPipeline<T> pipeline, HttpClient httpClient, string endpoint, RestApiTargetOptions? options = null, CancellationToken cancellationToken = default)
+        => ToRestApi(pipeline, httpClient, endpoint, options, cancellationToken);
 
     private static async IAsyncEnumerable<T> EnumerateAndDispose<T>(RestApiSource<T> source, bool paginated, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {

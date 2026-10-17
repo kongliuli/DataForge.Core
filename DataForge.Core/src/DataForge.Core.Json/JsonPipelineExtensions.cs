@@ -8,6 +8,9 @@ namespace DataForge.Core.Json;
 public static class JsonPipelineExtensions
 {
     public static IDataPipeline<T> FromJson<T>(this DataForgePipeline builder, string filePath, JsonSourceOptions? options = null)
+        => FromJson<T>(filePath, options);
+
+    public static IDataPipeline<T> FromJson<T>(string filePath, JsonSourceOptions? options = null)
     {
         var source = new JsonSource<T>(filePath, options);
         return new DataPipeline<T>(source.ReadAsync());
