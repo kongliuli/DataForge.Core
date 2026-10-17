@@ -23,34 +23,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.0] - 2024-01-01
 
+> 说明：版本日期沿用仓库既有发布记录；接口与终端方法名称已按当前源码对齐修订。
+
 ### Added
 
 - **Core Pipeline**
-  - `DataForgePipeline` static entry class
-  - `IDataPipeline<TIn, TOut>` interface with chainable API
+  - `DataForgePipeline` entry class（工厂方法为 static；类本身可被扩展方法扩展）
+  - `IDataPipeline<T>` interface with chainable API
   - `Where`, `Select`, `OrderBy`, `OrderByDescending`, `ThenBy`, `ThenByDescending`
   - `Skip`, `Take`, `Distinct`, `DistinctBy`
   - `GroupBy` with aggregation support
 
 - **Data Sources**
   - `IDataSource<T>` interface
-  - SQL Server source (`FromSqlServer<T>`)
-  - MySQL source (`FromMySql<T>`)
-  - SQLite source (`FromSqlite<T>`)
+  - SQL Server source (`FromSqlServer<T>`，扩展包)
+  - MySQL source (`FromMySql<T>`，扩展包)
+  - SQLite source (`FromSqlite<T>`，扩展包)
   - CSV source (`FromCsv<T>`)
-  - Excel source (`FromExcel<T>`)
-  - JSON source (`FromJson<T>`, `FromJsonArray<T>`)
-  - Memory source (`FromCollection<T>`, `FromEnumerable<T>`)
+  - Excel source (`FromExcel<T>`；核心为占位实现，真实 xlsx 见 `DataForge.Core.Excel`)
+  - JSON source (`FromJson<T>`, `FromJsonArray<T>`；扩展能力见 `DataForge.Core.Json`)
+  - Memory source (`FromMemory<T>`)
 
 - **Data Targets**
   - `IDataTarget<T>` interface
-  - CSV export (`ToCsv`)
-  - Excel export (`ToExcel`)
-  - JSON export (`ToJson`)
-  - SQL Server export (`ToSqlServer`)
-  - MySQL export (`ToMySql`)
-  - SQLite export (`ToSqlite`)
-  - Console export (`ToConsole`)
+  - CSV export (`ToCsvAsync`)
+  - Excel export (`ToExcelAsync`)
+  - JSON export (`ToJsonAsync`)
+  - SQL Server export (`ToSqlServer`，扩展包)
+  - MySQL export (`ToMySql`，扩展包)
+  - SQLite export (`ToSqlite`，扩展包)
+  - Console export (`ToConsoleAsync`)
 
 - **Validation**
   - `IValidator<T>` interface

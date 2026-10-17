@@ -3,6 +3,7 @@ using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Sources.Options;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -45,7 +46,7 @@ internal class JsonSource<T> : IFileDataSource<T>
         }
     }
 
-    private async IAsyncEnumerable<T> DeserializeStreamAsync(Stream stream, CancellationToken cancellationToken)
+    private async IAsyncEnumerable<T> DeserializeStreamAsync(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var options = _options.SerializerOptions ?? new JsonSerializerOptions();
         using var doc = await JsonDocument.ParseAsync(stream, new JsonDocumentOptions

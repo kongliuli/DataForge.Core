@@ -67,7 +67,7 @@ public class PerformanceTests
     }
 
     [Fact]
-    public void BatchOptimizer_FlushesAtBatchSize()
+    public async System.Threading.Tasks.Task BatchOptimizer_FlushesAtBatchSize()
     {
         var flushCount = 0;
         var flushedItems = new System.Collections.Generic.List<int>();
@@ -78,20 +78,20 @@ public class PerformanceTests
             return System.Threading.Tasks.Task.CompletedTask;
         });
 
-        optimizer.AddAsync(1).Wait();
+        await optimizer.AddAsync(1);
         flushCount.Should().Be(0);
 
-        optimizer.AddAsync(2).Wait();
+        await optimizer.AddAsync(2);
         flushCount.Should().Be(0);
 
-        optimizer.AddAsync(3).Wait();
+        await optimizer.AddAsync(3);
         flushCount.Should().Be(1);
         flushedItems.Should().HaveCount(3);
 
-        optimizer.AddAsync(4).Wait();
+        await optimizer.AddAsync(4);
         flushCount.Should().Be(1);
 
-        optimizer.FlushAsync().Wait();
+        await optimizer.FlushAsync();
         flushCount.Should().Be(2);
         flushedItems.Should().HaveCount(4);
     }

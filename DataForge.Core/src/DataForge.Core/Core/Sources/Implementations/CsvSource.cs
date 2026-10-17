@@ -1,4 +1,4 @@
-﻿using DataForge.Core.Core.Infrastructure;
+using DataForge.Core.Core.Infrastructure;
 using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Sources.Options;
 using System.Collections.Generic;
@@ -169,7 +169,7 @@ internal class CsvSource<T> : IFileDataSource<T>
 
         if (type.IsPrimitive || type == typeof(decimal) || type == typeof(string))
         {
-            return values.Length > 0 ? ConvertValue<T>(values[0]) : default!;
+            return values.Length > 0 ? ConvertValueTo<T>(values[0]) : default!;
         }
 
         var instance = Activator.CreateInstance<T>();
@@ -203,8 +203,8 @@ internal class CsvSource<T> : IFileDataSource<T>
         return instance;
     }
 
-    private T ConvertValue<T>(string value)
+    private static TValue ConvertValueTo<TValue>(string value)
     {
-        return (T)Convert.ChangeType(value, typeof(T), CultureInfo.InvariantCulture);
+        return (TValue)Convert.ChangeType(value, typeof(TValue), CultureInfo.InvariantCulture);
     }
 }

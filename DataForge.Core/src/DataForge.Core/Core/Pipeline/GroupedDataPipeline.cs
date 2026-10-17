@@ -81,7 +81,7 @@ internal class GroupedDataPipeline<TKey, TElement> : IGroupedDataPipeline<TKey, 
         Func<TElement, TKey> keySelector,
         Func<IGrouping<TKey, TElement>, TKey2> orderKeySelector,
         bool ascending,
-        CancellationToken ct)
+        [EnumeratorCancellation] CancellationToken ct)
     {
         var items = new List<TElement>();
         await foreach (var item in source.WithCancellation(ct).ConfigureAwait(false))

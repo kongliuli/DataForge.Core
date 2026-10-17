@@ -1,255 +1,95 @@
-# 快速上手
+# 快速上手（0.1.0）
 
-本指南将帮助你在 5 分钟内快速上手 DataForge.Core，完成第一个数据处理任务。
+5 分钟跑通：装包 → 读 CSV → 过滤 → 写 JSON。签名以源码与 [api-implemented.md](./api-implemented.md) 为准。
 
-## 环境要求
+## 环境与安装
 
-- **.NET 8.0** 或更高版本
-- **Visual Studio 2022 17.8+** / **VS Code** / **JetBrains Rider**
-- 推荐 **.NET SDK 8.0**
-
-### 验证 .NET 版本
-
-```bash
-dotnet --version
-# 输出应为 8.0.100 或更高
-```
-
-## 安装
-
-### 通过 NuGet 包管理器
+- **.NET 8**（`dotnet --version` ≥ 8）
 
 ```bash
 dotnet add package DataForge.Core
 ```
 
-### 通过 .NET CLI
-
-```bash
-dotnet add package DataForge.Core --version 0.1.0
-```
-
-### 验证安装
-
 ```csharp
-using DataForge;
+using DataForge.Core;
 
-Console.WriteLine(DataForgeVersion.Current);
-// 输出: DataForge.Core 0.1.0
+var n = await DataForgePipeline.FromMemory(new[] { 1, 2, 3 }).CountAsync();
+Console.WriteLine(n); // 3
 ```
 
-## 5 分钟 Hello World
+包版本看 NuGet / `PackageVersion`。没有 `DataForgeVersion` 类型。
 
-### 场景：读取 CSV 并导出为 JSON
+## Hello World
 
-假设有一个 `customers.csv` 文件：
+`customers.csv`：
 
 ```csv
 Id,Name,Email,City
 1,张三,zhangsan@example.com,北京
 2,李四,lisi@example.com,上海
-3,王五,wangwu@example.com,深圳
 ```
 
-创建控制台项目并编写代码：
-
 ```csharp
-using DataForge;
+using DataForge.Core;
 
 var result = await DataForgePipeline
     .FromCsv<Customer>("customers.csv")
     .Where(c => c.City == "北京")
     .Select(c => new { c.Name, c.Email })
-    .ToJson("beijing-customers.json");
+    .ToJsonAsync("beijing-customers.json");
 
-Console.WriteLine($"处理完成：{result.RecordsWritten} 条记录");
+Console.WriteLine($"写入 {result.RecordsWritten} 条 → {result.OutputPath}");
 ```
 
-运行后生成 `beijing-customers.json`：
-
-```json
-[
-  { "name": "张三", "email": "zhangsan@example.com" }
-]
-```
-
-## 核心概念速览
-
-DataForge.Core 的核心概念非常简洁：
-
-```
-┌─────────────┐    ┌─────────────────┐    ┌─────────────┐
-│  DataSource │───▶│    Pipeline     │───▶│ DataTarget  │
-│   数据源    │    │      管道       │    │    数据目标 │
-└─────────────┘    └─────────────────┘    └─────────────┘
-                           │
-                           ▼
-                   ┌─────────────────┐
-                   │   Transform     │
-                   │     转换器      │
-                   └─────────────────┘
-                           │
-                           ▼
-                   ┌─────────────────┐
-                   │    Validator    │
-                   │     验证器      │
-                   └─────────────────┘
-```
-
-### 1. 数据源 (DataSource)
-
-数据源是数据的入口，支持多种格式：
+## 再进一步：清洗 + 验证
 
 ```csharp
-// SQL 数据库
-.FromSqlServer("connection-string")
-.FromMySql("connection-string")
-.FromSqlite("database.db")
+using DataForge.Core;
+using DataForge.Core.Core.Validation;
 
-// 文件
-.FromCsv<T>("file.csv")
-.FromExcel<T>("file.xlsx")
-.FromJson<T>("file.json")
-.FromJsonArray<T>("file.json")
-
-// 内存
-.FromCollection(collection)
-.FromEnumerable(enumerable)
-```
-
-### 2. 管道 (Pipeline)
-
-管道是数据处理的核心，提供链式操作：
-
-```csharp
-DataForgePipeline
-    .FromCsv<Order>("orders.csv")
-    .Where(o => o.Status == "Completed")           // 过滤
-    .Select(o => new { o.OrderId, o.Amount })      // 映射
-    .OrderBy(o => o.OrderDate)                     // 排序
-    .Distinct()                                     // 去重
-    .Take(100)                                      // 限制
-```
-
-### 3. 目标 (Target)
-
-目标是数据的出口：
-
-```csharp
-.ToCsv("output.csv")           // CSV 文件
-.ToExcel("output.xlsx")        // Excel 文件
-.ToJson("output.json")         // JSON 文件
-.ToSqlServer(conn, table)      // SQL Server
-.ToMySql(conn, table)          // MySQL
-.ToConsole()                   // 控制台输出
-```
-
-### 4. 转换器 (Transform)
-
-转换器在管道中修改或聚合数据：
-
-```csharp
-.GroupBy(o => o.Category)                                    // 分组
-.Aggregate(g => new { Category = g.Key, Total = g.Sum(x => x.Amount) })  // 聚合
-.CustomTransform(row => ProcessRow(row))                       // 自定义
-```
-
-### 5. 验证器 (Validator)
-
-验证器确保数据质量：
-
-```csharp
-.ValidateWith(new OrderValidator())                    // 单条验证
-.ValidateAllWith(validator).ContinueOnError()          // 验证全部，收集错误
-```
-
-## 完整示例：订单数据清洗流程
-
-```csharp
-using DataForge;
-
-// 定义验证器
 public class OrderValidator : DataValidator<SalesOrder>
 {
     public OrderValidator()
     {
         RuleFor(o => o.OrderId).NotEmpty().WithMessage("订单号不能为空");
-        RuleFor(o => o.Amount).GreaterThan(0).WithMessage("订单金额必须大于0");
-        RuleFor(o => o.CustomerId).NotEmpty().WithMessage("客户ID不能为空");
+        RuleFor(o => o.Amount).GreaterThan(0).WithMessage("金额须 > 0");
     }
 }
 
-// 执行数据清洗
 var result = await DataForgePipeline
-    .FromExcel<SalesOrderRow>("dirty-orders.xlsx")
+    .FromCsv<SalesOrderRow>("dirty-orders.csv")
     .Select(row => new SalesOrder
     {
-        OrderId = row.OrderID?.Trim(),
-        CustomerId = row.CustomerID,
-        Amount = decimal.TryParse(row.Amount, out var a) ? a : 0,
-        OrderDate = DateTime.TryParse(row.Date, out var d) ? d : DateTime.MinValue
+        OrderId = row.OrderID?.Trim() ?? "",
+        Amount = decimal.TryParse(row.Amount, out var a) ? a : 0
     })
-    .Where(o => o.OrderId != null)
+    .Where(o => o.OrderId.Length > 0)
     .ValidateWith(new OrderValidator())
-    .ToCsv("cleaned-orders.csv", includeHeader: true);
+    .ContinueOnValidationError()
+    .ToCsvAsync("cleaned-orders.csv", new CsvExportOptions { IncludeHeader = true });
 
-Console.WriteLine($"清洗完成: {result.SuccessCount} 成功, {result.FailedCount} 失败");
+Console.WriteLine($"写入 {result.RecordsWritten}；错误条数 {result.Errors.Count}");
 ```
 
-## 常见配置
+## 别踩的坑（极简）
 
-### CSV 选项
+| 话题 | 0.1.0 做法 |
+|---|---|
+| 命名空间 | `using DataForge.Core;` |
+| Excel | 核心 `FromExcel`/`ToExcelAsync` 是**占位**；真 `.xlsx` → `DataForge.Core.Excel` 的 `ToExcel` |
+| SQL | `SqlServerPipelineExtensions.FromSqlServer(conn, table)`，不是 `DataForgePipeline.FromSqlServer` |
+| 导出结果 | `ExportResults`：`RecordsWritten` / `OutputPath` / `Duration` / `Errors`（没有 `FilePath`） |
+| 选项字段 | CSV 用 `Delimiter` + `HasHeaderRow`；详见 [data-sources.md](./data-sources.md) / [export.md](./export.md) |
 
-```csharp
-.FromCsv<Order>("orders.csv", options: new CsvSourceOptions
-{
-    Encoding = Encoding.UTF8,
-    Separator = ',',
-    HasHeader = true,
-    SkipLines = 0,
-    TrimFields = true
-})
-```
+流程一句话：`Source → IDataPipeline<T> → Target`。细节别堆在本页。
 
-### Excel 选项
+## 下一步
 
-```csharp
-.FromExcel<Order>("orders.xlsx", options: new ExcelSourceOptions
-{
-    SheetName = "订单数据",
-    // 或使用 SheetIndex
-    // SheetIndex = 0,
-    HeaderRow = 1,
-    SkipEmptyRows = true
-})
-```
-
-### SQL 连接池
-
-```csharp
-.FromSqlServer(connectionString, options: new SqlSourceOptions
-{
-    CommandTimeout = 300,
-    EnableRetry = true,
-    MaxRetryCount = 3,
-    Pooling = true,
-    MinPoolSize = 5,
-    MaxPoolSize = 100
-})
-```
-
-## 下一步阅读建议
-
-| 如果你想... | 推荐阅读 |
-|------------|---------|
-| 理解核心设计 | [架构设计文档](./architecture.md) |
-| 掌握高级管道用法 | [管道编程指南](./pipeline-guide.md) |
-| 接入新的数据源 | [数据源接入指南](./data-sources.md) |
-| 学习数据转换 | [数据转换指南](./transforms.md) |
-| 处理真实业务场景 | [场景实战手册](./scenarios.md) |
-
-## 获取帮助
-
-- 📖 查看 [常见问题](./faq.md)
-- 🐛 发现 Bug？[提交 Issue](https://github.com/dataforge-team/dataforge-core/issues)
-- 💬 需要帮助？[发起 Discussion](https://github.com/dataforge-team/dataforge-core/discussions)
+| 想… | 看 |
+|---|---|
+| 管道 / GroupBy / 错误策略 | [pipeline-guide.md](./pipeline-guide.md) |
+| 数据源与扩展包入口 | [data-sources.md](./data-sources.md) |
+| 已实现 API 清单 | [api-implemented.md](./api-implemented.md) |
+| 规划 / 旧名对照 | [api-roadmap.md](./api-roadmap.md) |
+| 场景小品 | [scenarios.md](./scenarios.md) |
+| FAQ | [faq.md](./faq.md) |

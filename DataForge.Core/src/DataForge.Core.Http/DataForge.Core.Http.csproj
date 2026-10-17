@@ -11,9 +11,11 @@
     <PackageTags>data processing;ETL;REST;API;HTTP</PackageTags>
     <RepositoryUrl>https://github.com/kongliuli/DataForge.Core</RepositoryUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
     <ProjectReference Include="..\DataForge.Core\DataForge.Core.csproj" />
   </ItemGroup>
 

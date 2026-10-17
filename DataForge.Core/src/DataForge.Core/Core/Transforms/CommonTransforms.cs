@@ -38,7 +38,15 @@ public class AsyncMapTransform<TInput, TOutput> : IAsyncDataTransform<TInput, TO
 /// </summary>
 public class CastTransform<TInput, TOutput> : IDataTransform<TInput, TOutput> where TOutput : TInput
 {
-    public TOutput Transform(TInput input) => (TOutput)input;
+    public TOutput Transform(TInput input)
+    {
+        if (input is TOutput output)
+        {
+            return output;
+        }
+
+        throw new InvalidCastException($"Cannot cast value of type '{typeof(TInput)}' to '{typeof(TOutput)}'.");
+    }
 }
 
 /// <summary>
@@ -188,7 +196,7 @@ public class ConditionalTransform<TInput, TOutput> : IDataTransform<TInput, TOut
 /// <summary>
 /// 查找转换器（类似于字典查找）
 /// </summary>
-public class LookupTransform<TKey, TValue> : IDataTransform<TKey, TValue?>
+public class LookupTransform<TKey, TValue> : IDataTransform<TKey, TValue?> where TKey : notnull
 {
     private readonly Dictionary<TKey, TValue> _lookupTable;
 

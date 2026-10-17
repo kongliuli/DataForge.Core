@@ -11,9 +11,11 @@
     <PackageTags>data processing;ETL;data pipeline;csv;json;excel;validation</PackageTags>
     <RepositoryUrl>https://github.com/kongliuli/DataForge.Core</RepositoryUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
     <InternalsVisibleTo Include="DataForge.Core.Tests" />
     <InternalsVisibleTo Include="DataForge.Core.IntegrationTests" />
     <InternalsVisibleTo Include="DataForge.Core.SqlServer" />
