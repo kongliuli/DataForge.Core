@@ -69,6 +69,17 @@ sink:
     <textarea id="vars" style="min-height:4rem">SRC=./in.csv
 DST=./out.json</textarea>
     <button id="run">运行</button>
+    <h3>定时作业</h3>
+    <p>在上方 YAML 添加 schedule，例如 '0 2 * * *'（本机时区每天 02:00）。注册会自动保存，重启后恢复。</p>
+    <label for="scheduleId">注册标识（留空自动生成）</label>
+    <input id="scheduleId" />
+    <button id="registerSchedule">注册当前 YAML</button>
+    <button id="refreshSchedules">刷新调度状态</button>
+    <label for="scheduledJob">已注册作业</label>
+    <select id="scheduledJob"></select>
+    <button id="runSchedule">立即执行所选作业</button>
+    <button id="removeSchedule">删除所选注册</button>
+    <pre id="scheduleOut" role="status">等待操作</pre>
     <h3>进度</h3>
     <pre id="progress">等待运行</pre>
     <pre id="out">等待运行</pre>
@@ -78,6 +89,69 @@ DST=./out.json</textarea>
 
   <script>
     let connections = [];
+
+    function readVariables() {
+      const variables = {};
+      for (const line of document.getElementById('vars').value.split(/\r?\n/)) {
+        const eq = line.indexOf('=');
+        if (eq <= 0 || line.trim().startsWith('#')) continue;
+        variables[line.slice(0, eq).trim()] = line.slice(eq + 1).trim();
+      }
+      return variables;
+    }
+
+    async function refreshSchedules() {
+      const response = await fetch('/api/schedules');
+      if (!response.ok) throw new Error(await response.text());
+      const entries = await response.json();
+      const select = document.getElementById('scheduledJob');
+      const selected = select.value;
+      select.replaceChildren();
+      for (const entry of entries) {
+        const option = document.createElement('option');
+        option.value = entry.id;
+        option.textContent = `${entry.name || entry.id} — ${entry.cron}`;
+        select.append(option);
+      }
+      if (entries.some(entry => entry.id === selected)) select.value = selected;
+      document.getElementById('scheduleOut').textContent = entries.length
+        ? JSON.stringify(entries, null, 2) : '暂无注册作业';
+    }
+
+    function scheduleAction(id, action) {
+      const button = document.getElementById(id);
+      button.onclick = async () => {
+        button.disabled = true;
+        try { await action(); }
+        catch (error) { document.getElementById('scheduleOut').textContent = error.message; }
+        finally { button.disabled = false; }
+      };
+    }
+    scheduleAction('refreshSchedules', refreshSchedules);
+    scheduleAction('registerSchedule', async () => {
+      const result = await post('/api/schedules', {
+        id: document.getElementById('scheduleId').value.trim() || null,
+        yaml: document.getElementById('yaml').value,
+        variables: readVariables()
+      });
+      if (!result.ok) throw new Error(result.json.error || JSON.stringify(result.json));
+      await refreshSchedules();
+      document.getElementById('scheduledJob').value = result.json.id;
+    });
+    scheduleAction('runSchedule', async () => {
+      const id = document.getElementById('scheduledJob').value;
+      if (!id) throw new Error('请先选择注册作业');
+      const result = await post('/api/schedules/' + encodeURIComponent(id) + '/run', {});
+      await refreshSchedules();
+      document.getElementById('scheduleOut').textContent = JSON.stringify(result.json, null, 2);
+    });
+    scheduleAction('removeSchedule', async () => {
+      const id = document.getElementById('scheduledJob').value;
+      if (!id) throw new Error('请先选择注册作业');
+      const response = await fetch('/api/schedules/' + encodeURIComponent(id), { method: 'DELETE' });
+      if (!response.ok) throw new Error(await response.text());
+      await refreshSchedules();
+    });
 
     const connPayload = () => {
       const id = document.getElementById('connId').value;
