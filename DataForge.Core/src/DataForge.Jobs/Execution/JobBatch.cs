@@ -50,7 +50,7 @@ public static class JobBatch
             return sequential;
         }
 
-        var gate = new SemaphoreSlim(parallelism);
+        using var gate = new SemaphoreSlim(parallelism);
         var tasks = new List<Task<(int Index, JobRunResult Result)>>(jobs.Count);
         for (var i = 0; i < jobs.Count; i++)
         {

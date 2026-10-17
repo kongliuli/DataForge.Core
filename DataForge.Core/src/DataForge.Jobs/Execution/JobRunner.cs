@@ -16,6 +16,7 @@ public sealed class JobRunner
         CancellationToken cancellationToken = default,
         IProgress<JobProgress>? progress = null)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var startedAt = DateTimeOffset.UtcNow;
 
         try
@@ -26,6 +27,10 @@ public sealed class JobRunner
             var yaml = await File.ReadAllTextAsync(jobFilePath, cancellationToken).ConfigureAwait(false);
             var job = JobYamlParser.Parse(yaml);
             return await RunAsync(job, jobFilePath, variables, cancellationToken, progress).ConfigureAwait(false);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {
@@ -40,6 +45,7 @@ public sealed class JobRunner
         CancellationToken cancellationToken = default,
         IProgress<JobProgress>? progress = null)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var startedAt = DateTimeOffset.UtcNow;
         var jobName = job.Name ?? Path.GetFileNameWithoutExtension(jobFilePath);
         try
@@ -110,6 +116,10 @@ public sealed class JobRunner
                 FinishedAt = DateTimeOffset.UtcNow,
                 ExportResults = results
             };
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch (Exception ex)
         {
