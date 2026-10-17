@@ -104,7 +104,10 @@ public sealed class JobScheduleService : IAsyncDisposable
         if (string.IsNullOrWhiteSpace(yaml))
             throw new ArgumentException("yaml is required.", nameof(yaml));
 
-        var job = JobYamlParser.Parse(yaml);
+        var jobs = JobYamlParser.ParseMany(yaml);
+        if (jobs.Count != 1)
+            throw new InvalidOperationException("A schedule registration requires exactly one job. Register each job separately.");
+        var job = jobs[0];
         if (string.IsNullOrWhiteSpace(job.Schedule))
             throw new InvalidOperationException("Job has no schedule field; nothing to register.");
 

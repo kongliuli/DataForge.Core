@@ -12,6 +12,31 @@ namespace DataForge.Web.Tests;
 public class ScheduleRestartTests
 {
     [Fact]
+    public async Task MultiJobRegistration_IsRejectedWithoutChangingStore()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "df-multi-" + Guid.NewGuid().ToString("N"));
+        var path = Path.Combine(dir, "schedules.json");
+        Directory.CreateDirectory(dir);
+        try
+        {
+            await using var factory = new WebApplicationFactory<Program>()
+                .WithWebHostBuilder(builder => builder.UseSetting("Schedules:Path", path));
+            using var client = factory.CreateClient();
+            const string single = "name: existing\nschedule: '0 0 1 1 *'\nsource:\n  type: csv\n  path: ./in.csv\nsink:\n  type: json\n  path: ./out.json";
+            var accepted = await client.PostAsJsonAsync("/api/schedules", new { id = "existing", yaml = single });
+            Assert.Equal(HttpStatusCode.Created, accepted.StatusCode);
+            var before = await File.ReadAllTextAsync(path);
+            var item = "  - " + single.Replace("\n", "\n    ");
+            var rejected = await client.PostAsJsonAsync("/api/schedules", new { id = "multi", yaml = "jobs:\n" + item + "\n" + item });
+            Assert.Equal(HttpStatusCode.BadRequest, rejected.StatusCode);
+            Assert.Contains("exactly one job", await rejected.Content.ReadAsStringAsync());
+            Assert.Equal(before, await File.ReadAllTextAsync(path));
+            Assert.Null(factory.Services.GetRequiredService<JobScheduleService>().Get("multi"));
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact]
     public async Task FailedSave_DoesNotActivateOrRemoveRegistrations()
     {
         var dir = Path.Combine(Path.GetTempPath(), "df-store-failure-" + Guid.NewGuid().ToString("N"));
