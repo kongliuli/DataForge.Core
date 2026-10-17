@@ -7,6 +7,34 @@ namespace DataForge.Sync.Tests;
 public class SchedulePersistenceTests
 {
     [Fact]
+    public async Task FileStore_RoundTripReplacementAndCancelledSave()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var path = Path.Combine(dir, "schedules.json");
+        try
+        {
+            Assert.Empty(await ScheduleFileStore.LoadAsync(path));
+            var registration = new ScheduleRegistration("one", "yaml", "job.yaml",
+                new Dictionary<string, string> { ["KEY"] = "value" }, false);
+            await ScheduleFileStore.SaveAsync(path, new[] { registration });
+            var loaded = Assert.Single(await ScheduleFileStore.LoadAsync(path));
+            Assert.Equal("one", loaded.Id);
+            Assert.Equal("value", loaded.Variables!["KEY"]);
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+                ScheduleFileStore.SaveAsync(path, Array.Empty<ScheduleRegistration>(), cts.Token));
+            Assert.Single(await ScheduleFileStore.LoadAsync(path));
+            Assert.Empty(Directory.GetFiles(dir, "*.tmp"));
+            await ScheduleFileStore.SaveAsync(path, Array.Empty<ScheduleRegistration>());
+            Assert.Empty(await ScheduleFileStore.LoadAsync(path));
+            await File.WriteAllTextAsync(path, "not json");
+            await Assert.ThrowsAsync<JsonException>(() => ScheduleFileStore.LoadAsync(path));
+        }
+        finally { if (Directory.Exists(dir)) Directory.Delete(dir, true); }
+    }
+
+    [Fact]
     public async Task ExportAndRestore_PreservesOriginalYamlAndDetachedVariables()
     {
         var dir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
