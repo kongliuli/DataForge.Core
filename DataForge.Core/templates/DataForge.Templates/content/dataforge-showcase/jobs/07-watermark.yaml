@@ -1,0 +1,13 @@
+# Incremental copy: only rows with Id greater than the value in state/orders.watermark
+# are written. After a successful run the file stores the max Id seen.
+name: orders-incremental
+watermark:
+  column: Id
+  statePath: ../state/orders.watermark
+  initial: "0"
+source:
+  type: csv
+  path: ../data/orders.csv
+sink:
+  type: json
+  path: ../out/orders-incremental.json

@@ -235,6 +235,52 @@ public class JobSchedulerTests
     }
 }
 
+public class JobWatermarkTests
+{
+    [Fact]
+    public async Task Run_WritesOnlyRowsAfterStoredWatermark()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), "dataforge-wm-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        var csvPath = Path.Combine(tempDir, "in.csv");
+        var outPath = Path.Combine(tempDir, "out.json");
+        var statePath = Path.Combine(tempDir, "wm.txt");
+        var jobPath = Path.Combine(tempDir, "job.yaml");
+
+        try
+        {
+            await File.WriteAllTextAsync(csvPath, "Id,Name\n1,a\n2,b\n3,c\n");
+            await File.WriteAllTextAsync(statePath, "1");
+            await File.WriteAllTextAsync(jobPath, $"""
+                name: incremental
+                watermark:
+                  column: Id
+                  statePath: {statePath.Replace('\\', '/')}
+                source:
+                  type: csv
+                  path: {csvPath.Replace('\\', '/')}
+                sink:
+                  type: json
+                  path: {outPath.Replace('\\', '/')}
+                """);
+
+            var result = await new JobRunner().RunAsync(jobPath);
+            Assert.True(result.Success, result.ErrorMessage);
+            Assert.Equal(2, result.ExportResults!.RecordsWritten);
+            Assert.Equal("3", (await File.ReadAllTextAsync(statePath)).Trim());
+            var json = await File.ReadAllTextAsync(outPath);
+            Assert.DoesNotContain("\"Id\": \"1\"", json.Replace("\"Id\":\"1\"", "\"Id\": \"1\""));
+            Assert.Contains("b", json);
+            Assert.Contains("c", json);
+        }
+        finally
+        {
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, recursive: true);
+        }
+    }
+}
+
 public class JobYamlParserTests
 {
     [Fact]

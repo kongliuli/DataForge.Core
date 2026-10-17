@@ -32,6 +32,9 @@ public sealed class JobDefinition
 
     /// <summary>Per-job execution options (batch size hint, progress cadence).</summary>
     public JobExecutionOptions? Execution { get; set; }
+
+    /// <summary>Optional incremental cursor stored next to the job file.</summary>
+    public WatermarkDefinition? Watermark { get; set; }
 }
 
 public sealed class JobExecutionOptions
@@ -47,6 +50,20 @@ public sealed class JobExecutionOptions
 
     /// <summary>Preferred sink batch size when the adapter supports it.</summary>
     public int? BatchSize { get; set; }
+}
+
+/// <summary>
+/// Incremental watermark. The runner filters rows where <see cref="Column"/> is greater than the stored value,
+/// then writes the max seen value back to <see cref="StatePath"/>.
+/// </summary>
+public sealed class WatermarkDefinition
+{
+    public string Column { get; set; } = "";
+
+    public string StatePath { get; set; } = "";
+
+    /// <summary>Used when the state file does not exist yet.</summary>
+    public string? Initial { get; set; }
 }
 
 public sealed class JoinSourceDefinition

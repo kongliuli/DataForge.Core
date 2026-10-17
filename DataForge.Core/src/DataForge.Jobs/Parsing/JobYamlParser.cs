@@ -55,6 +55,13 @@ public static class JobYamlParser
         }
 
         ValidateSink(job.Sink);
+        if (job.Watermark is not null)
+        {
+            if (string.IsNullOrWhiteSpace(job.Watermark.Column))
+                throw new InvalidOperationException("Job watermark.column is required.");
+            if (string.IsNullOrWhiteSpace(job.Watermark.StatePath))
+                throw new InvalidOperationException("Job watermark.statePath is required.");
+        }
     }
 
     private static void ValidateSource(SourceDefinition source)

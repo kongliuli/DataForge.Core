@@ -52,6 +52,11 @@ public sealed class JobRunner
             ResolvePaths(job, jobDirectory);
             ApplyExecutionHints(job);
 
+            var watermarkValue = job.Watermark is null
+                ? null
+                : await JobWatermark.ReadAsync(job.Watermark, cancellationToken).ConfigureAwait(false);
+            string? nextWatermark = watermarkValue;
+
             ExportResults results;
             if (job.Sources.Count > 0)
             {
@@ -59,6 +64,7 @@ public sealed class JobRunner
                     WithProgress(JobJoin.ReadJoinedAsync(job, cancellationToken), jobName, job.Execution?.ProgressEvery ?? 1000, progress, cancellationToken),
                     job,
                     vars);
+                joined = ApplyWatermark(joined, job.Watermark, watermarkValue, value => nextWatermark = value, cancellationToken);
                 results = await JobSinkWriter.WriteAsync(joined, job.Sink, cancellationToken).ConfigureAwait(false);
                 progress?.Report(JobProgress.Writing(jobName, results.RecordsWritten));
             }
@@ -71,6 +77,7 @@ public sealed class JobRunner
                     job.Execution?.ProgressEvery ?? 1000,
                     progress,
                     cancellationToken);
+                rows = ApplyWatermark(rows, job.Watermark, watermarkValue, value => nextWatermark = value, cancellationToken);
 
                 results = await JobSinkWriter.WriteAsync(rows, job.Sink, cancellationToken).ConfigureAwait(false);
 
@@ -83,6 +90,13 @@ public sealed class JobRunner
                 }
 
                 progress?.Report(JobProgress.Writing(jobName, results.RecordsWritten));
+            }
+
+            if (job.Watermark is not null &&
+                !string.IsNullOrEmpty(nextWatermark) &&
+                !string.Equals(nextWatermark, watermarkValue, StringComparison.Ordinal))
+            {
+                await JobWatermark.WriteAsync(job.Watermark, nextWatermark, cancellationToken).ConfigureAwait(false);
             }
 
             progress?.Report(JobProgress.Completed(jobName, results.RecordsWritten));
@@ -150,6 +164,35 @@ public sealed class JobRunner
 
         if (job.Validate?.BadRowOutput != null)
             job.Validate.BadRowOutput = VariableResolver.ResolvePath(job.Validate.BadRowOutput, jobDirectory);
+
+        if (!string.IsNullOrWhiteSpace(job.Watermark?.StatePath))
+            job.Watermark.StatePath = VariableResolver.ResolvePath(job.Watermark.StatePath, jobDirectory);
+    }
+
+    private static async IAsyncEnumerable<JobRow> ApplyWatermark(
+        IAsyncEnumerable<JobRow> rows,
+        WatermarkDefinition? watermark,
+        string? current,
+        Action<string?> remember,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var max = current;
+        await foreach (var row in rows.WithCancellation(cancellationToken).ConfigureAwait(false))
+        {
+            if (watermark is null)
+            {
+                yield return row;
+                continue;
+            }
+
+            var value = row.Get(watermark.Column);
+            if (!JobWatermark.IsAfter(value, current))
+                continue;
+
+            max = JobWatermark.Max(max, value);
+            remember(max);
+            yield return row;
+        }
     }
 
     private static IDataPipeline<JobRow> BuildPipeline(
