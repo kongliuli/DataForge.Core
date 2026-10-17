@@ -9,7 +9,11 @@ var builder = WebApplication.CreateBuilder(args);
 JobProviders.RegisterAll();
 builder.Services.AddSingleton<JobRunHistory>();
 builder.Services.AddSingleton<ConnectionStore>();
+builder.Services.AddSingleton<JobScheduleService>();
 var app = builder.Build();
+
+// Resident scheduler: schedules registered via /api/schedules run inside this process.
+app.Services.GetRequiredService<JobScheduleService>().Start();
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
@@ -107,6 +111,49 @@ app.MapGet("/api/jobs/history", (JobRunHistory history) =>
         entry.Yaml,
         entry.Results
     }));
+
+app.MapGet("/api/schedules", (JobScheduleService schedules) => schedules.List());
+
+app.MapPost("/api/schedules", (RegisterScheduleRequest request, JobScheduleService schedules) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Yaml))
+        return Results.BadRequest(new { error = "yaml is required" });
+
+    try
+    {
+        var status = schedules.Add(
+            request.Yaml,
+            request.Id,
+            variables: request.Variables,
+            runOnStart: request.RunOnStart == true);
+
+        return Results.Created($"/api/schedules/{status.Id}", status);
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+});
+
+app.MapPost("/api/schedules/{id}/run", async (string id, JobScheduleService schedules, CancellationToken cancellationToken) =>
+{
+    try
+    {
+        var result = await schedules.RunNowAsync(id, cancellationToken);
+        return Results.Ok(ToDto(result));
+    }
+    catch (KeyNotFoundException)
+    {
+        return Results.NotFound();
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+});
+
+app.MapDelete("/api/schedules/{id}", (string id, JobScheduleService schedules) =>
+    schedules.Remove(id) ? Results.NoContent() : Results.NotFound());
 
 app.MapPost("/api/jobs/schedule", (ScheduleRequest request) =>
 {
@@ -235,6 +282,12 @@ static JobResultDto ToDto(JobRunResult result) => new(
 public sealed record RunRequest(string? Yaml, Dictionary<string, string>? Variables);
 
 public sealed record ScheduleRequest(string? Yaml);
+
+public sealed record RegisterScheduleRequest(
+    string? Yaml,
+    string? Id,
+    bool? RunOnStart,
+    Dictionary<string, string>? Variables);
 
 public sealed record CatalogRequest(string? Type, string? ConnectionString, string? ConnectionId, string? Table, int? Limit);
 

@@ -52,6 +52,15 @@ public sealed class JobScheduler
     /// <summary>Raised after each scheduled run (including failures).</summary>
     public Action<JobScheduleTick>? OnTick { get; set; }
 
+    /// <summary>Raised with the instant the loop starts waiting for (resident hosts show it as "next run").</summary>
+    public Action<DateTimeOffset>? OnWaiting { get; set; }
+
+    /// <summary>
+    /// Optional replacement for the default runner invocation. Resident hosts use it to
+    /// record run history (execution count, last result) around each scheduled run.
+    /// </summary>
+    public Func<JobDefinition, string, IReadOnlyDictionary<string, string>?, CancellationToken, Task<JobRunResult>>? Executor { get; set; }
+
     public static CronExpression ParseSchedule(string cronExpression)
     {
         if (string.IsNullOrWhiteSpace(cronExpression))
@@ -105,12 +114,17 @@ public sealed class JobScheduler
 
             var delay = due.Value - now;
             if (delay > TimeSpan.Zero)
+            {
+                OnWaiting?.Invoke(due.Value);
                 await DelayAsync(delay, cancellationToken).ConfigureAwait(false);
+            }
 
             var startedAt = Clock();
-            var result = await _runner
-                .RunAsync(job, jobFilePath, variables, cancellationToken, _progress)
-                .ConfigureAwait(false);
+            var result = Executor is null
+                ? await _runner
+                    .RunAsync(job, jobFilePath, variables, cancellationToken, _progress)
+                    .ConfigureAwait(false)
+                : await Executor(job, jobFilePath, variables, cancellationToken).ConfigureAwait(false);
 
             runs++;
             OnTick?.Invoke(new JobScheduleTick

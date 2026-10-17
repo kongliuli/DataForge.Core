@@ -12,6 +12,48 @@ public class JobApiTests : IClassFixture<WebApplicationFactory<Program>>
     public JobApiTests(WebApplicationFactory<Program> factory) => _factory = factory;
 
     [Fact]
+    public async Task ResidentSchedule_RegisterRunAndRemove()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "df-resident-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        var csv = Path.Combine(dir, "in.csv");
+        var json = Path.Combine(dir, "out.json");
+        var id = Guid.NewGuid().ToString("N");
+        var client = _factory.CreateClient();
+        try
+        {
+            await File.WriteAllTextAsync(csv, "Id,Name\n1,Ada\n");
+            var yaml = $"""
+                name: resident
+                schedule: "0 0 1 1 *"
+                source:
+                  type: csv
+                  path: {csv.Replace('\\', '/')}
+                sink:
+                  type: json
+                  path: {json.Replace('\\', '/')}
+                """;
+            var registered = await client.PostAsJsonAsync("/api/schedules", new { id, yaml });
+            Assert.Equal(HttpStatusCode.Created, registered.StatusCode);
+            var run = await client.PostAsync($"/api/schedules/{id}/run", null);
+            run.EnsureSuccessStatusCode();
+            Assert.True((await run.Content.ReadFromJsonAsync<JsonElement>()).GetProperty("success").GetBoolean());
+            Assert.Contains("Ada", await File.ReadAllTextAsync(json));
+            var statuses = await client.GetFromJsonAsync<JsonElement>("/api/schedules");
+            var status = statuses.EnumerateArray().Single(x => x.GetProperty("id").GetString() == id);
+            Assert.Equal(1, status.GetProperty("runCount").GetInt32());
+            Assert.True(status.GetProperty("lastSuccess").GetBoolean());
+            Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"/api/schedules/{id}")).StatusCode);
+            Assert.Equal(HttpStatusCode.NotFound, (await client.PostAsync($"/api/schedules/{id}/run", null)).StatusCode);
+        }
+        finally
+        {
+            await client.DeleteAsync($"/api/schedules/{id}");
+            Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
     public async Task Run_CsvToJson_WritesRecords()
     {
         var dir = Path.Combine(Path.GetTempPath(), "df-web-" + Guid.NewGuid().ToString("N"));
