@@ -310,7 +310,7 @@ public sealed class JobScheduleService : IAsyncDisposable
         {
             var startedAt = DateTimeOffset.UtcNow;
             var result = await _runner
-                .RunAsync(entry.Job, entry.JobFilePath, entry.Variables, cancellationToken, _progress)
+                .RunAsync(JobYamlParser.Parse(entry.Yaml), entry.JobFilePath, entry.Variables, cancellationToken, _progress)
                 .ConfigureAwait(false);
 
             lock (_sync)

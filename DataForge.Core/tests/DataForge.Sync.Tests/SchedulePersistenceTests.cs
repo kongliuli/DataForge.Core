@@ -7,6 +7,34 @@ namespace DataForge.Sync.Tests;
 public class SchedulePersistenceTests
 {
     [Fact]
+    public async Task RepeatedRuns_ResolveEnvironmentFromOriginalYaml()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var key = "DF_SCHEDULE_TEST_" + Guid.NewGuid().ToString("N");
+        Directory.CreateDirectory(dir);
+        try
+        {
+            await File.WriteAllTextAsync(Path.Combine(dir, "a.csv"), "Id,Name\n1,First\n");
+            await File.WriteAllTextAsync(Path.Combine(dir, "b.csv"), "Id,Name\n2,Second\n");
+            var yaml = "name: repeat\nschedule: '0 0 1 1 *'\nsource:\n  type: csv\n  path: ${" + key + "}\nsink:\n  type: json\n  path: ./out.json\n";
+            await using var service = new JobScheduleService();
+            service.Add(yaml, "repeat", Path.Combine(dir, "job.yaml"));
+            Environment.SetEnvironmentVariable(key, "./a.csv");
+            Assert.True((await service.RunNowAsync("repeat")).Success);
+            Assert.Contains("First", await File.ReadAllTextAsync(Path.Combine(dir, "out.json")));
+            Environment.SetEnvironmentVariable(key, "./b.csv");
+            Assert.True((await service.RunNowAsync("repeat")).Success);
+            Assert.Contains("Second", await File.ReadAllTextAsync(Path.Combine(dir, "out.json")));
+            Assert.Equal(2, service.Get("repeat")!.RunCount);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(key, null);
+            Directory.Delete(dir, true);
+        }
+    }
+
+    [Fact]
     public async Task FileStore_RoundTripReplacementAndCancelledSave()
     {
         var dir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
