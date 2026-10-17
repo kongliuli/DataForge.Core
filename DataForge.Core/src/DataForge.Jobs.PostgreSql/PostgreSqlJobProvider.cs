@@ -24,19 +24,23 @@ internal sealed class PostgreSqlJobProvider : IJobSourceProvider, IJobSinkProvid
 
     public IReadOnlyList<string> SinkTypes { get; } = ["postgresql", "postgres"];
 
-    public IDataPipeline<JobRow> Create(JobDefinition job)
+    public IDataPipeline<JobRow> Create(JobDefinition job) => Create(job, null);
+
+    public IDataPipeline<JobRow> Create(JobDefinition job, string? watermark)
     {
         return job.Source.Type.ToLowerInvariant() switch
-        {            "postgresql" or "postgres" => CreatePg(job),
+        {
+            "postgresql" or "postgres" => CreatePg(job, watermark),
             _ => throw new NotSupportedException(job.Source.Type)
         };
     }
 
-    private static IDataPipeline<JobRow> CreatePg(JobDefinition job)
+    private static IDataPipeline<JobRow> CreatePg(JobDefinition job, string? watermark)
     {
         var connection = job.Source.Connection ?? throw new InvalidOperationException("PostgreSQL source requires connection.");
         var table = job.Source.Table ?? throw new InvalidOperationException("PostgreSQL source requires table.");
-        return new DataPipeline<JobRow>(new JobRowPostgreSqlSource(connection, table).ReadAsync());
+        var source = new JobRowPostgreSqlSource(connection, table);
+        return new DataPipeline<JobRow>(source.ReadAsync(job.Watermark?.Column, watermark));
     }
 
     public Task<ExportResults> WriteAsync(IAsyncEnumerable<JobRow> rows, SinkDefinition sink, CancellationToken cancellationToken = default) =>

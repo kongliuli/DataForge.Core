@@ -279,6 +279,58 @@ public class JobWatermarkTests
                 Directory.Delete(tempDir, recursive: true);
         }
     }
+
+    [Fact]
+    public async Task Sqlite_PushesWatermarkIntoSql()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), "dataforge-wm-sql-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        var db = Path.Combine(tempDir, "src.db");
+        var json = Path.Combine(tempDir, "out.json");
+        var state = Path.Combine(tempDir, "wm.txt");
+        var job = Path.Combine(tempDir, "job.yaml");
+        var cs = new Microsoft.Data.Sqlite.SqliteConnectionStringBuilder { DataSource = db, Mode = Microsoft.Data.Sqlite.SqliteOpenMode.ReadWriteCreate }.ToString();
+
+        try
+        {
+            await using (var connection = new Microsoft.Data.Sqlite.SqliteConnection(cs))
+            {
+                await connection.OpenAsync();
+                await using var command = connection.CreateCommand();
+                command.CommandText = "CREATE TABLE Orders (Id INTEGER PRIMARY KEY, Name TEXT); INSERT INTO Orders VALUES (1,'a'),(2,'b'),(5,'e');";
+                await command.ExecuteNonQueryAsync();
+            }
+
+            await File.WriteAllTextAsync(state, "2");
+            var yaml = string.Join('\n',
+            [
+                "name: sqlite-wm",
+                "watermark:",
+                "  column: Id",
+                $"  statePath: {state.Replace('\\', '/')}",
+                "source:",
+                "  type: sqlite",
+                "  connection: " + cs.Replace("\\", "\\\\"),
+                "  table: Orders",
+                "sink:",
+                "  type: json",
+                $"  path: {json.Replace('\\', '/')}"
+            ]);
+            await File.WriteAllTextAsync(job, yaml);
+
+            var result = await new JobRunner().RunAsync(job);
+            Assert.True(result.Success, result.ErrorMessage);
+            Assert.Equal(1, result.ExportResults!.RecordsWritten);
+            Assert.Equal("5", (await File.ReadAllTextAsync(state)).Trim());
+            Assert.Contains("e", await File.ReadAllTextAsync(json));
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            if (Directory.Exists(tempDir))
+                Directory.Delete(tempDir, recursive: true);
+        }
+    }
 }
 
 public class JobYamlParserTests

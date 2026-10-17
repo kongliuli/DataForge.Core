@@ -23,14 +23,28 @@ public sealed class JobRowSqliteSource : IRelationalDataSource<JobRow>
 
     public DataSourceType SourceType => DataSourceType.Sqlite;
 
+    public IAsyncEnumerable<JobRow> ReadAsync(CancellationToken cancellationToken = default) =>
+        ReadAsync(null, null, cancellationToken);
+
     public async IAsyncEnumerable<JobRow> ReadAsync(
+        string? whereColumn,
+        string? watermark,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         await using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
         await using var command = connection.CreateCommand();
-        command.CommandText = $"SELECT * FROM {_quotedTableName}";
+        if (string.IsNullOrWhiteSpace(whereColumn) || string.IsNullOrEmpty(watermark))
+        {
+            command.CommandText = $"SELECT * FROM {_quotedTableName}";
+        }
+        else
+        {
+            var quoted = SqlIdentifiers.QuoteSqlite(whereColumn);
+            command.CommandText = $"SELECT * FROM {_quotedTableName} WHERE {quoted} > @watermark";
+            command.Parameters.AddWithValue("@watermark", watermark);
+        }
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))

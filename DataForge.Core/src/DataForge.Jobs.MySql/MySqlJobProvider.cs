@@ -22,11 +22,14 @@ internal sealed class MySqlJobProvider : IJobSourceProvider, IJobSinkProvider
     public IReadOnlyList<string> SourceTypes { get; } = ["mysql"];
     public IReadOnlyList<string> SinkTypes { get; } = ["mysql"];
 
-    public IDataPipeline<JobRow> Create(JobDefinition job)
+    public IDataPipeline<JobRow> Create(JobDefinition job) => Create(job, null);
+
+    public IDataPipeline<JobRow> Create(JobDefinition job, string? watermark)
     {
         var connection = job.Source.Connection ?? throw new InvalidOperationException("MySQL source requires connection.");
         var table = job.Source.Table ?? throw new InvalidOperationException("MySQL source requires table.");
-        return new DataPipeline<JobRow>(new JobRowMySqlSource(connection, table).ReadAsync());
+        var source = new JobRowMySqlSource(connection, table);
+        return new DataPipeline<JobRow>(source.ReadAsync(job.Watermark?.Column, watermark));
     }
 
     public Task<ExportResults> WriteAsync(IAsyncEnumerable<JobRow> rows, SinkDefinition sink, CancellationToken cancellationToken = default) =>

@@ -21,14 +21,29 @@ public sealed class JobRowSqlServerSource : IRelationalDataSource<JobRow>
 
     public DataSourceType SourceType => DataSourceType.SqlServer;
 
+    public IAsyncEnumerable<JobRow> ReadAsync(CancellationToken cancellationToken = default) =>
+        ReadAsync(null, null, cancellationToken);
+
     public async IAsyncEnumerable<JobRow> ReadAsync(
+        string? whereColumn,
+        string? watermark,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         await using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
         await using var command = connection.CreateCommand();
-        command.CommandText = $"SELECT * FROM {_tableName}";
+        var quotedTable = SqlIdentifiers.QuoteSqlServer(_tableName);
+        if (string.IsNullOrWhiteSpace(whereColumn) || string.IsNullOrEmpty(watermark))
+        {
+            command.CommandText = $"SELECT * FROM {quotedTable}";
+        }
+        else
+        {
+            var quoted = SqlIdentifiers.QuoteSqlServer(whereColumn);
+            command.CommandText = $"SELECT * FROM {quotedTable} WHERE {quoted} > @watermark";
+            command.Parameters.AddWithValue("@watermark", watermark);
+        }
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))

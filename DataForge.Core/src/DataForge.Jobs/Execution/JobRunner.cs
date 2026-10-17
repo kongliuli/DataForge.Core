@@ -10,6 +10,9 @@ namespace DataForge.Jobs.Execution;
 
 public sealed class JobRunner
 {
+    [ThreadStatic]
+    private static string? _pendingWatermark;
+
     public async Task<JobRunResult> RunAsync(
         string jobFilePath,
         IReadOnlyDictionary<string, string>? variables = null,
@@ -56,6 +59,7 @@ public sealed class JobRunner
                 ? null
                 : await JobWatermark.ReadAsync(job.Watermark, cancellationToken).ConfigureAwait(false);
             string? nextWatermark = watermarkValue;
+            _pendingWatermark = watermarkValue;
 
             ExportResults results;
             if (job.Sources.Count > 0)
@@ -263,7 +267,7 @@ public sealed class JobRunner
             throw new NotSupportedException(
                 $"Source type '{job.Source.Type}' is not registered. Reference the matching DataForge.Jobs.* adapter and call its registration method.");
 
-        return provider.Create(job);
+        return provider.Create(job, _pendingWatermark);
     }
 
     private static JobRow ProjectRow(JobRow row, Dictionary<string, string> mapping)

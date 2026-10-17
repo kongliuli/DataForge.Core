@@ -24,19 +24,23 @@ internal sealed class SqlServerJobProvider : IJobSourceProvider, IJobSinkProvide
 
     public IReadOnlyList<string> SinkTypes { get; } = ["sqlserver"];
 
-    public IDataPipeline<JobRow> Create(JobDefinition job)
+    public IDataPipeline<JobRow> Create(JobDefinition job) => Create(job, null);
+
+    public IDataPipeline<JobRow> Create(JobDefinition job, string? watermark)
     {
         return job.Source.Type.ToLowerInvariant() switch
-        {            "sqlserver" => CreateSql(job),
+        {
+            "sqlserver" => CreateSql(job, watermark),
             _ => throw new NotSupportedException(job.Source.Type)
         };
     }
 
-    private static IDataPipeline<JobRow> CreateSql(JobDefinition job)
+    private static IDataPipeline<JobRow> CreateSql(JobDefinition job, string? watermark)
     {
         var connection = job.Source.Connection ?? throw new InvalidOperationException("SQL Server source requires connection.");
         var table = job.Source.Table ?? throw new InvalidOperationException("SQL Server source requires table.");
-        return new DataPipeline<JobRow>(new JobRowSqlServerSource(connection, table).ReadAsync());
+        var source = new JobRowSqlServerSource(connection, table);
+        return new DataPipeline<JobRow>(source.ReadAsync(job.Watermark?.Column, watermark));
     }
 
     public Task<ExportResults> WriteAsync(IAsyncEnumerable<JobRow> rows, SinkDefinition sink, CancellationToken cancellationToken = default) =>

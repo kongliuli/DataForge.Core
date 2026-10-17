@@ -1,4 +1,5 @@
 using System.Globalization;
+using DataForge.Core.Core.Infrastructure;
 using DataForge.Jobs.Models;
 
 namespace DataForge.Jobs.Execution;
@@ -47,5 +48,22 @@ public static class JobWatermark
         if (string.IsNullOrEmpty(current))
             return candidate;
         return IsAfter(candidate, current) ? candidate : current;
+    }
+
+    /// <summary>
+    /// Builds <c>SELECT * FROM table WHERE column &gt; @watermark</c> when a cursor exists.
+    /// Column and table names are validated identifiers; the cursor value is a parameter.
+    /// </summary>
+    public static (string Sql, string ParameterName, string? Value) BuildSelect(
+        string quotedTable,
+        string column,
+        string? watermark,
+        Func<string, string> quote)
+    {
+        var quotedColumn = quote(SqlIdentifiers.Validate(column, nameof(column)));
+        if (string.IsNullOrEmpty(watermark))
+            return ($"SELECT * FROM {quotedTable}", "watermark", null);
+
+        return ($"SELECT * FROM {quotedTable} WHERE {quotedColumn} > @watermark", "watermark", watermark);
     }
 }
