@@ -53,6 +53,7 @@ public sealed class JobScheduleService : IAsyncDisposable
     {
         public required string Id { get; init; }
         public required JobDefinition Job { get; init; }
+        public required string Yaml { get; init; }
         public required string JobFilePath { get; init; }
         public IReadOnlyDictionary<string, string>? Variables { get; init; }
         public bool RunOnStart { get; init; }
@@ -115,8 +116,9 @@ public sealed class JobScheduleService : IAsyncDisposable
         {
             Id = entryId,
             Job = job,
-            JobFilePath = jobFilePath ?? Path.Combine(Directory.GetCurrentDirectory(), "scheduled-job.yaml"),
-            Variables = variables,
+            Yaml = yaml,
+            JobFilePath = Path.GetFullPath(jobFilePath ?? Path.Combine(Directory.GetCurrentDirectory(), "scheduled-job.yaml")),
+            Variables = variables is null ? null : new Dictionary<string, string>(variables),
             RunOnStart = runOnStart,
             Status = new ScheduledJobStatus
             {
@@ -138,6 +140,26 @@ public sealed class JobScheduleService : IAsyncDisposable
         }
 
         return entry.Status.Clone();
+    }
+
+    /// <summary>Returns detached registrations suitable for JSON persistence. Does not include run history.</summary>
+    public IReadOnlyList<ScheduleRegistration> ExportRegistrations()
+    {
+        lock (_sync)
+        {
+            return _entries.Select(entry => new ScheduleRegistration(
+                entry.Id, entry.Yaml, entry.JobFilePath,
+                entry.Variables is null ? null : new Dictionary<string, string>(entry.Variables),
+                entry.RunOnStart)).ToArray();
+        }
+    }
+
+    /// <summary>Restores one saved registration. Duplicate identifiers are rejected by Add.</summary>
+    public ScheduledJobStatus Restore(ScheduleRegistration registration)
+    {
+        ArgumentNullException.ThrowIfNull(registration);
+        return Add(registration.Yaml, registration.Id, registration.JobFilePath,
+            registration.Variables, registration.RunOnStart);
     }
 
     public bool Remove(string id)
