@@ -12,7 +12,13 @@ public static class JobYamlParser
         .IgnoreUnmatchedProperties()
         .Build();
 
-    public static JobDefinition Parse(string yaml) => ParseMany(yaml)[0];
+    public static JobDefinition Parse(string yaml)
+    {
+        var jobs = ParseMany(yaml);
+        if (jobs.Count != 1)
+            throw new InvalidOperationException("Single-job parsing requires exactly one job. Use ParseMany or JobBatch for batch YAML.");
+        return jobs[0];
+    }
 
     public static JobFile ParseFile(string yaml)
     {

@@ -8,6 +8,16 @@ public class YamlStructureTests
     private const string Single = "name: sample\nsource:\n  type: csv\n  path: ./in.csv\nsink:\n  type: json\n  path: ./out.json";
 
     [Fact]
+    public void SingleParserRejectsBatchWhileBatchParserPreservesAllJobs()
+    {
+        var item = "  - " + Single.Replace("\n", "\n    ");
+        var yaml = "jobs:\n" + item + "\n" + item;
+        var error = Assert.Throws<InvalidOperationException>(() => JobYamlParser.Parse(yaml));
+        Assert.Contains("JobBatch", error.Message);
+        Assert.Equal(2, JobYamlParser.ParseMany(yaml).Count);
+    }
+
+    [Fact]
     public void QuotedJobsKey_IsRecognizedAsBatch()
     {
         var yaml = "'jobs':\n  - " + Single.Replace("\n", "\n    ");
