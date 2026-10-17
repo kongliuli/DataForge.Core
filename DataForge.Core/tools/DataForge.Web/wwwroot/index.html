@@ -65,6 +65,9 @@ sink:
   type: json
   path: ./output.json
 </textarea>
+    <label>变量（每行 KEY=VALUE，YAML 里用 ${KEY}）</label>
+    <textarea id="vars" style="min-height:4rem">SRC=./in.csv
+DST=./out.json</textarea>
     <button id="run">运行</button>
     <h3>进度</h3>
     <pre id="progress">等待运行</pre>
@@ -166,10 +169,18 @@ sink:
       const progress = document.getElementById('progress');
       out.textContent = '运行中…';
       progress.textContent = '';
+      const variables = {};
+      for (const line of document.getElementById('vars').value.split(/\r?\n/)) {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) continue;
+        const eq = trimmed.indexOf('=');
+        if (eq <= 0) continue;
+        variables[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim();
+      }
       const res = await fetch('/api/jobs/run/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
-        body: JSON.stringify({ yaml: document.getElementById('yaml').value })
+        body: JSON.stringify({ yaml: document.getElementById('yaml').value, variables })
       });
       if (!res.ok || !res.body) {
         out.textContent = await res.text();

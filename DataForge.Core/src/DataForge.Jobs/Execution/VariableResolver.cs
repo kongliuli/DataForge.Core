@@ -36,6 +36,22 @@ public static partial class VariableResolver
         if (job.Validate?.BadRowOutput != null)
             job.Validate.BadRowOutput = ResolveText(job.Validate.BadRowOutput, variables);
 
+        if (job.Watermark is not null)
+        {
+            job.Watermark.Column = ResolveText(job.Watermark.Column, variables);
+            job.Watermark.StatePath = ResolveText(job.Watermark.StatePath, variables);
+            if (job.Watermark.Initial != null)
+                job.Watermark.Initial = ResolveText(job.Watermark.Initial, variables);
+        }
+
+        foreach (var source in job.Sources)
+        {
+            source.Path = ResolveText(source.Path, variables);
+            source.Connection = ResolveText(source.Connection ?? string.Empty, variables);
+            source.Table = ResolveText(source.Table ?? string.Empty, variables);
+            source.On = ResolveText(source.On ?? string.Empty, variables);
+        }
+
         return job;
     }
 

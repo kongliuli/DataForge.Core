@@ -117,4 +117,37 @@ public class JobApiTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.Contains("event: result", body);
         Assert.Contains("web-sse", body);
     }
+
+    [Fact]
+    public async Task Run_SubstitutesRequestVariables()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "df-var-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        var csv = Path.Combine(dir, "in.csv");
+        var json = Path.Combine(dir, "out.json");
+        await File.WriteAllTextAsync(csv, "Id,Name\n1,var\n");
+        var yaml = """
+            name: web-vars
+            source:
+              type: csv
+              path: ${SRC}
+            sink:
+              type: json
+              path: ${DST}
+            """;
+
+        var client = _factory.CreateClient();
+        var response = await client.PostAsJsonAsync("/api/jobs/run", new
+        {
+            yaml,
+            variables = new Dictionary<string, string>
+            {
+                ["SRC"] = csv.Replace('\\', '/'),
+                ["DST"] = json.Replace('\\', '/')
+            }
+        });
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.True(response.StatusCode == HttpStatusCode.OK, body);
+        Assert.Contains("var", await File.ReadAllTextAsync(json));
+    }
 }
