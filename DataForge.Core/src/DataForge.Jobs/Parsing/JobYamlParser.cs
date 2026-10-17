@@ -13,7 +13,7 @@ public static class JobYamlParser
 
     public static JobDefinition Parse(string yaml) => ParseMany(yaml)[0];
 
-    public static IReadOnlyList<JobDefinition> ParseMany(string yaml)
+    public static JobFile ParseFile(string yaml)
     {
         if (yaml.Contains("jobs:", StringComparison.Ordinal))
         {
@@ -23,15 +23,17 @@ public static class JobYamlParser
             {
                 foreach (var job in file.Jobs)
                     ValidateJob(job);
-                return file.Jobs;
+                return file;
             }
         }
 
         var single = Deserializer.Deserialize<JobDefinition>(yaml)
             ?? throw new InvalidOperationException("Job YAML deserialized to null.");
         ValidateJob(single);
-        return [single];
+        return new JobFile { Jobs = [single], SourceJob = single };
     }
+
+    public static IReadOnlyList<JobDefinition> ParseMany(string yaml) => ParseFile(yaml).Jobs;
 
     private static void ValidateJob(JobDefinition job)
     {

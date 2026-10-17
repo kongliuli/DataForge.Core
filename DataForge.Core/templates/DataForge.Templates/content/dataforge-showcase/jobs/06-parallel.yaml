@@ -1,0 +1,20 @@
+name: parallel-batch
+execution:
+  parallelism: 2
+  stopOnError: false
+  progressEvery: 500
+jobs:
+  - name: copy-a
+    source:
+      type: csv
+      path: data/orders.csv
+    sink:
+      type: json
+      path: out/a.json
+  - name: copy-b
+    source:
+      type: csv
+      path: data/orders.csv
+    sink:
+      type: json
+      path: out/b.json

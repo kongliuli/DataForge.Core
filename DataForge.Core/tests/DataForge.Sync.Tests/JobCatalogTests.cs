@@ -1,4 +1,6 @@
+using ClosedXML.Excel;
 using DataForge.Jobs.Catalog;
+using DataForge.Jobs.Excel;
 using DataForge.Jobs.Sqlite;
 using Microsoft.Data.Sqlite;
 using Xunit;
@@ -62,5 +64,39 @@ public class JobCatalogTests
     {
         JobSqliteRegistration.AddDataForgeJobsSqlite();
         Assert.Contains("sqlite", JobCatalog.RegisteredTypes, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task ExcelCatalog_ListsSheetAndPreview()
+    {
+        JobExcelRegistration.AddDataForgeJobsExcel();
+        var path = Path.Combine(Path.GetTempPath(), "df-xlsx-" + Guid.NewGuid().ToString("N") + ".xlsx");
+        try
+        {
+            using (var workbook = new XLWorkbook())
+            {
+                var sheet = workbook.AddWorksheet("Orders");
+                sheet.Cell(1, 1).Value = "Id";
+                sheet.Cell(1, 2).Value = "Name";
+                sheet.Cell(2, 1).Value = "1";
+                sheet.Cell(2, 2).Value = "Ada";
+                workbook.SaveAs(path);
+            }
+
+            var test = await JobCatalog.TestConnectionAsync("excel", path);
+            Assert.True(test.Success, test.Error);
+            var sheets = await JobCatalog.ListTablesAsync("excel", path);
+            Assert.Contains("Orders", sheets);
+            var columns = await JobCatalog.DescribeTableAsync("excel", path, "Orders");
+            Assert.Contains(columns, column => column.Name == "Id");
+            var rows = await JobCatalog.PreviewAsync("excel", path, "Orders", 5);
+            Assert.Equal("Ada", rows[0]["Name"]);
+            Assert.True(await JobCatalog.TableExistsAsync("excel", path, "Orders"));
+        }
+        finally
+        {
+            if (File.Exists(path))
+                File.Delete(path);
+        }
     }
 }

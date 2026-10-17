@@ -4,6 +4,7 @@ using DataForge.Jobs.Models;
 using DataForge.Jobs.Parsing;
 using DataForge.Jobs.Providers;
 using DataForge.Jobs.Validation;
+using System.Runtime.CompilerServices;
 
 namespace DataForge.Jobs.Execution;
 
@@ -12,7 +13,8 @@ public sealed class JobRunner
     public async Task<JobRunResult> RunAsync(
         string jobFilePath,
         IReadOnlyDictionary<string, string>? variables = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IProgress<JobProgress>? progress = null)
     {
         var startedAt = DateTimeOffset.UtcNow;
 
@@ -21,10 +23,9 @@ public sealed class JobRunner
             if (!File.Exists(jobFilePath))
                 return Fail(jobFilePath, startedAt, $"Job file not found: {jobFilePath}");
 
-            var jobDirectory = Path.GetDirectoryName(Path.GetFullPath(jobFilePath)) ?? Directory.GetCurrentDirectory();
             var yaml = await File.ReadAllTextAsync(jobFilePath, cancellationToken).ConfigureAwait(false);
             var job = JobYamlParser.Parse(yaml);
-            return await RunAsync(job, jobFilePath, variables, cancellationToken).ConfigureAwait(false);
+            return await RunAsync(job, jobFilePath, variables, cancellationToken, progress).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -36,29 +37,42 @@ public sealed class JobRunner
         JobDefinition job,
         string jobFilePath,
         IReadOnlyDictionary<string, string>? variables = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IProgress<JobProgress>? progress = null)
     {
         var startedAt = DateTimeOffset.UtcNow;
+        var jobName = job.Name ?? Path.GetFileNameWithoutExtension(jobFilePath);
         try
         {
+            progress?.Report(JobProgress.Started(jobName));
+
             var jobDirectory = Path.GetDirectoryName(Path.GetFullPath(jobFilePath)) ?? Directory.GetCurrentDirectory();
             var vars = variables ?? new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             VariableResolver.Apply(job, vars);
             ResolvePaths(job, jobDirectory);
+            ApplyExecutionHints(job);
 
             ExportResults results;
             if (job.Sources.Count > 0)
             {
-                var joined = ApplyTransforms(JobJoin.ReadJoinedAsync(job, cancellationToken), job, vars);
+                var joined = ApplyTransforms(
+                    WithProgress(JobJoin.ReadJoinedAsync(job, cancellationToken), jobName, job.Execution?.ProgressEvery ?? 1000, progress, cancellationToken),
+                    job,
+                    vars);
                 results = await JobSinkWriter.WriteAsync(joined, job.Sink, cancellationToken).ConfigureAwait(false);
+                progress?.Report(JobProgress.Writing(jobName, results.RecordsWritten));
             }
             else
             {
                 var pipeline = BuildPipeline(job, vars);
-                results = await JobSinkWriter.WriteAsync(
+                var rows = WithProgress(
                     pipeline.AsAsyncEnumerable(cancellationToken),
-                    job.Sink,
-                    cancellationToken).ConfigureAwait(false);
+                    jobName,
+                    job.Execution?.ProgressEvery ?? 1000,
+                    progress,
+                    cancellationToken);
+
+                results = await JobSinkWriter.WriteAsync(rows, job.Sink, cancellationToken).ConfigureAwait(false);
 
                 if (pipeline is DataPipeline<JobRow> dataPipeline &&
                     !string.IsNullOrWhiteSpace(job.Validate?.BadRowOutput))
@@ -67,12 +81,16 @@ public sealed class JobRunner
                         .FinalizeExportResultsAsync(results, cancellationToken)
                         .ConfigureAwait(false);
                 }
+
+                progress?.Report(JobProgress.Writing(jobName, results.RecordsWritten));
             }
+
+            progress?.Report(JobProgress.Completed(jobName, results.RecordsWritten));
 
             return new JobRunResult
             {
                 Success = true,
-                JobName = job.Name ?? Path.GetFileNameWithoutExtension(jobFilePath),
+                JobName = jobName,
                 JobFilePath = Path.GetFullPath(jobFilePath),
                 StartedAt = startedAt,
                 FinishedAt = DateTimeOffset.UtcNow,
@@ -81,8 +99,39 @@ public sealed class JobRunner
         }
         catch (Exception ex)
         {
+            progress?.Report(JobProgress.Failed(jobName, ex.Message));
             return Fail(jobFilePath, startedAt, ex.Message);
         }
+    }
+
+    private static void ApplyExecutionHints(JobDefinition job)
+    {
+        if (job.Execution?.BatchSize is int batchSize && batchSize > 0)
+        {
+            job.Sink.Options ??= new SinkOptionsDefinition();
+            job.Sink.Options.BatchSize ??= batchSize;
+        }
+    }
+
+    private static async IAsyncEnumerable<JobRow> WithProgress(
+        IAsyncEnumerable<JobRow> rows,
+        string? jobName,
+        int every,
+        IProgress<JobProgress>? progress,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        long count = 0;
+        var cadence = every <= 0 ? 0 : every;
+        await foreach (var row in rows.WithCancellation(cancellationToken).ConfigureAwait(false))
+        {
+            count++;
+            if (progress is not null && cadence > 0 && count % cadence == 0)
+                progress.Report(JobProgress.Reading(jobName, count));
+            yield return row;
+        }
+
+        if (progress is not null && count > 0)
+            progress.Report(JobProgress.Reading(jobName, count));
     }
 
     private static void ResolvePaths(JobDefinition job, string jobDirectory)

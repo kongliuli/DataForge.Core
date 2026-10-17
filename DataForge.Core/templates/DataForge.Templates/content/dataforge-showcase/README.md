@@ -7,8 +7,8 @@ UI 走 Web/CLI，不走 WPF。
 
 | LocalDts | DataForge |
 |---|---|
-| 连接探活 / 列库表 / 表结构 / 预览 | NuGet `JobCatalog.*` + Web `/api/catalog/*` |
-| MigrationEngine 作业 | YAML + `JobRunner` / `dataforge run` / Web 运行页 |
+| 连接探活 / 列库表 / 表结构 / 预览 | NuGet `JobCatalog.*` + Web `/api/catalog/*`（含 excel/parquet 文件路径） |
+| MigrationEngine 作业 + 进度 | YAML + `JobRunner`/`JobBatch` `IProgress<JobProgress>` / `dataforge run` / Web |
 | 同构/拆表/合表 | `jobs/01`–`05` |
 | 连接档案 | Web `ConnectionStore`（`data/connections.json`） |
 
@@ -21,6 +21,9 @@ UI 走 Web/CLI，不走 WPF。
 | `jobs/03-merge.yaml` | 异构投影后写入摘要表 |
 | `jobs/04-join.yaml` | 多源等值 JOIN + `createTable` + upsert |
 | `jobs/05-batch.yaml` | `jobs:` 顺序编排，失败即停 |
+| `jobs/06-parallel.yaml` | `execution.parallelism` 并行批 |
+
+批处理选项写在文件根 `execution:`：`parallelism`（默认 1）、`stopOnError`（默认 true）、`progressEvery`、`batchSize`。
 
 ## CLI
 
@@ -49,4 +52,4 @@ var cols = await JobCatalog.DescribeTableAsync("sqlite", conn, "orders");
 var rows = await JobCatalog.PreviewAsync("sqlite", conn, "orders", 20);
 ```
 
-已注册 Catalog：`sqlite` / `postgresql` / `sqlserver` / `mysql`。
+已注册 Catalog：`sqlite` / `postgresql` / `sqlserver` / `mysql` / `excel` / `parquet`。文件类 Catalog 的 connection 是文件路径，table 是工作表名或 parquet 文件名。

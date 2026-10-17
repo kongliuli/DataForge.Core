@@ -7,6 +7,9 @@ public sealed class JobFile
     public List<JobDefinition> Jobs { get; set; } = [];
 
     public JobDefinition? SourceJob { get; set; }
+
+    /// <summary>Batch-level execution options for <c>jobs:</c> files.</summary>
+    public JobExecutionOptions? Execution { get; set; }
 }
 
 public sealed class JobDefinition
@@ -26,6 +29,24 @@ public sealed class JobDefinition
     public ValidateDefinition? Validate { get; set; }
 
     public SinkDefinition Sink { get; set; } = new();
+
+    /// <summary>Per-job execution options (batch size hint, progress cadence).</summary>
+    public JobExecutionOptions? Execution { get; set; }
+}
+
+public sealed class JobExecutionOptions
+{
+    /// <summary>Max parallel jobs when a YAML file contains <c>jobs:</c>. Default 1 (sequential).</summary>
+    public int Parallelism { get; set; } = 1;
+
+    /// <summary>Stop the batch after the first failure. Default true.</summary>
+    public bool StopOnError { get; set; } = true;
+
+    /// <summary>Emit reading progress every N rows (0 = only phase events).</summary>
+    public int ProgressEvery { get; set; } = 1000;
+
+    /// <summary>Preferred sink batch size when the adapter supports it.</summary>
+    public int? BatchSize { get; set; }
 }
 
 public sealed class JoinSourceDefinition

@@ -107,4 +107,56 @@ public class JobJoinBatchTests
         Assert.Equal(1, results[0].ExportResults!.RecordsWritten);
         Assert.False(results[1].Success);
     }
+
+    [Fact]
+    public async Task Progress_AndParallelBatch_ReportPhases()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "df-progress-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        var csvA = Path.Combine(dir, "a.csv");
+        var csvB = Path.Combine(dir, "b.csv");
+        await File.WriteAllTextAsync(csvA, "Id,Name\n1,Ada\n2,Bob\n3,Cy\n");
+        await File.WriteAllTextAsync(csvB, "Id,Name\n4,Dee\n");
+        var yamlPath = Path.Combine(dir, "parallel.yaml");
+        var pathA = csvA.Replace('\\', '/');
+        var pathB = csvB.Replace('\\', '/');
+        var dirPath = dir.Replace('\\', '/');
+        var yaml = $"""
+            name: parallel
+            execution:
+              parallelism: 2
+              stopOnError: false
+              progressEvery: 2
+            jobs:
+              - name: a
+                source:
+                  type: csv
+                  path: {pathA}
+                sink:
+                  type: json
+                  path: {dirPath}/a.json
+                execution:
+                  progressEvery: 2
+              - name: b
+                source:
+                  type: csv
+                  path: {pathB}
+                sink:
+                  type: json
+                  path: {dirPath}/b.json
+            """;
+        await File.WriteAllTextAsync(yamlPath, yaml);
+
+        var phases = new List<string>();
+        var progress = new Progress<JobProgress>(item => phases.Add(item.Phase));
+        var results = await JobBatch.RunFileAsync(yamlPath, progress: progress);
+
+        Assert.Equal(2, results.Count);
+        Assert.All(results, item => Assert.True(item.Success, item.ErrorMessage));
+        Assert.Contains(phases, phase => phase is "started" or "batch-started");
+        Assert.Contains("reading", phases);
+        Assert.Contains("completed", phases);
+        Assert.True(File.Exists(Path.Combine(dir, "a.json")));
+        Assert.True(File.Exists(Path.Combine(dir, "b.json")));
+    }
 }

@@ -1,6 +1,7 @@
 using ClosedXML.Excel;
 using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Pipeline;
+using DataForge.Jobs.Catalog;
 using DataForge.Jobs.Models;
 using DataForge.Jobs.Providers;
 using System.Diagnostics;
@@ -15,6 +16,7 @@ public static class JobExcelRegistration
         var provider = new ExcelJobProvider();
         JobProviderRegistry.Register((IJobSourceProvider)provider);
         JobProviderRegistry.Register((IJobSinkProvider)provider);
+        JobCatalog.Register(new ExcelCatalogProvider());
     }
 }
 

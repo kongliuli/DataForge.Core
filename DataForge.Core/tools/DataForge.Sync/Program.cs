@@ -230,7 +230,7 @@ static void PrintHelp()
           transforms: where, select, join (sources[])
           validate: rules (required/min/max/pattern), onError, badRowOutput
           schedule: cron (5-field, used by watch)
-          catalog types: sqlite | postgresql | sqlserver | mysql
+          catalog types: sqlite | postgresql | sqlserver | mysql | excel | parquet
 
         Variables:
           --var lastSync=2026-07-01
