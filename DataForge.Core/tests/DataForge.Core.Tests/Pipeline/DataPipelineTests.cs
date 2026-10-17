@@ -85,6 +85,52 @@ public class DataPipelineTests
     }
 
     [Fact]
+    public async Task ThenBy_AppliesSecondarySort()
+    {
+        var data = new[]
+        {
+            (Name: "b", Rank: 2),
+            (Name: "a", Rank: 2),
+            (Name: "c", Rank: 1),
+            (Name: "a", Rank: 1)
+        };
+
+        var result = await DataForgePipeline
+            .FromMemory(data)
+            .OrderBy(x => x.Rank)
+            .ThenBy(x => x.Name)
+            .ToListAsync();
+
+        result.Select(x => (x.Rank, x.Name)).Should().ContainInOrder(
+            (1, "a"),
+            (1, "c"),
+            (2, "a"),
+            (2, "b"));
+    }
+
+    [Fact]
+    public async Task ThenByDescending_AppliesSecondarySort()
+    {
+        var data = new[]
+        {
+            (Name: "a", Rank: 1),
+            (Name: "c", Rank: 1),
+            (Name: "b", Rank: 2)
+        };
+
+        var result = await DataForgePipeline
+            .FromMemory(data)
+            .OrderBy(x => x.Rank)
+            .ThenByDescending(x => x.Name)
+            .ToListAsync();
+
+        result.Select(x => (x.Rank, x.Name)).Should().ContainInOrder(
+            (1, "c"),
+            (1, "a"),
+            (2, "b"));
+    }
+
+    [Fact]
     public async Task Take_WithCount_LimitsResults()
     {
         var data = new[] { 1, 2, 3, 4, 5 };

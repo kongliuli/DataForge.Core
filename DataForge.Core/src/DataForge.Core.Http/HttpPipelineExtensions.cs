@@ -1,6 +1,7 @@
 using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Pipeline;
 using System.Net.Http;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -10,46 +11,70 @@ public static class HttpPipelineExtensions
 {
     public static IDataPipeline<T> FromRestApi<T>(this DataForgePipeline builder, string baseUrl, string endpoint, RestApiSourceOptions? options = null)
     {
-        var source = new RestApiSource<T>(null, options ?? new RestApiSourceOptions
-        {
-            BaseUrl = baseUrl,
-            Endpoint = endpoint
-        });
-        return new DataPipeline<T>(source.ReadAsync());
+        var sourceOptions = options ?? new RestApiSourceOptions();
+        sourceOptions.BaseUrl = string.IsNullOrWhiteSpace(sourceOptions.BaseUrl) ? baseUrl : sourceOptions.BaseUrl;
+        sourceOptions.Endpoint = string.IsNullOrWhiteSpace(sourceOptions.Endpoint) ? endpoint : sourceOptions.Endpoint;
+        var source = new RestApiSource<T>(null, sourceOptions);
+        return new DataPipeline<T>(EnumerateAndDispose(source, paginated: false));
     }
 
     public static IDataPipeline<T> FromRestApi<T>(this DataForgePipeline builder, HttpClient httpClient, string endpoint, RestApiSourceOptions? options = null)
     {
+        ArgumentNullException.ThrowIfNull(httpClient);
         var sourceOptions = options ?? new RestApiSourceOptions { Endpoint = endpoint };
+        if (string.IsNullOrWhiteSpace(sourceOptions.Endpoint))
+        {
+            sourceOptions.Endpoint = endpoint;
+        }
+
         var source = new RestApiSource<T>(httpClient, sourceOptions);
         return new DataPipeline<T>(source.ReadAsync());
     }
 
     public static IDataPipeline<T> FromRestApiWithPagination<T>(this DataForgePipeline builder, string baseUrl, string endpoint, RestApiSourceOptions? options = null)
     {
-        var sourceOptions = options ?? new RestApiSourceOptions
-        {
-            BaseUrl = baseUrl,
-            Endpoint = endpoint
-        };
+        var sourceOptions = options ?? new RestApiSourceOptions();
+        sourceOptions.BaseUrl = string.IsNullOrWhiteSpace(sourceOptions.BaseUrl) ? baseUrl : sourceOptions.BaseUrl;
+        sourceOptions.Endpoint = string.IsNullOrWhiteSpace(sourceOptions.Endpoint) ? endpoint : sourceOptions.Endpoint;
         var source = new RestApiSource<T>(null, sourceOptions);
-        return new DataPipeline<T>(source.ReadWithPaginationAsync());
+        return new DataPipeline<T>(EnumerateAndDispose(source, paginated: true));
     }
 
-    public static Task<ExportResults> ToRestApi<T>(this IDataPipeline<T> pipeline, string baseUrl, string endpoint, RestApiTargetOptions? options = null, CancellationToken cancellationToken = default)
+    public static async Task<ExportResults> ToRestApi<T>(this IDataPipeline<T> pipeline, string baseUrl, string endpoint, RestApiTargetOptions? options = null, CancellationToken cancellationToken = default)
     {
-        var targetOptions = options ?? new RestApiTargetOptions
-        {
-            BaseUrl = baseUrl,
-            Endpoint = endpoint
-        };
-        var target = new RestApiTarget<T>(null, targetOptions);
-        return target.ExportAsync(pipeline.AsAsyncEnumerable(cancellationToken), $"{baseUrl}{endpoint}", cancellationToken);
+        var targetOptions = options ?? new RestApiTargetOptions();
+        targetOptions.BaseUrl = string.IsNullOrWhiteSpace(targetOptions.BaseUrl) ? baseUrl : targetOptions.BaseUrl;
+        targetOptions.Endpoint = string.IsNullOrWhiteSpace(targetOptions.Endpoint) ? endpoint : targetOptions.Endpoint;
+        using var target = new RestApiTarget<T>(null, targetOptions);
+        return await target.ExportAsync(pipeline.AsAsyncEnumerable(cancellationToken), $"{baseUrl}{endpoint}", cancellationToken).ConfigureAwait(false);
     }
 
     public static Task<ExportResults> ToRestApi<T>(this IDataPipeline<T> pipeline, HttpClient httpClient, string endpoint, RestApiTargetOptions? options = null, CancellationToken cancellationToken = default)
     {
-        var target = new RestApiTarget<T>(httpClient, options);
+        ArgumentNullException.ThrowIfNull(httpClient);
+        var targetOptions = options ?? new RestApiTargetOptions { Endpoint = endpoint };
+        if (string.IsNullOrWhiteSpace(targetOptions.Endpoint))
+        {
+            targetOptions.Endpoint = endpoint;
+        }
+
+        var target = new RestApiTarget<T>(httpClient, targetOptions);
         return target.ExportAsync(pipeline.AsAsyncEnumerable(cancellationToken), endpoint, cancellationToken);
+    }
+
+    private static async IAsyncEnumerable<T> EnumerateAndDispose<T>(RestApiSource<T> source, bool paginated, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var enumerable = paginated ? source.ReadWithPaginationAsync(cancellationToken) : source.ReadAsync(cancellationToken);
+            await foreach (var item in enumerable.ConfigureAwait(false))
+            {
+                yield return item;
+            }
+        }
+        finally
+        {
+            source.Dispose();
+        }
     }
 }

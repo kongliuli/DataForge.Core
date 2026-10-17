@@ -18,4 +18,8 @@ public static class ExcelPipelineExtensions
         var target = new ExcelTarget<T>(options);
         return target.ExportAsync(pipeline.AsAsyncEnumerable(cancellationToken), filePath, cancellationToken);
     }
+
+    /// <summary>Alias aligned with core <c>To*Async</c> naming.</summary>
+    public static Task<ExportResults> ToExcelAsync<T>(this IDataPipeline<T> pipeline, string filePath, ExcelExportOptions? options = null, CancellationToken cancellationToken = default)
+        => ToExcel(pipeline, filePath, options, cancellationToken);
 }

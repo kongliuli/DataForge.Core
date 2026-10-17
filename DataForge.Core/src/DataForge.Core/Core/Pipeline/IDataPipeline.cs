@@ -80,6 +80,7 @@ public interface IDataPipeline<T>
 
     Task<ExportResults> ToJsonAsync(string filePath, JsonExportOptions? options = null, CancellationToken cancellationToken = default);
 
+    [Obsolete("Core ToExcelAsync is a CSV-style placeholder and does not write real .xlsx. Install DataForge.Core.Excel and use ToExcel/ToExcelAsync extension methods.")]
     Task<ExportResults> ToExcelAsync(string filePath, ExcelExportOptions? options = null, CancellationToken cancellationToken = default);
 
     Task<ExportResults> ToConsoleAsync(Func<T, string>? formatter = null, CancellationToken cancellationToken = default);

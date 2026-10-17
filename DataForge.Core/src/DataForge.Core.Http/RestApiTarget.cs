@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -11,22 +12,25 @@ using DataForge.Core.Core.Targets;
 
 namespace DataForge.Core.Http;
 
-public class RestApiTarget<T> : IDataTarget<T>
+public class RestApiTarget<T> : IDataTarget<T>, IDisposable
 {
     private readonly HttpClient _httpClient;
+    private readonly bool _ownsHttpClient;
     private readonly RestApiTargetOptions _options;
     private readonly JsonSerializerOptions _jsonOptions;
     private readonly List<T> _buffer = new();
+    private bool _disposed;
 
     public string Name => $"REST API Target: {_options.BaseUrl}{_options.Endpoint}";
     public DataTargetType TargetType => DataTargetType.RestApi;
 
     public RestApiTarget(HttpClient? httpClient, RestApiTargetOptions? options = null)
     {
-        _httpClient = httpClient ?? new HttpClient();
         _options = options ?? new RestApiTargetOptions();
+        _ownsHttpClient = httpClient is null;
+        _httpClient = httpClient ?? new HttpClient();
 
-        if (!string.IsNullOrWhiteSpace(_options.BaseUrl))
+        if (!string.IsNullOrWhiteSpace(_options.BaseUrl) && _ownsHttpClient)
         {
             _httpClient.BaseAddress = new Uri(_options.BaseUrl);
         }
@@ -40,6 +44,8 @@ public class RestApiTarget<T> : IDataTarget<T>
 
     public async Task<ExportResults> ExportAsync(IAsyncEnumerable<T> data, string destination, CancellationToken cancellationToken = default)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         var sw = System.Diagnostics.Stopwatch.StartNew();
         var count = 0;
 
@@ -69,16 +75,19 @@ public class RestApiTarget<T> : IDataTarget<T>
 
     public async Task WriteAsync(T item, CancellationToken cancellationToken = default)
     {
-        var url = $"{_options.Endpoint}";
-        var json = JsonSerializer.Serialize(item, _jsonOptions);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
-        var response = await _httpClient.PostAsync(url, content, cancellationToken).ConfigureAwait(false);
+        var json = JsonSerializer.Serialize(item, _jsonOptions);
+        using var content = new StringContent(json, Encoding.UTF8, "application/json");
+        using var request = CreateRequest(HttpMethod.Post, _options.Endpoint, content);
+        using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
     }
 
     public async Task<WriteResult> WriteBatchAsync(IEnumerable<T> items, CancellationToken cancellationToken = default)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         var successCount = 0;
         var failedCount = 0;
         var errors = new List<string>();
@@ -131,12 +140,57 @@ public class RestApiTarget<T> : IDataTarget<T>
 
     private async Task SendBulkRequestAsync(List<T> items, CancellationToken cancellationToken)
     {
-        var url = $"{_options.Endpoint}";
         var json = JsonSerializer.Serialize(items, _jsonOptions);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        var response = await _httpClient.PostAsync(url, content, cancellationToken).ConfigureAwait(false);
+        using var content = new StringContent(json, Encoding.UTF8, "application/json");
+        using var request = CreateRequest(HttpMethod.Post, _options.Endpoint, content);
+        using var response = await _httpClient.SendAsync(request, cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
+    }
+
+    private HttpRequestMessage CreateRequest(HttpMethod method, string url, HttpContent? content)
+    {
+        var request = new HttpRequestMessage(method, ResolveUri(url))
+        {
+            Content = content
+        };
+
+        foreach (var header in _options.Headers)
+        {
+            request.Headers.TryAddWithoutValidation(header.Key, header.Value);
+        }
+
+        return request;
+    }
+
+    private Uri ResolveUri(string url)
+    {
+        if (Uri.TryCreate(url, UriKind.Absolute, out var absolute))
+        {
+            return absolute;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_options.BaseUrl))
+        {
+            return new Uri(new Uri(_options.BaseUrl.EndsWith('/') ? _options.BaseUrl : _options.BaseUrl + "/"), url.TrimStart('/'));
+        }
+
+        return new Uri(url, UriKind.RelativeOrAbsolute);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (_ownsHttpClient)
+        {
+            _httpClient.Dispose();
+        }
+
+        _disposed = true;
+        GC.SuppressFinalize(this);
     }
 }
 

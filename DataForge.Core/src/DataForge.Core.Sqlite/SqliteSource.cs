@@ -14,14 +14,17 @@ public class SqliteSource<T> : IRelationalDataSource<T> where T : new()
 {
     private readonly string _connectionString;
     private readonly string _tableName;
+    private readonly string _quotedTableName;
 
     public string Name => $"SQLite: {_tableName}";
     public DataSourceType SourceType => DataSourceType.Sqlite;
 
     public SqliteSource(string connectionString, string tableName)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
         _connectionString = connectionString;
-        _tableName = tableName;
+        _tableName = SqlIdentifiers.Validate(tableName, nameof(tableName));
+        _quotedTableName = SqlIdentifiers.QuoteSqlite(_tableName);
     }
 
     public async IAsyncEnumerable<T> ReadAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
@@ -29,29 +32,18 @@ public class SqliteSource<T> : IRelationalDataSource<T> where T : new()
         using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
         using var command = connection.CreateCommand();
-        command.CommandText = $"SELECT * FROM {_tableName}";
+        command.CommandText = $"SELECT * FROM {_quotedTableName}";
         using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
 
-        var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        await foreach (var item in MapReaderAsync(reader, cancellationToken).ConfigureAwait(false))
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var item = new T();
-            foreach (var prop in properties)
-            {
-                var ordinal = reader.GetOrdinal(prop.Name);
-                if (!reader.IsDBNull(ordinal))
-                {
-                    prop.SetValue(item, reader.GetValue(ordinal));
-                }
-            }
             yield return item;
         }
     }
 
     public async IAsyncEnumerable<T> QueryAsync(string sql, object? parameters = null, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sql);
         using var connection = new SqliteConnection(_connectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
         using var command = connection.CreateCommand();
@@ -66,24 +58,8 @@ public class SqliteSource<T> : IRelationalDataSource<T> where T : new()
         }
 
         using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
-        var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-
-        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        await foreach (var item in MapReaderAsync(reader, cancellationToken).ConfigureAwait(false))
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            var item = new T();
-            foreach (var prop in properties)
-            {
-                try
-                {
-                    var ordinal = reader.GetOrdinal(prop.Name);
-                    if (!reader.IsDBNull(ordinal))
-                    {
-                        prop.SetValue(item, reader.GetValue(ordinal));
-                    }
-                }
-                catch { }
-            }
             yield return item;
         }
     }
@@ -94,17 +70,65 @@ public class SqliteSource<T> : IRelationalDataSource<T> where T : new()
         {
             SourceType = "Sqlite",
             Location = _tableName,
-            AdditionalInfo = { ["ConnectionString"] = _connectionString }
+            AdditionalInfo =
+            {
+                ["Provider"] = "Microsoft.Data.Sqlite",
+                ["Table"] = _tableName
+            }
         });
     }
 
     public async Task<IReadOnlyList<T>> ReadAllAsync(CancellationToken cancellationToken = default)
     {
         var results = new List<T>();
-        await foreach (var item in ReadAsync(cancellationToken))
+        await foreach (var item in ReadAsync(cancellationToken).ConfigureAwait(false))
         {
             results.Add(item);
         }
         return results;
+    }
+
+    private static async IAsyncEnumerable<T> MapReaderAsync(
+        SqliteDataReader reader,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
+        var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
+        var columns = new HashSet<string>(
+            Enumerable.Range(0, reader.FieldCount).Select(reader.GetName),
+            StringComparer.OrdinalIgnoreCase);
+
+        while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var item = new T();
+            foreach (var prop in properties)
+            {
+                if (!columns.Contains(prop.Name) || !prop.CanWrite)
+                {
+                    continue;
+                }
+
+                var ordinal = reader.GetOrdinal(prop.Name);
+                if (reader.IsDBNull(ordinal))
+                {
+                    continue;
+                }
+
+                try
+                {
+                    var raw = reader.GetValue(ordinal);
+                    var converted = new DefaultTypeConverter().Convert(raw, prop.PropertyType);
+                    prop.SetValue(item, converted);
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException(
+                        $"Failed to map SQLite column '{prop.Name}' onto {typeof(T).Name}.{prop.Name}.",
+                        ex);
+                }
+            }
+
+            yield return item;
+        }
     }
 }

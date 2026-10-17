@@ -13,9 +13,14 @@ public static class SqlitePipelineExtensions
         return new DataPipeline<T>(source.ReadAsync());
     }
 
-    public static Task<ExportResults> ToSqlite<T>(this IDataPipeline<T> pipeline, string connectionString, string tableName, SqliteExportOptions? options = null, CancellationToken cancellationToken = default)
+    public static Task<ExportResults> ToSqlite<T>(
+        this IDataPipeline<T> pipeline,
+        string connectionString,
+        string tableName,
+        SqliteExportOptions? options = null,
+        CancellationToken cancellationToken = default)
     {
-        var target = new SqliteTarget<T>(options ?? new SqliteExportOptions());
-        return target.ExportAsync(pipeline.AsAsyncEnumerable(cancellationToken), $"{connectionString}|{tableName}", cancellationToken);
+        var target = new SqliteTarget<T>(connectionString, tableName, options);
+        return target.ExportAsync(pipeline.AsAsyncEnumerable(cancellationToken), tableName, cancellationToken);
     }
 }

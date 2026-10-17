@@ -13,9 +13,14 @@ public static class MySqlPipelineExtensions
         return new DataPipeline<T>(source.ReadAsync());
     }
 
-    public static Task<ExportResults> ToMySql<T>(this IDataPipeline<T> pipeline, string connectionString, string tableName, MySqlExportOptions? options = null, CancellationToken cancellationToken = default)
+    public static Task<ExportResults> ToMySql<T>(
+        this IDataPipeline<T> pipeline,
+        string connectionString,
+        string tableName,
+        MySqlExportOptions? options = null,
+        CancellationToken cancellationToken = default)
     {
-        var target = new MySqlTarget<T>(options ?? new MySqlExportOptions());
-        return target.ExportAsync(pipeline.AsAsyncEnumerable(cancellationToken), $"{connectionString}|{tableName}", cancellationToken);
+        var target = new MySqlTarget<T>(connectionString, tableName, options);
+        return target.ExportAsync(pipeline.AsAsyncEnumerable(cancellationToken), tableName, cancellationToken);
     }
 }

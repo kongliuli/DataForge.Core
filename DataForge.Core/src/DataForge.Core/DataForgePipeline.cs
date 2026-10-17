@@ -26,6 +26,7 @@ public class DataForgePipeline
         return new DataPipeline<T>(source.ReadAsync());
     }
 
+    [Obsolete("Core FromExcel is a CSV-style placeholder and does not read real .xlsx. Install DataForge.Core.Excel and use ExcelPipelineExtensions.FromExcel.")]
     public static IDataPipeline<T> FromExcel<T>(string filePath, string sheetName = "Sheet1")
     {
         var source = new ExcelSource<T>(filePath, sheetName);
@@ -38,6 +39,7 @@ public class DataForgePipeline
         return new DataPipeline<T>(source.ReadAsync());
     }
 
+    [Obsolete("FromJsonArray currently aliases FromJson; prefer FromJson. True JSON-array streaming may land in a later release.")]
     public static IDataPipeline<T> FromJsonArray<T>(string filePath)
     {
         return FromJson<T>(filePath);

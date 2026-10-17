@@ -13,9 +13,14 @@ public static class SqlServerPipelineExtensions
         return new DataPipeline<T>(source.ReadAsync());
     }
 
-    public static Task<ExportResults> ToSqlServer<T>(this IDataPipeline<T> pipeline, string connectionString, string tableName, SqlServerExportOptions? options = null, CancellationToken cancellationToken = default)
+    public static Task<ExportResults> ToSqlServer<T>(
+        this IDataPipeline<T> pipeline,
+        string connectionString,
+        string tableName,
+        SqlServerExportOptions? options = null,
+        CancellationToken cancellationToken = default)
     {
-        var target = new SqlServerTarget<T>(options ?? new SqlServerExportOptions());
-        return target.ExportAsync(pipeline.AsAsyncEnumerable(cancellationToken), $"{connectionString}|{tableName}", cancellationToken);
+        var target = new SqlServerTarget<T>(connectionString, tableName, options);
+        return target.ExportAsync(pipeline.AsAsyncEnumerable(cancellationToken), tableName, cancellationToken);
     }
 }

@@ -11,23 +11,29 @@ using DataForge.Core.Core.Sources;
 
 namespace DataForge.Core.Http;
 
-public class RestApiSource<T> : IDataSource<T>
+public class RestApiSource<T> : IDataSource<T>, IDisposable
 {
     private readonly HttpClient _httpClient;
+    private readonly bool _ownsHttpClient;
     private readonly RestApiSourceOptions _options;
     private readonly JsonSerializerOptions _jsonOptions;
+    private bool _disposed;
 
     public string Name => $"REST API: {_options.BaseUrl}{_options.Endpoint}";
     public DataSourceType SourceType => DataSourceType.RestApi;
 
     public RestApiSource(HttpClient? httpClient, RestApiSourceOptions options)
     {
+        ArgumentNullException.ThrowIfNull(options);
+        _ownsHttpClient = httpClient is null;
         _httpClient = httpClient ?? new HttpClient();
-        if (!string.IsNullOrWhiteSpace(options.BaseUrl))
+        _options = options;
+
+        if (!string.IsNullOrWhiteSpace(options.BaseUrl) && _ownsHttpClient)
         {
             _httpClient.BaseAddress = new Uri(options.BaseUrl);
         }
-        _options = options;
+
         _jsonOptions = new JsonSerializerOptions
         {
             PropertyNameCaseInsensitive = true
@@ -36,11 +42,13 @@ public class RestApiSource<T> : IDataSource<T>
 
     public async IAsyncEnumerable<T> ReadAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var url = BuildUrl();
-        var response = await _httpClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
+        using var request = CreateRequest(BuildUrl());
+        using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
         response.EnsureSuccessStatusCode();
 
-        var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
 
         if (_options.UseStreaming)
         {
@@ -64,6 +72,8 @@ public class RestApiSource<T> : IDataSource<T>
 
     public async IAsyncEnumerable<T> ReadWithPaginationAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         var page = _options.StartPage;
         var hasMore = true;
 
@@ -71,11 +81,11 @@ public class RestApiSource<T> : IDataSource<T>
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var url = BuildUrl(page);
-            var response = await _httpClient.GetAsync(url, cancellationToken).ConfigureAwait(false);
+            using var request = CreateRequest(BuildUrl(page));
+            using var response = await _httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
 
-            var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
             var items = await JsonSerializer.DeserializeAsync<List<T>>(stream, _jsonOptions, cancellationToken).ConfigureAwait(false);
 
             if (items == null || items.Count == 0)
@@ -103,21 +113,41 @@ public class RestApiSource<T> : IDataSource<T>
 
     private async IAsyncEnumerable<T> DeserializeStreamAsync(System.IO.Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: cancellationToken).ConfigureAwait(false);
-        var root = doc.RootElement;
-
-        if (root.ValueKind == JsonValueKind.Array)
+        // Expects a JSON array payload. For a single JSON object, set UseStreaming = false.
+        var enumerable = JsonSerializer.DeserializeAsyncEnumerable<T>(stream, _jsonOptions, cancellationToken);
+        await foreach (var item in enumerable.ConfigureAwait(false))
         {
-            foreach (var element in root.EnumerateArray())
+            if (item is not null)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                yield return element.Deserialize<T>(_jsonOptions)!;
+                yield return item;
             }
         }
-        else if (root.ValueKind == JsonValueKind.Object)
+    }
+
+    private HttpRequestMessage CreateRequest(string url)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Get, ResolveUri(url));
+        foreach (var header in _options.Headers)
         {
-            yield return root.Deserialize<T>(_jsonOptions)!;
+            request.Headers.TryAddWithoutValidation(header.Key, header.Value);
         }
+
+        return request;
+    }
+
+    private Uri ResolveUri(string url)
+    {
+        if (Uri.TryCreate(url, UriKind.Absolute, out var absolute))
+        {
+            return absolute;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_options.BaseUrl))
+        {
+            return new Uri(new Uri(_options.BaseUrl.EndsWith('/') ? _options.BaseUrl : _options.BaseUrl + "/"), url.TrimStart('/'));
+        }
+
+        return new Uri(url, UriKind.RelativeOrAbsolute);
     }
 
     private string BuildUrl(int? page = null)
@@ -147,7 +177,8 @@ public class RestApiSource<T> : IDataSource<T>
             AdditionalInfo = new Dictionary<string, string>
             {
                 ["HttpMethod"] = "GET",
-                ["PageSize"] = _options.PageSize.ToString()
+                ["PageSize"] = _options.PageSize.ToString(),
+                ["OwnsHttpClient"] = _ownsHttpClient.ToString()
             }
         });
     }
@@ -161,6 +192,22 @@ public class RestApiSource<T> : IDataSource<T>
         }
         return results;
     }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        if (_ownsHttpClient)
+        {
+            _httpClient.Dispose();
+        }
+
+        _disposed = true;
+        GC.SuppressFinalize(this);
+    }
 }
 
 public class RestApiSourceOptions
@@ -172,5 +219,12 @@ public class RestApiSourceOptions
     public string? PageParam { get; set; }
     public int StartPage { get; set; } = 1;
     public int MaxPages { get; set; } = 0;
+
+    /// <summary>
+    /// When true, deserialize a JSON array with <see cref="JsonSerializer.DeserializeAsyncEnumerable{T}"/>.
+    /// When false, buffer into <see cref="List{T}"/> first.
+    /// </summary>
     public bool UseStreaming { get; set; } = true;
+
+    public Dictionary<string, string> Headers { get; set; } = new();
 }

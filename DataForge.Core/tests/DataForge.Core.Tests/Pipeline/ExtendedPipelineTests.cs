@@ -176,7 +176,9 @@ public class ExtendedPipelineTests
         try
         {
             System.IO.File.WriteAllText(tempFile, json);
+#pragma warning disable CS0618 // intentional Obsolete coverage for FromJsonArray alias
             var pipeline = DataForgePipeline.FromJsonArray<Person>(tempFile);
+#pragma warning restore CS0618
 
             var result = await pipeline.ToListAsync();
 

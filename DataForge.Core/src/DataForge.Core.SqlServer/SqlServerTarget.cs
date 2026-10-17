@@ -5,7 +5,6 @@ using Microsoft.Data.SqlClient;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -13,22 +12,34 @@ namespace DataForge.Core.SqlServer;
 
 public class SqlServerTarget<T> : IDataTarget<T>
 {
+    private readonly string _connectionString;
+    private readonly string _tableName;
+    private readonly string _quotedTableName;
     private readonly SqlServerExportOptions _options;
 
-    public string Name => "SQL Server Target";
+    public string Name => $"SQL Server Target: {_tableName}";
     public DataTargetType TargetType => DataTargetType.SqlServer;
 
-    public SqlServerTarget(SqlServerExportOptions? options = null)
+    public SqlServerTarget(string connectionString, string tableName, SqlServerExportOptions? options = null)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
+        _connectionString = connectionString;
+        _tableName = SqlIdentifiers.Validate(tableName, nameof(tableName));
+        _quotedTableName = SqlIdentifiers.QuoteSqlServer(_tableName);
         _options = options ?? new SqlServerExportOptions();
+
+        if (_options.UpsertKeyColumns is { Length: > 0 })
+        {
+            foreach (var key in _options.UpsertKeyColumns)
+            {
+                SqlIdentifiers.Validate(key, nameof(_options.UpsertKeyColumns));
+            }
+        }
     }
 
     public async Task<ExportResults> ExportAsync(IAsyncEnumerable<T> data, string destination, CancellationToken cancellationToken = default)
     {
-        var parts = destination.Split('|');
-        var connectionString = parts[0];
-        var tableName = parts.Length > 1 ? parts[1] : string.Empty;
-
+        _ = destination; // destination kept for IDataTarget; connection/table come from ctor
         var sw = Stopwatch.StartNew();
         var count = 0;
         var batch = new List<T>();
@@ -38,7 +49,7 @@ public class SqlServerTarget<T> : IDataTarget<T>
             batch.Add(item);
             if (batch.Count >= _options.BatchSize)
             {
-                await WriteBatchAsync(batch, connectionString, tableName, cancellationToken).ConfigureAwait(false);
+                await WriteBatchAsync(batch, cancellationToken).ConfigureAwait(false);
                 count += batch.Count;
                 batch.Clear();
             }
@@ -46,21 +57,35 @@ public class SqlServerTarget<T> : IDataTarget<T>
 
         if (batch.Count > 0)
         {
-            await WriteBatchAsync(batch, connectionString, tableName, cancellationToken).ConfigureAwait(false);
+            await WriteBatchAsync(batch, cancellationToken).ConfigureAwait(false);
             count += batch.Count;
         }
 
         sw.Stop();
-        return new ExportResults { RecordsWritten = count, Duration = sw.Elapsed };
+        return new ExportResults
+        {
+            RecordsWritten = count,
+            Duration = sw.Elapsed,
+            OutputPath = _tableName
+        };
     }
 
-    private async Task WriteBatchAsync(List<T> batch, string connectionString, string tableName, CancellationToken ct)
+    private async Task WriteBatchAsync(List<T> batch, CancellationToken ct)
     {
-        using var connection = new SqlConnection(connectionString);
+        using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync(ct).ConfigureAwait(false);
 
-        var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance);
-        var columns = string.Join(", ", properties.Select(p => p.Name));
+        var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.CanRead)
+            .ToArray();
+
+        foreach (var prop in properties)
+        {
+            SqlIdentifiers.Validate(prop.Name, nameof(T));
+        }
+
+        var quotedColumns = properties.Select(p => SqlIdentifiers.QuoteSqlServer(p.Name)).ToArray();
+        var columns = string.Join(", ", quotedColumns);
         var valuePlaceholders = string.Join(", ", properties.Select((_, i) => $"@p{i}"));
 
         SqlTransaction? transaction = null;
@@ -83,16 +108,26 @@ public class SqlServerTarget<T> : IDataTarget<T>
                 {
                     var keyCols = _options.UpsertKeyColumns;
                     var nonKeyProps = properties.Where(p => !keyCols.Contains(p.Name)).ToArray();
-                    var updateSet = string.Join(", ", nonKeyProps.Select((p, i) => $"{p.Name} = @p{Array.IndexOf(properties, p)}"));
+                    var updateSet = string.Join(", ", nonKeyProps.Select(p =>
+                    {
+                        var idx = Array.IndexOf(properties, p);
+                        return $"{SqlIdentifiers.QuoteSqlServer(p.Name)} = @p{idx}";
+                    }));
+                    var where = string.Join(" AND ", keyCols.Select(k =>
+                    {
+                        var idx = Array.IndexOf(properties, properties.First(p => p.Name == k));
+                        return $"{SqlIdentifiers.QuoteSqlServer(k)} = @p{idx}";
+                    }));
+
                     command.CommandText = $@"
-IF EXISTS (SELECT 1 FROM {tableName} WHERE {string.Join(" AND ", keyCols.Select(k => $"{k} = @p{Array.IndexOf(properties, properties.First(p => p.Name == k))}"))})
-    UPDATE {tableName} SET {updateSet} WHERE {string.Join(" AND ", keyCols.Select(k => $"{k} = @p{Array.IndexOf(properties, properties.First(p => p.Name == k))}"))}
+IF EXISTS (SELECT 1 FROM {_quotedTableName} WHERE {where})
+    UPDATE {_quotedTableName} SET {updateSet} WHERE {where}
 ELSE
-    INSERT INTO {tableName} ({columns}) VALUES ({valuePlaceholders})";
+    INSERT INTO {_quotedTableName} ({columns}) VALUES ({valuePlaceholders})";
                 }
                 else
                 {
-                    command.CommandText = $"INSERT INTO {tableName} ({columns}) VALUES ({valuePlaceholders})";
+                    command.CommandText = $"INSERT INTO {_quotedTableName} ({columns}) VALUES ({valuePlaceholders})";
                 }
 
                 for (var i = 0; i < properties.Length; i++)
@@ -120,12 +155,12 @@ ELSE
 
     public Task WriteAsync(T item, CancellationToken cancellationToken = default)
     {
-        return ExportAsync(ToAsyncEnumerable(item), "", cancellationToken);
+        return ExportAsync(ToAsyncEnumerable(item), _tableName, cancellationToken);
     }
 
     public async Task<WriteResult> WriteBatchAsync(IEnumerable<T> items, CancellationToken cancellationToken = default)
     {
-        var result = await ExportAsync(ToAsyncEnumerable(items), "", cancellationToken).ConfigureAwait(false);
+        var result = await ExportAsync(ToAsyncEnumerable(items), _tableName, cancellationToken).ConfigureAwait(false);
         return new WriteResult { SuccessCount = result.RecordsWritten };
     }
 
@@ -134,6 +169,7 @@ ELSE
     private static async IAsyncEnumerable<T> ToAsyncEnumerable(T item)
     {
         yield return item;
+        await Task.CompletedTask;
     }
 
     private static async IAsyncEnumerable<T> ToAsyncEnumerable(IEnumerable<T> items)
@@ -142,5 +178,6 @@ ELSE
         {
             yield return item;
         }
+        await Task.CompletedTask;
     }
 }

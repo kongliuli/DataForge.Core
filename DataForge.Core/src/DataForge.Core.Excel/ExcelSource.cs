@@ -135,7 +135,12 @@ public class ExcelSource<T> : IFileDataSource<T> where T : new()
                     var convertedValue = Convert.ChangeType(value, property.PropertyType);
                     property.SetValue(instance, convertedValue);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException(
+                        $"Failed to map Excel value '{value}' onto {type.Name}.{property.Name}.",
+                        ex);
+                }
             }
         }
 

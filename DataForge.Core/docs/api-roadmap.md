@@ -113,7 +113,8 @@ IDataPipeline<RestApiSource<T>, T> FromRestApi<T>(...);
 - **DI 一等集成**：`services.AddDataForge(...)` 与选项绑定 —— 现状示例多为手写注册
 - **分组聚合一等成员**：`Count` / `Sum` / `Average` / `Min` / `Max` 直接挂在 grouped 接口 —— 现状 `Select` + LINQ on `IGrouping`
 - **验证批处理链**：`ValidateAllWith`、错误收集后再决定 Fail/Continue —— 现状为逐条 `ValidateWith` + Continue/FailOnValidationError
-- **核心 Excel**：`DataForgePipeline.FromExcel` / `ToExcelAsync` 仍为占位；生产路径用 `DataForge.Core.Excel` 扩展
+- **核心 Excel**：`DataForgePipeline.FromExcel` / `ToExcelAsync` 仍为占位且已 `[Obsolete]`；生产路径用 `DataForge.Core.Excel` 扩展（见债单 P1-5）
+- **`FromJsonArray`**：已 `[Obsolete]`，当前等同 `FromJson`；真数组流式差异仍属规划
 
 ---
 

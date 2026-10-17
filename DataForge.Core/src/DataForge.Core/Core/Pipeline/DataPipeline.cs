@@ -16,6 +16,8 @@ namespace DataForge.Core.Core.Pipeline;
 public class DataPipeline<T> : IDataPipeline<T>
 {
     private readonly Func<CancellationToken, IAsyncEnumerable<T>> _sourceFactory;
+    private readonly Func<CancellationToken, IAsyncEnumerable<T>>? _baseSourceFactory;
+    private readonly IReadOnlyList<IPipelineSortStep<T>>? _sortSteps;
     private readonly IValidator<T>? _validator;
     private readonly bool _continueOnValidationError;
     private readonly bool _failOnValidationError;
@@ -34,7 +36,9 @@ public class DataPipeline<T> : IDataPipeline<T>
         bool continueOnValidationError = false,
         bool failOnValidationError = true,
         Func<Exception, T, ErrorAction>? errorHandler = null,
-        bool onErrorContinue = false)
+        bool onErrorContinue = false,
+        Func<CancellationToken, IAsyncEnumerable<T>>? baseSourceFactory = null,
+        IReadOnlyList<IPipelineSortStep<T>>? sortSteps = null)
     {
         _sourceFactory = sourceFactory;
         _validator = validator;
@@ -42,6 +46,8 @@ public class DataPipeline<T> : IDataPipeline<T>
         _failOnValidationError = failOnValidationError;
         _errorHandler = errorHandler;
         _onErrorContinue = onErrorContinue;
+        _baseSourceFactory = baseSourceFactory;
+        _sortSteps = sortSteps;
     }
 
     public IDataPipeline<TResult> Select<TResult>(Func<T, TResult> selector)
@@ -57,14 +63,26 @@ public class DataPipeline<T> : IDataPipeline<T>
 
     public IDataPipeline<TResult> SelectAsync<TResult>(Func<T, Task<TResult>> selector)
     {
+        if (_errorHandler != null || _onErrorContinue)
+        {
+            return new DataPipeline<TResult>((ct) =>
+                SelectAsyncSafeInternal(_sourceFactory(ct), selector, _errorHandler, ct));
+        }
+
         return new DataPipeline<TResult>((ct) =>
             SelectAsyncInternal(_sourceFactory(ct), selector, ct));
     }
 
     public IDataPipeline<TResult> SelectMany<TResult>(Func<T, IEnumerable<TResult>> selector)
     {
+        if (_errorHandler != null || _onErrorContinue)
+        {
+            return new DataPipeline<TResult>((ct) =>
+                SelectManySafeInternal(_sourceFactory(ct), selector, _errorHandler, ct));
+        }
+
         return new DataPipeline<TResult>((ct) =>
-            SelectManyInternal(_sourceFactory(ct), selector));
+            SelectManyInternal(_sourceFactory(ct), selector, ct));
     }
 
     public IDataPipeline<T> Where(Func<T, bool> predicate)
@@ -88,72 +106,107 @@ public class DataPipeline<T> : IDataPipeline<T>
 
     public IDataPipeline<T> OrderBy<TKey>(Func<T, TKey> keySelector)
     {
-        return new DataPipeline<T>((ct) =>
-            OrderByInternal(_sourceFactory(ct), keySelector, ascending: true, ct));
+        return CreateSortedPipeline(new PipelineSortStep<T, TKey>(keySelector, ascending: true), restart: true);
     }
 
     public IDataPipeline<T> OrderByDescending<TKey>(Func<T, TKey> keySelector)
     {
-        return new DataPipeline<T>((ct) =>
-            OrderByInternal(_sourceFactory(ct), keySelector, ascending: false, ct));
+        return CreateSortedPipeline(new PipelineSortStep<T, TKey>(keySelector, ascending: false), restart: true);
     }
 
     public IDataPipeline<T> ThenBy<TKey>(Func<T, TKey> keySelector)
     {
-        return OrderBy(keySelector);
+        return CreateSortedPipeline(new PipelineSortStep<T, TKey>(keySelector, ascending: true), restart: false);
     }
 
     public IDataPipeline<T> ThenByDescending<TKey>(Func<T, TKey> keySelector)
     {
-        return OrderByDescending(keySelector);
+        return CreateSortedPipeline(new PipelineSortStep<T, TKey>(keySelector, ascending: false), restart: false);
+    }
+
+    private IDataPipeline<T> CreateSortedPipeline(IPipelineSortStep<T> step, bool restart)
+    {
+        var baseFactory = _baseSourceFactory ?? _sourceFactory;
+        IReadOnlyList<IPipelineSortStep<T>> steps;
+        if (restart || _sortSteps is null || _sortSteps.Count == 0)
+        {
+            steps = new[] { step };
+        }
+        else
+        {
+            var list = new List<IPipelineSortStep<T>>(_sortSteps.Count + 1);
+            list.AddRange(_sortSteps);
+            list.Add(step);
+            steps = list;
+        }
+
+        return new DataPipeline<T>(
+            (ct) => SortInternal(baseFactory(ct), steps, ct),
+            _validator,
+            _continueOnValidationError,
+            _failOnValidationError,
+            _errorHandler,
+            _onErrorContinue,
+            baseFactory,
+            steps);
     }
 
     public IDataPipeline<T> Distinct()
     {
         return new DataPipeline<T>((ct) =>
-            DistinctInternal(_sourceFactory(ct)));
+            DistinctInternal(_sourceFactory(ct)),
+            _validator, _continueOnValidationError, _failOnValidationError, _errorHandler, _onErrorContinue);
     }
 
     public IDataPipeline<T> DistinctBy<TKey>(Func<T, TKey> keySelector)
     {
         return new DataPipeline<T>((ct) =>
-            DistinctByInternal(_sourceFactory(ct), keySelector));
+            DistinctByInternal(_sourceFactory(ct), keySelector),
+            _validator, _continueOnValidationError, _failOnValidationError, _errorHandler, _onErrorContinue);
     }
 
     public IDataPipeline<T> Skip(int count)
     {
         return new DataPipeline<T>((ct) =>
-            SkipInternal(_sourceFactory(ct), count));
+            SkipInternal(_sourceFactory(ct), count),
+            _validator, _continueOnValidationError, _failOnValidationError, _errorHandler, _onErrorContinue);
     }
 
     public IDataPipeline<T> Take(int count)
     {
         return new DataPipeline<T>((ct) =>
-            TakeInternal(_sourceFactory(ct), count));
+            TakeInternal(_sourceFactory(ct), count),
+            _validator, _continueOnValidationError, _failOnValidationError, _errorHandler, _onErrorContinue);
     }
 
     public IDataPipeline<List<T>> Batch(int batchSize)
     {
         return new DataPipeline<List<T>>((ct) =>
-            BatchInternal(_sourceFactory(ct), batchSize));
+            BatchInternal(GetValidatedEnumerable(ct), batchSize));
     }
 
     public IGroupedDataPipeline<TKey, T> GroupBy<TKey>(Func<T, TKey> keySelector) where TKey : notnull
     {
-        return new GroupedDataPipeline<TKey, T>(_sourceFactory, keySelector);
+        // Apply current validation / OnError policy before grouping.
+        return new GroupedDataPipeline<TKey, T>(ct => GetValidatedEnumerable(ct), keySelector);
     }
 
     public IDataPipeline<(T First, TSecond Second)> Zip<TSecond>(IDataPipeline<TSecond> second)
     {
-        var secondEnum = second.AsAsyncEnumerable();
         return new DataPipeline<(T First, TSecond Second)>((ct) =>
-            ZipInternal(_sourceFactory(ct), secondEnum, ct));
+            ZipInternal(GetValidatedEnumerable(ct), second.AsAsyncEnumerable(ct), ct));
     }
 
     public IDataPipeline<TResult> TransformWith<TResult>(IDataTransform<T, TResult> transform)
     {
+        if (_errorHandler != null || _onErrorContinue)
+        {
+            return new DataPipeline<TResult>((ct) =>
+                TransformWithSafeInternal(GetValidatedEnumerable(ct), transform, _errorHandler, ct));
+        }
+
         return new DataPipeline<TResult>((ct) =>
-            TransformWithInternal(_sourceFactory(ct), transform));
+            TransformWithInternal(GetValidatedEnumerable(ct), transform));
     }
 
     public IDataPipeline<T> ValidateWith(IValidator<T> validator)
@@ -273,6 +326,7 @@ public class DataPipeline<T> : IDataPipeline<T>
         return result;
     }
 
+    [Obsolete("Core ToExcelAsync is a CSV-style placeholder and does not write real .xlsx. Install DataForge.Core.Excel and use ToExcel/ToExcelAsync extension methods.")]
     public async Task<ExportResults> ToExcelAsync(string filePath, ExcelExportOptions? options = null, CancellationToken cancellationToken = default)
     {
         var target = new ExcelTarget<T>(options ?? new ExcelExportOptions());
@@ -441,6 +495,40 @@ public class DataPipeline<T> : IDataPipeline<T>
         }
     }
 
+    private static async IAsyncEnumerable<TResult> SelectAsyncSafeInternal<TResult>(
+        IAsyncEnumerable<T> source,
+        Func<T, Task<TResult>> selector,
+        Func<Exception, T, ErrorAction>? errorHandler,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await foreach (var item in source.WithCancellation(ct).ConfigureAwait(false))
+        {
+            TResult? result = default;
+            Exception? caughtException = null;
+            try
+            {
+                result = await selector(item).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                caughtException = ex;
+            }
+
+            if (caughtException != null)
+            {
+                var action = errorHandler?.Invoke(caughtException, item) ?? ErrorAction.Skip;
+                if (action == ErrorAction.Stop || action == ErrorAction.Throw)
+                {
+                    throw caughtException;
+                }
+
+                continue;
+            }
+
+            yield return result!;
+        }
+    }
+
     private static async IAsyncEnumerable<TResult> SelectManyInternal<TResult>(
         IAsyncEnumerable<T> source,
         Func<T, IEnumerable<TResult>> selector,
@@ -449,6 +537,43 @@ public class DataPipeline<T> : IDataPipeline<T>
         await foreach (var item in source.WithCancellation(ct).ConfigureAwait(false))
         {
             foreach (var result in selector(item))
+            {
+                yield return result;
+            }
+        }
+    }
+
+    private static async IAsyncEnumerable<TResult> SelectManySafeInternal<TResult>(
+        IAsyncEnumerable<T> source,
+        Func<T, IEnumerable<TResult>> selector,
+        Func<Exception, T, ErrorAction>? errorHandler,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await foreach (var item in source.WithCancellation(ct).ConfigureAwait(false))
+        {
+            IEnumerable<TResult>? results = null;
+            Exception? caughtException = null;
+            try
+            {
+                results = selector(item);
+            }
+            catch (Exception ex)
+            {
+                caughtException = ex;
+            }
+
+            if (caughtException != null)
+            {
+                var action = errorHandler?.Invoke(caughtException, item) ?? ErrorAction.Skip;
+                if (action == ErrorAction.Stop || action == ErrorAction.Throw)
+                {
+                    throw caughtException;
+                }
+
+                continue;
+            }
+
+            foreach (var result in results!)
             {
                 yield return result;
             }
@@ -522,10 +647,9 @@ public class DataPipeline<T> : IDataPipeline<T>
         }
     }
 
-    private static async IAsyncEnumerable<T> OrderByInternal<TKey>(
+    private static async IAsyncEnumerable<T> SortInternal(
         IAsyncEnumerable<T> source,
-        Func<T, TKey> keySelector,
-        bool ascending,
+        IReadOnlyList<IPipelineSortStep<T>> steps,
         [EnumeratorCancellation] CancellationToken ct)
     {
         var items = new List<T>();
@@ -534,11 +658,22 @@ public class DataPipeline<T> : IDataPipeline<T>
             items.Add(item);
         }
 
-        var sorted = ascending
-            ? items.OrderBy(keySelector)
-            : items.OrderByDescending(keySelector);
+        if (steps.Count == 0)
+        {
+            foreach (var item in items)
+            {
+                yield return item;
+            }
+            yield break;
+        }
 
-        foreach (var item in sorted)
+        IOrderedEnumerable<T> ordered = steps[0].ApplyFirst(items);
+        for (var i = 1; i < steps.Count; i++)
+        {
+            ordered = steps[i].ApplyThen(ordered);
+        }
+
+        foreach (var item in ordered)
         {
             yield return item;
         }
@@ -646,6 +781,34 @@ public class DataPipeline<T> : IDataPipeline<T>
         await foreach (var item in source.WithCancellation(ct).ConfigureAwait(false))
         {
             yield return transform.Transform(item);
+        }
+    }
+
+    private static async IAsyncEnumerable<TResult> TransformWithSafeInternal<TResult>(
+        IAsyncEnumerable<T> source,
+        IDataTransform<T, TResult> transform,
+        Func<Exception, T, ErrorAction>? errorHandler,
+        [EnumeratorCancellation] CancellationToken ct = default)
+    {
+        await foreach (var item in source.WithCancellation(ct).ConfigureAwait(false))
+        {
+            TResult result;
+            try
+            {
+                result = transform.Transform(item);
+            }
+            catch (Exception ex)
+            {
+                var action = errorHandler?.Invoke(ex, item) ?? ErrorAction.Skip;
+                if (action == ErrorAction.Skip || action == ErrorAction.Continue)
+                {
+                    continue;
+                }
+
+                throw;
+            }
+
+            yield return result;
         }
     }
 }

@@ -119,6 +119,7 @@ internal class ProgressReportingPipeline<T> : IDataPipeline<T>
     public async Task<bool> AnyAsync(CancellationToken cancellationToken = default) { await foreach (var _ in AsAsyncEnumerable(cancellationToken).ConfigureAwait(false)) return true; return false; }
     public Task<ExportResults> ToCsvAsync(string filePath, CsvExportOptions? options = null, CancellationToken cancellationToken = default) => _inner.ToCsvAsync(filePath, options, cancellationToken);
     public Task<ExportResults> ToJsonAsync(string filePath, JsonExportOptions? options = null, CancellationToken cancellationToken = default) => _inner.ToJsonAsync(filePath, options, cancellationToken);
+    [Obsolete("Core ToExcelAsync is a CSV-style placeholder. Prefer DataForge.Core.Excel ToExcel/ToExcelAsync.")]
     public Task<ExportResults> ToExcelAsync(string filePath, ExcelExportOptions? options = null, CancellationToken cancellationToken = default) => _inner.ToExcelAsync(filePath, options, cancellationToken);
     public Task<ExportResults> ToConsoleAsync(Func<T, string>? formatter = null, CancellationToken cancellationToken = default) => _inner.ToConsoleAsync(formatter, cancellationToken);
     public Task<ExportResults> ToStreamAsync(System.IO.Stream stream, ExportFormat format, CancellationToken cancellationToken = default) => _inner.ToStreamAsync(stream, format, cancellationToken);
@@ -179,6 +180,7 @@ internal class CounterReportingPipeline<T> : IDataPipeline<T>
     public async Task<bool> AnyAsync(CancellationToken cancellationToken = default) { await foreach (var _ in AsAsyncEnumerable(cancellationToken).ConfigureAwait(false)) return true; return false; }
     public Task<ExportResults> ToCsvAsync(string filePath, CsvExportOptions? options = null, CancellationToken cancellationToken = default) => _inner.ToCsvAsync(filePath, options, cancellationToken);
     public Task<ExportResults> ToJsonAsync(string filePath, JsonExportOptions? options = null, CancellationToken cancellationToken = default) => _inner.ToJsonAsync(filePath, options, cancellationToken);
+    [Obsolete("Core ToExcelAsync is a CSV-style placeholder. Prefer DataForge.Core.Excel ToExcel/ToExcelAsync.")]
     public Task<ExportResults> ToExcelAsync(string filePath, ExcelExportOptions? options = null, CancellationToken cancellationToken = default) => _inner.ToExcelAsync(filePath, options, cancellationToken);
     public Task<ExportResults> ToConsoleAsync(Func<T, string>? formatter = null, CancellationToken cancellationToken = default) => _inner.ToConsoleAsync(formatter, cancellationToken);
     public Task<ExportResults> ToStreamAsync(System.IO.Stream stream, ExportFormat format, CancellationToken cancellationToken = default) => _inner.ToStreamAsync(stream, format, cancellationToken);
@@ -299,6 +301,7 @@ internal class ParallelPipeline<T> : IDataPipeline<T>
     public async Task<bool> AnyAsync(CancellationToken cancellationToken = default) { await foreach (var _ in AsAsyncEnumerable(cancellationToken).ConfigureAwait(false)) return true; return false; }
     public Task<ExportResults> ToCsvAsync(string filePath, CsvExportOptions? options = null, CancellationToken cancellationToken = default) => _inner.ToCsvAsync(filePath, options, cancellationToken);
     public Task<ExportResults> ToJsonAsync(string filePath, JsonExportOptions? options = null, CancellationToken cancellationToken = default) => _inner.ToJsonAsync(filePath, options, cancellationToken);
+    [Obsolete("Core ToExcelAsync is a CSV-style placeholder. Prefer DataForge.Core.Excel ToExcel/ToExcelAsync.")]
     public Task<ExportResults> ToExcelAsync(string filePath, ExcelExportOptions? options = null, CancellationToken cancellationToken = default) => _inner.ToExcelAsync(filePath, options, cancellationToken);
     public Task<ExportResults> ToConsoleAsync(Func<T, string>? formatter = null, CancellationToken cancellationToken = default) => _inner.ToConsoleAsync(formatter, cancellationToken);
     public Task<ExportResults> ToStreamAsync(System.IO.Stream stream, ExportFormat format, CancellationToken cancellationToken = default) => _inner.ToStreamAsync(stream, format, cancellationToken);

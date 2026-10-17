@@ -115,7 +115,12 @@ internal class ExcelSource<T> : IFileDataSource<T>
                     var convertedValue = Convert.ChangeType(value, property.PropertyType);
                     property.SetValue(instance, convertedValue);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException(
+                        $"Failed to map Excel (placeholder) value '{value}' onto {type.Name}.{property.Name}.",
+                        ex);
+                }
             }
         }
 

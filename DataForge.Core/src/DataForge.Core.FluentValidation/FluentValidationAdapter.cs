@@ -12,6 +12,7 @@ public class FluentValidationAdapter<T> : IValidator<T>
 
     public FluentValidationAdapter(global::FluentValidation.IValidator<T> innerValidator)
     {
+        ArgumentNullException.ThrowIfNull(innerValidator);
         _innerValidator = innerValidator;
     }
 

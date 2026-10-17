@@ -353,7 +353,7 @@ public class ExcelExportOptions
 
 | 包 | 入口 | 说明 |
 |---|---|---|
-| `DataForge.Core.Excel` | `FromExcel(this DataForgePipeline, ...)` / `ToExcel` | ClosedXML；导出无 Async 后缀 |
+| `DataForge.Core.Excel` | `FromExcel(this DataForgePipeline, ...)` / `ToExcel` / `ToExcelAsync`（别名） | ClosedXML；核心 `FromExcel`/`ToExcelAsync` 已 Obsolete |
 | `DataForge.Core.Json` | `FromJson(this DataForgePipeline, ...)` / `ToJson` | 与核心 `FromJson`/`ToJsonAsync` 并存 |
 | `DataForge.Core.Http` | `FromRestApi` / `FromRestApiWithPagination` / `ToRestApi` | `this DataForgePipeline`；返回 `IDataPipeline<T>` |
 | `DataForge.Core.SqlServer` | `FromSqlServer(connectionString, tableName)` / `ToSqlServer` | **静态**工厂 |
@@ -400,7 +400,9 @@ public class RestApiSourceOptions
     public string? PageParam { get; set; }
     public int StartPage { get; set; } = 1;
     public int MaxPages { get; set; } = 0;
+    /// <summary>true: DeserializeAsyncEnumerable for JSON arrays; false: buffer List&lt;T&gt;. Source/Target apply Headers.</summary>
     public bool UseStreaming { get; set; } = true;
+    public Dictionary<string, string> Headers { get; set; } = new();
 }
 
 public class RestApiTargetOptions
@@ -411,6 +413,7 @@ public class RestApiTargetOptions
     public bool UseBulkEndpoint { get; set; } = false;
     public Dictionary<string, string> Headers { get; set; } = new();
 }
+// RestApiSource/Target: IDisposable; only dispose HttpClient when constructed without an external client.
 ```
 
 ### SQL（SqlServer / MySql / Sqlite）

@@ -18,8 +18,8 @@ using DataForge.Core;
 
 ### Excel 要用哪个包？
 
-- **核心** `DataForgePipeline.FromExcel`：占位实现（按文本/CSV 方式读），不适合当真 xlsx。
-- **生产**：安装 **`DataForge.Core.Excel`**，使用扩展 `FromExcel(this DataForgePipeline, path, ExcelSourceOptions?)` 与 `ToExcel(...)`。
+- **核心** `DataForgePipeline.FromExcel` / `ToExcelAsync`：占位实现，已 `[Obsolete]`，不适合当真 xlsx。
+- **生产**：安装 **`DataForge.Core.Excel`**，使用扩展 `FromExcel(...)` 与 `ToExcel` / `ToExcelAsync`。
 
 核心 `IDataPipeline<T>` 上也有 `ToExcelAsync`；扩展包方法名是 `ToExcel`，返回值仍是 `Task<ExportResults>`。
 

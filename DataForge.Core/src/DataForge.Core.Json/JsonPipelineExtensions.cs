@@ -18,4 +18,8 @@ public static class JsonPipelineExtensions
         var target = new JsonTarget<T>(options);
         return target.ExportAsync(pipeline.AsAsyncEnumerable(cancellationToken), filePath, cancellationToken);
     }
+
+    /// <summary>Alias aligned with core <c>To*Async</c> naming.</summary>
+    public static Task<ExportResults> ToJsonAsync<T>(this IDataPipeline<T> pipeline, string filePath, JsonExportOptions? options = null, CancellationToken cancellationToken = default)
+        => ToJson(pipeline, filePath, options, cancellationToken);
 }
