@@ -21,6 +21,7 @@
     <InternalsVisibleTo Include="DataForge.Core.SqlServer" />
     <InternalsVisibleTo Include="DataForge.Core.MySql" />
     <InternalsVisibleTo Include="DataForge.Core.Sqlite" />
+    <InternalsVisibleTo Include="DataForge.Core.PostgreSql" />
     <InternalsVisibleTo Include="DataForge.Core.Excel" />
     <InternalsVisibleTo Include="DataForge.Core.Json" />
     <InternalsVisibleTo Include="DataForge.Core.FluentValidation" />

@@ -59,4 +59,7 @@ public static partial class SqlIdentifiers
         var validated = Validate(identifier);
         return string.Join('.', validated.Split('.').Select(static p => $"\"{p.Replace("\"", "\"\"", StringComparison.Ordinal)}\""));
     }
+
+    /// <summary>PostgreSQL uses double-quoted identifiers (same escaping as SQLite).</summary>
+    public static string QuotePostgreSql(string identifier) => QuoteSqlite(identifier);
 }

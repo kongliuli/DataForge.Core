@@ -1,0 +1,21 @@
+name: sqlite-to-postgresql-orders
+# Requires: docker start dataforge-pg (5433), and a prepared SQLite file.
+
+source:
+  type: sqlite
+  connection: Data Source=./orders.db
+  table: orders
+
+transforms:
+  - where: "Amount > 0"
+  - select:
+      OrderId: OrderId
+      Customer: Customer
+      Amount: Amount
+
+sink:
+  type: postgresql
+  connection: Host=127.0.0.1;Port=5433;Username=dataforge;Password=dataforge;Database=dataforge
+  table: orders
+  mode: upsert
+  keys: [OrderId]

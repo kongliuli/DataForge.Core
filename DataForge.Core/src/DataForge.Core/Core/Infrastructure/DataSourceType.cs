@@ -8,6 +8,7 @@ public enum DataSourceType
     SqlServer,
     MySql,
     Sqlite,
+    PostgreSql,
     Memory,
     RestApi,
     Custom
@@ -21,6 +22,7 @@ public enum DataTargetType
     SqlServer,
     MySql,
     Sqlite,
+    PostgreSql,
     Console,
     Stream,
     RestApi,

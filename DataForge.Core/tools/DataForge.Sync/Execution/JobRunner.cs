@@ -112,6 +112,8 @@ public sealed class JobRunner
             "csv" => CreateCsvSource(job),
             "json" => CreateJsonSource(job),
             "sqlserver" => CreateSqlServerSource(job),
+            "sqlite" => CreateSqliteSource(job),
+            "postgresql" or "postgres" => CreatePostgreSqlSource(job),
             "parquet" => CreateParquetSource(job),
             "duckdb" => CreateDuckDbSource(job),
             _ => throw new NotSupportedException($"Source type '{job.Source.Type}' is not supported.")
@@ -153,6 +155,26 @@ public sealed class JobRunner
     private static IDataPipeline<JobRow> CreateSqlServerSource(JobDefinition job)
     {
         var source = new JobRowSqlServerSource(job.Source.Connection!, job.Source.Table!);
+        return new DataPipeline<JobRow>(source.ReadAsync());
+    }
+
+    private static IDataPipeline<JobRow> CreateSqliteSource(JobDefinition job)
+    {
+        var connection = job.Source.Connection
+            ?? throw new InvalidOperationException("SQLite source requires connection.");
+        var table = job.Source.Table
+            ?? throw new InvalidOperationException("SQLite source requires table.");
+        var source = new JobRowSqliteSource(connection, table);
+        return new DataPipeline<JobRow>(source.ReadAsync());
+    }
+
+    private static IDataPipeline<JobRow> CreatePostgreSqlSource(JobDefinition job)
+    {
+        var connection = job.Source.Connection
+            ?? throw new InvalidOperationException("PostgreSQL source requires connection.");
+        var table = job.Source.Table
+            ?? throw new InvalidOperationException("PostgreSQL source requires table.");
+        var source = new JobRowPostgreSqlSource(connection, table);
         return new DataPipeline<JobRow>(source.ReadAsync());
     }
 

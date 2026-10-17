@@ -35,10 +35,13 @@ public static class JobYamlParser
                     throw new InvalidOperationException("Job source.path is required for file sources.");
                 break;
             case "sqlserver":
+            case "sqlite":
+            case "postgresql":
+            case "postgres":
                 if (string.IsNullOrWhiteSpace(source.Connection))
-                    throw new InvalidOperationException("Job source.connection is required for sqlserver.");
+                    throw new InvalidOperationException($"Job source.connection is required for {source.Type}.");
                 if (string.IsNullOrWhiteSpace(source.Table))
-                    throw new InvalidOperationException("Job source.table is required for sqlserver.");
+                    throw new InvalidOperationException($"Job source.table is required for {source.Type}.");
                 break;
             case "parquet":
                 if (string.IsNullOrWhiteSpace(source.Path))
@@ -65,10 +68,13 @@ public static class JobYamlParser
                     throw new InvalidOperationException("Job sink.path is required for file sinks.");
                 break;
             case "sqlserver":
+            case "sqlite":
+            case "postgresql":
+            case "postgres":
                 if (string.IsNullOrWhiteSpace(sink.Connection))
-                    throw new InvalidOperationException("Job sink.connection is required for sqlserver.");
+                    throw new InvalidOperationException($"Job sink.connection is required for {sink.Type}.");
                 if (string.IsNullOrWhiteSpace(sink.Table))
-                    throw new InvalidOperationException("Job sink.table is required for sqlserver.");
+                    throw new InvalidOperationException($"Job sink.table is required for {sink.Type}.");
                 if (sink.Mode.Equals("upsert", StringComparison.OrdinalIgnoreCase) && sink.Keys.Count == 0)
                     throw new InvalidOperationException("Job sink.keys is required when mode is upsert.");
                 break;

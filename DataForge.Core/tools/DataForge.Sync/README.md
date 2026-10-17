@@ -4,14 +4,14 @@ Monorepo CLI tool for YAML-driven data sync jobs (**DEC-03**).
 
 ## Status
 
-**v0.4** — full job lifecycle for file + SQL Server pipelines, YAML validation rules, and cron watch.
+**v0.5** — file + SQL Server / SQLite / PostgreSQL / Parquet / DuckDB pipelines, YAML validation, cron watch.
 
 | Feature | Support |
 |---------|---------|
-| Source | `csv` · `json` · `sqlserver` |
+| Source | `csv` · `json` · `sqlserver` · `sqlite` · `postgresql`/`postgres` · `parquet` · `duckdb` |
 | Transforms | `where` · `select` |
 | Validate | `rules` (required/min/max/pattern) · `onError` · `badRowOutput` |
-| Sink | `csv` · `json` · `sqlserver` (`insert` / `upsert`) |
+| Sink | `csv` · `json` · `sqlserver` · `sqlite` · `postgresql`/`postgres` (`insert` / `upsert`) · `parquet` · `duckdb` |
 | Schedule | 5-field cron via `dataforge watch` |
 
 ## Build
@@ -29,6 +29,13 @@ dotnet run --project .. -- run example-job.yaml
 cat orders-clean.json
 ```
 
+Cross-database example (SQLite → PostgreSQL):
+
+```bash
+# docker start dataforge-pg   # port 5433, user/db/password dataforge
+dotnet run --project .. -- run sqlite-to-postgresql.yaml
+```
+
 With variables:
 
 ```bash
@@ -41,18 +48,18 @@ Scheduled watch (Ctrl+C to stop):
 dataforge watch job.yaml
 ```
 
-## YAML schema (v0.4)
+## YAML schema (v0.5)
 
 ```yaml
 name: orders-sync
 schedule: "0 2 * * *"          # optional; used by watch
 
 source:
-  type: csv                    # csv | json | sqlserver
-  path: ./orders.csv
-  # sqlserver:
-  # connection: ${DB_CONN}
-  # table: Orders
+  type: sqlite                 # csv | json | sqlserver | sqlite | postgresql | parquet | duckdb
+  connection: Data Source=./orders.db
+  table: Orders
+  # path: ./orders.csv         # for file sources
+  # query: SELECT ...          # for duckdb
 
 transforms:
   - where: "Amount > 0"
@@ -71,8 +78,8 @@ validate:
       min: 0
 
 sink:
-  type: sqlserver              # json | csv | sqlserver
-  connection: ${DB_CONN}
+  type: postgresql             # json | csv | sqlserver | sqlite | postgresql | parquet | duckdb
+  connection: Host=127.0.0.1;Port=5433;Username=dataforge;Password=dataforge;Database=dataforge
   table: Fact_Orders
   mode: upsert                 # insert | upsert
   keys: [OrderId]
