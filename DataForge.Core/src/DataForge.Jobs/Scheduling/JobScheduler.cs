@@ -119,6 +119,7 @@ public sealed class JobScheduler
                 await DelayAsync(delay, cancellationToken).ConfigureAwait(false);
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             var startedAt = Clock();
             var result = Executor is null
                 ? await _runner

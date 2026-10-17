@@ -227,6 +227,27 @@ public class JobRunnerValidationTests
 public class JobSchedulerTests
 {
     [Fact]
+    public async Task WatchAsync_CancelledAtEndOfWaitDoesNotExecute()
+    {
+        using var cts = new CancellationTokenSource();
+        var executions = 0;
+        var scheduler = new JobScheduler(timeZone: TimeZoneInfo.Utc)
+        {
+            Clock = () => new DateTimeOffset(2026, 10, 18, 0, 0, 0, TimeSpan.Zero),
+            DelayAsync = (_, _) => { cts.Cancel(); return Task.CompletedTask; },
+            Executor = (_, _, _, _) =>
+            {
+                executions++;
+                return Task.FromResult(new JobRunResult { Success = true });
+            }
+        };
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => scheduler.WatchAsync(
+            new JobDefinition { Schedule = "* * * * *" }, "job.yaml", cancellationToken: cts.Token));
+        Assert.Equal(0, executions);
+    }
+
+    [Fact]
     public async Task WatchAsync_LongRunReportsNextOccurrenceAfterCompletion()
     {
         var now = new DateTimeOffset(2026, 10, 18, 0, 0, 0, TimeSpan.Zero);
