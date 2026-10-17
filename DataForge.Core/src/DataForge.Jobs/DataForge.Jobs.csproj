@@ -7,7 +7,7 @@
     <PackageId>DataForge.Jobs</PackageId>
     <PackageVersion>0.5.0</PackageVersion>
     <Authors>DataForge Team</Authors>
-    <Description>YAML job engine for DataForge — model, parser, runner, and csv/json providers. Database and file adapters live in DataForge.Jobs.* packages.</Description>
+    <Description>YAML job engine for DataForge — model, parser, runner, cron scheduler, and csv/json providers. Database and file adapters live in DataForge.Jobs.* packages.</Description>
     <PackageTags>data processing;ETL;jobs;migration;yaml</PackageTags>
     <RepositoryUrl>https://github.com/kongliuli/DataForge.Core</RepositoryUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -20,6 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Cronos" Version="0.8.4" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
 

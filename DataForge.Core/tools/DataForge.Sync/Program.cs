@@ -6,9 +6,9 @@ using DataForge.Jobs.Http;
 using DataForge.Jobs.MySql;
 using DataForge.Jobs.Parquet;
 using DataForge.Jobs.PostgreSql;
+using DataForge.Jobs.Scheduling;
 using DataForge.Jobs.Sqlite;
 using DataForge.Jobs.SqlServer;
-using DataForge.Sync.Execution;
 using System.Text.Json;
 
 JobSqliteRegistration.AddDataForgeJobsSqlite();
@@ -158,7 +158,21 @@ static async Task<int> WatchAsync(string[] args)
 
     var jobPath = args[1];
     var (variables, _) = ParseRunOptions(args.AsSpan(2));
-    await JobScheduler.WatchAsync(new JobRunner(), jobPath, variables, cts.Token).ConfigureAwait(false);
+    var scheduler = new JobScheduler();
+    scheduler.OnTick += tick =>
+    {
+        if (tick.Error != null)
+            Console.Error.WriteLine($"Scheduled run failed: {tick.Error}");
+        else
+            Console.WriteLine(
+                $"Scheduled run completed: {tick.Result!.ExportResults!.RecordsWritten} record(s) written.");
+
+        if (tick.NextDueAt is { } nextDue)
+            Console.WriteLine($"Next run at {nextDue.LocalDateTime:yyyy-MM-dd HH:mm:ss}");
+    };
+
+    Console.WriteLine($"Watching '{jobPath}' (Ctrl+C to stop)");
+    await scheduler.WatchFileAsync(jobPath, variables, cts.Token).ConfigureAwait(false);
     return 0;
 }
 

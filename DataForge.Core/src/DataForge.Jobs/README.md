@@ -34,6 +34,20 @@ var cols = await JobCatalog.DescribeTableAsync("sqlite", conn, "orders");
 var rows = await JobCatalog.PreviewAsync("sqlite", conn, "orders", 20);
 ```
 
+## 调度（清单一并进 NuGet）
+
+```csharp
+using DataForge.Jobs.Scheduling;
+
+var scheduler = new JobScheduler();          // 默认本机时区
+scheduler.OnTick += tick => Console.WriteLine(tick.Success ? "ok" : tick.Error);
+await scheduler.WatchFileAsync("job.yaml", variables, cancellationToken);
+```
+
+- `JobScheduler.GetNextOccurrence("0 2 * * *", DateTimeOffset.UtcNow, TimeZoneInfo.Local)` 用标准 5 段 cron（Cronos）
+- `MaxRuns` 便于测试/一次性试跑；`OnTick` 上报每次结果与下次时间
+- CLI `dataforge watch` 与 Web `POST /api/jobs/schedule` 复用同一实现
+
 已支持：`sqlite` / `postgresql` / `sqlserver` / `mysql`。
 
 CLI：`tools/DataForge.Sync`　Web：`tools/DataForge.Web`　模板：`templates/DataForge.Templates`。

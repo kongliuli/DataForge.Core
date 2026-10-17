@@ -119,6 +119,50 @@ public class JobApiTests : IClassFixture<WebApplicationFactory<Program>>
     }
 
     [Fact]
+    public async Task Schedule_ReturnsNextOccurrence()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.PostAsJsonAsync("/api/jobs/schedule", new
+        {
+            yaml = """
+                name: sched
+                schedule: "0 2 * * *"
+                source:
+                  type: csv
+                  path: ./in.csv
+                sink:
+                  type: json
+                  path: ./out.json
+                """
+        });
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.True(response.StatusCode == HttpStatusCode.OK, body);
+        Assert.Contains("0 2 * * *", body);
+        Assert.Contains("next", body);
+    }
+
+    [Fact]
+    public async Task Schedule_NoScheduleReturnsNullNext()
+    {
+        var client = _factory.CreateClient();
+        var response = await client.PostAsJsonAsync("/api/jobs/schedule", new
+        {
+            yaml = """
+                name: no-sched
+                source:
+                  type: csv
+                  path: ./in.csv
+                sink:
+                  type: json
+                  path: ./out.json
+                """
+        });
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.True(response.StatusCode == HttpStatusCode.OK, body);
+        Assert.Contains("\"next\":null", body.Replace(" ", ""));
+    }
+
+    [Fact]
     public async Task Run_SubstitutesRequestVariables()
     {
         var dir = Path.Combine(Path.GetTempPath(), "df-var-" + Guid.NewGuid().ToString("N"));

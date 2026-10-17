@@ -1,6 +1,8 @@
 using System.Text.Json;
 using DataForge.Jobs.Catalog;
 using DataForge.Jobs.Execution;
+using DataForge.Jobs.Parsing;
+using DataForge.Jobs.Scheduling;
 using DataForge.Web;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -106,6 +108,27 @@ app.MapGet("/api/jobs/history", (JobRunHistory history) =>
         entry.Results
     }));
 
+app.MapPost("/api/jobs/schedule", (ScheduleRequest request) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Yaml))
+        return Results.BadRequest(new { error = "yaml is required" });
+
+    try
+    {
+        var job = JobYamlParser.Parse(request.Yaml);
+        if (string.IsNullOrWhiteSpace(job.Schedule))
+            return Results.Ok(new { schedule = (string?)null, next = (DateTimeOffset?)null });
+
+        var scheduler = new JobScheduler();
+        var next = scheduler.GetNextOccurrence(job.Schedule, DateTimeOffset.UtcNow);
+        return Results.Ok(new { schedule = job.Schedule, next });
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+});
+
 app.MapPost("/api/jobs/run", async (RunRequest request, JobRunHistory history, CancellationToken cancellationToken) =>
 {
     if (string.IsNullOrWhiteSpace(request.Yaml))
@@ -210,6 +233,8 @@ static JobResultDto ToDto(JobRunResult result) => new(
     result.ExportResults?.OutputPath);
 
 public sealed record RunRequest(string? Yaml, Dictionary<string, string>? Variables);
+
+public sealed record ScheduleRequest(string? Yaml);
 
 public sealed record CatalogRequest(string? Type, string? ConnectionString, string? ConnectionId, string? Table, int? Limit);
 

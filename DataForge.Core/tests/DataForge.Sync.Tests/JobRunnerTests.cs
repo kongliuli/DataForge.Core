@@ -5,10 +5,10 @@ using DataForge.Jobs.Models;
 using DataForge.Jobs.Parquet;
 using DataForge.Jobs.Parsing;
 using DataForge.Jobs.PostgreSql;
+using DataForge.Jobs.Scheduling;
 using DataForge.Jobs.Sqlite;
 using DataForge.Jobs.SqlServer;
 using DataForge.Jobs.Validation;
-using DataForge.Sync.Execution;
 using Xunit;
 
 namespace DataForge.Sync.Tests;
@@ -232,6 +232,118 @@ public class JobSchedulerTests
         var next = JobScheduler.GetNextOccurrence("* * * * *", DateTimeOffset.UtcNow);
         Assert.NotNull(next);
         Assert.True(next > DateTimeOffset.UtcNow.AddSeconds(-1));
+    }
+
+    [Fact]
+    public void GetNextOccurrence_HonoursTimeZone()
+    {
+        var utc = new DateTimeOffset(2026, 3, 22, 0, 30, 0, TimeSpan.Zero);
+        var shanghai = TimeZoneInfo.FindSystemTimeZoneById("Asia/Shanghai");
+        var next = JobScheduler.GetNextOccurrence("0 9 * * *", utc, shanghai);
+
+        Assert.NotNull(next);
+        Assert.Equal(new DateTimeOffset(2026, 3, 22, 9, 0, 0, TimeSpan.FromHours(8)), next!.Value);
+    }
+
+    [Fact]
+    public void ParseSchedule_RejectsEmpty()
+    {
+        Assert.Throws<ArgumentException>(() => JobScheduler.ParseSchedule("  "));
+    }
+
+    [Fact]
+    public async Task WatchAsync_ThrowsWhenJobHasNoSchedule()
+    {
+        var scheduler = new JobScheduler();
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            scheduler.WatchAsync(new JobDefinition { Name = "no-schedule" }, "no-schedule.yaml"));
+    }
+
+    [Fact]
+    public async Task WatchAsync_RunsUntilMaxRunsAndReportsTicks()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "df-sched-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        var csv = Path.Combine(dir, "in.csv");
+        var json = Path.Combine(dir, "out.json");
+        await File.WriteAllTextAsync(csv, "Id,Name\n1,sched\n");
+
+        var job = JobYamlParser.Parse($"""
+            name: sched-job
+            schedule: "* * * * *"
+            source:
+              type: csv
+              path: {csv.Replace('\\', '/')}
+            sink:
+              type: json
+              path: {json.Replace('\\', '/')}
+            """);
+
+        var baseTime = new DateTimeOffset(2026, 3, 22, 0, 0, 0, TimeSpan.Zero);
+        var ticks = new List<JobScheduleTick>();
+        var scheduler = new JobScheduler
+        {
+            MaxRuns = 2,
+            OnTick = ticks.Add,
+            Clock = () => baseTime,
+            DelayAsync = (_, _) => Task.CompletedTask
+        };
+        scheduler.Clock = () => baseTime = baseTime.AddMinutes(1);
+
+        await scheduler.WatchAsync(job, Path.Combine(dir, "job.yaml"));
+
+        Assert.Equal(2, ticks.Count);
+        Assert.All(ticks, tick => Assert.True(tick.Success, tick.Error));
+        Assert.NotNull(ticks[0].Result!.ExportResults);
+        Assert.NotNull(ticks[0].NextDueAt);
+        Assert.True(ticks[0].NextDueAt > ticks[0].StartedAt);
+    }
+
+    [Fact]
+    public async Task GetNextRunAsync_ReturnsNullWithoutSchedule()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "df-sched-null-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, "job.yaml");
+        await File.WriteAllTextAsync(path, """
+            name: no-sched
+            source:
+              type: csv
+              path: ./in.csv
+            sink:
+              type: json
+              path: ./out.json
+            """);
+
+        var scheduler = new JobScheduler();
+        Assert.Null(await scheduler.GetNextRunAsync(path));
+    }
+
+    [Fact]
+    public async Task GetNextRunAsync_ReturnsScheduledInstant()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "df-sched-next-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, "job.yaml");
+        await File.WriteAllTextAsync(path, """
+            name: sched
+            schedule: "0 2 * * *"
+            source:
+              type: csv
+              path: ./in.csv
+            sink:
+              type: json
+              path: ./out.json
+            """);
+
+        var scheduler = new JobScheduler
+        {
+            Clock = () => new DateTimeOffset(2026, 3, 22, 0, 0, 0, TimeSpan.Zero)
+        };
+        var next = await scheduler.GetNextRunAsync(path);
+
+        Assert.NotNull(next);
+        Assert.True(next > scheduler.Clock());
     }
 }
 
