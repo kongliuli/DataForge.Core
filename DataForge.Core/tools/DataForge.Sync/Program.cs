@@ -1,3 +1,4 @@
+using DataForge.Jobs.Catalog;
 using DataForge.Jobs.DuckDB;
 using DataForge.Jobs.Excel;
 using DataForge.Jobs.Execution;
@@ -8,6 +9,7 @@ using DataForge.Jobs.PostgreSql;
 using DataForge.Jobs.Sqlite;
 using DataForge.Jobs.SqlServer;
 using DataForge.Sync.Execution;
+using System.Text.Json;
 
 JobSqliteRegistration.AddDataForgeJobsSqlite();
 JobPostgreSqlRegistration.AddDataForgeJobsPostgreSql();
@@ -30,6 +32,7 @@ try
     {
         "run" => await RunOnceAsync(args),
         "watch" => await WatchAsync(args),
+        "catalog" => await CatalogAsync(args),
         _ => UnknownCommand(args[0])
     };
 }
@@ -74,6 +77,67 @@ static async Task<int> RunOnceAsync(string[] args)
     }
     if (!string.IsNullOrWhiteSpace(reportPath))
         Console.WriteLine($"Report written to {Path.GetFullPath(reportPath)}");
+    return 0;
+}
+
+static async Task<int> CatalogAsync(string[] args)
+{
+    if (args.Length < 2)
+    {
+        Console.Error.WriteLine("Usage: dataforge catalog <test|tables|describe|preview|types> --type <db> --connection <cs> [--table name] [--limit n]");
+        return 1;
+    }
+
+    var action = args[1].ToLowerInvariant();
+    if (action == "types")
+    {
+        Console.WriteLine(string.Join(Environment.NewLine, JobCatalog.RegisteredTypes));
+        return 0;
+    }
+
+    string? type = null;
+    string? connection = null;
+    string? table = null;
+    var limit = 20;
+
+    for (var i = 2; i < args.Length; i++)
+    {
+        var arg = args[i];
+        string? Next() => i + 1 < args.Length ? args[++i] : throw new InvalidOperationException($"Missing value for {arg}");
+
+        if (arg is "--type" or "-t") type = Next();
+        else if (arg.StartsWith("--type=", StringComparison.Ordinal)) type = arg["--type=".Length..];
+        else if (arg is "--connection" or "-c") connection = Next();
+        else if (arg.StartsWith("--connection=", StringComparison.Ordinal)) connection = arg["--connection=".Length..];
+        else if (arg is "--table") table = Next();
+        else if (arg.StartsWith("--table=", StringComparison.Ordinal)) table = arg["--table=".Length..];
+        else if (arg is "--limit") limit = int.Parse(Next()!);
+        else if (arg.StartsWith("--limit=", StringComparison.Ordinal)) limit = int.Parse(arg["--limit=".Length..]);
+    }
+
+    if (string.IsNullOrWhiteSpace(type) || string.IsNullOrWhiteSpace(connection))
+    {
+        Console.Error.WriteLine("--type and --connection are required");
+        return 1;
+    }
+
+    object payload = action switch
+    {
+        "test" => await JobCatalog.TestConnectionAsync(type, connection),
+        "tables" => await JobCatalog.ListTablesAsync(type, connection),
+        "describe" => string.IsNullOrWhiteSpace(table)
+            ? throw new InvalidOperationException("--table is required for describe")
+            : await JobCatalog.DescribeTableAsync(type, connection, table),
+        "preview" => string.IsNullOrWhiteSpace(table)
+            ? throw new InvalidOperationException("--table is required for preview")
+            : await JobCatalog.PreviewAsync(type, connection, table, limit),
+        "exists" => string.IsNullOrWhiteSpace(table)
+            ? throw new InvalidOperationException("--table is required for exists")
+            : new { exists = await JobCatalog.TableExistsAsync(type, connection, table) },
+        _ => throw new InvalidOperationException($"Unknown catalog action '{action}'")
+    };
+
+    Console.WriteLine(JsonSerializer.Serialize(payload, new JsonSerializerOptions { WriteIndented = true }));
     return 0;
 }
 
@@ -158,14 +222,15 @@ static void PrintHelp()
         Usage:
           dataforge run <job.yaml> [--var key=value] [--report run.json]
           dataforge watch <job.yaml> [--var key=value ...]
+          dataforge catalog <test|tables|describe|preview|exists|types> --type <db> --connection <cs> [--table name] [--limit n]
           dataforge help
 
         Supported:
-          source: csv | json | sqlserver | parquet | duckdb
-          transforms: where, select
+          source/sink: csv | json | sqlite | postgresql | sqlserver | mysql | excel | http | parquet | duckdb
+          transforms: where, select, join (sources[])
           validate: rules (required/min/max/pattern), onError, badRowOutput
-          sink: csv | json | sqlserver | parquet | duckdb
           schedule: cron (5-field, used by watch)
+          catalog types: sqlite | postgresql | sqlserver | mysql
 
         Variables:
           --var lastSync=2026-07-01

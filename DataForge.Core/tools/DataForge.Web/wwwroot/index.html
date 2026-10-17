@@ -15,10 +15,14 @@
 </head>
 <body>
   <h1>DataForge Local DTS</h1>
-  <p>替代 LocalDts：连接档案 + 对象浏览 + YAML 作业运行。NuGet 目录能力：sqlite / postgresql / sqlserver / mysql。</p>
+  <p>替代 LocalDts：连接档案 + 对象浏览 + YAML 作业运行。Catalog：sqlite / postgresql / sqlserver / mysql。</p>
 
   <section>
     <h2>连接档案</h2>
+    <label>已保存连接</label>
+    <select id="savedConn"></select>
+    <button id="loadConn">载入</button>
+    <button id="deleteConn">删除</button>
     <div class="row">
       <div>
         <label>名称</label>
@@ -36,6 +40,7 @@
     </div>
     <label>连接串</label>
     <input id="connString" value="Data Source=./demo.db" />
+    <input id="connId" type="hidden" />
     <button id="saveConn">保存连接</button>
     <button id="testConn">探活</button>
     <button id="listTables">列出表</button>
@@ -63,10 +68,16 @@ sink:
   </section>
 
   <script>
-    const connPayload = () => ({
-      type: document.getElementById('connType').value,
-      connectionString: document.getElementById('connString').value
-    });
+    let connections = [];
+
+    const connPayload = () => {
+      const id = document.getElementById('connId').value;
+      if (id) return { connectionId: id };
+      return {
+        type: document.getElementById('connType').value,
+        connectionString: document.getElementById('connString').value
+      };
+    };
 
     async function post(url, body) {
       const res = await fetch(url, {
@@ -77,14 +88,50 @@ sink:
       return { ok: res.ok, json: await res.json() };
     }
 
+    async function refreshConnections() {
+      const res = await fetch('/api/connections');
+      connections = await res.json();
+      const sel = document.getElementById('savedConn');
+      sel.innerHTML = '<option value="">（新建 / 直接填连接串）</option>' +
+        connections.map(c => `<option value="${c.id}">${c.name} [${c.type}]</option>`).join('');
+    }
+
+    document.getElementById('loadConn').onclick = () => {
+      const id = document.getElementById('savedConn').value;
+      const c = connections.find(x => x.id === id);
+      if (!c) {
+        document.getElementById('connId').value = '';
+        return;
+      }
+      document.getElementById('connId').value = c.id;
+      document.getElementById('connName').value = c.name;
+      document.getElementById('connType').value = c.type;
+      document.getElementById('connString').value = c.connectionString;
+      document.getElementById('connOut').textContent = JSON.stringify(c, null, 2);
+    };
+
+    document.getElementById('deleteConn').onclick = async () => {
+      const id = document.getElementById('savedConn').value || document.getElementById('connId').value;
+      if (!id) return;
+      await fetch('/api/connections/' + id, { method: 'DELETE' });
+      document.getElementById('connId').value = '';
+      await refreshConnections();
+      document.getElementById('connOut').textContent = '已删除 ' + id;
+    };
+
     document.getElementById('saveConn').onclick = async () => {
       const body = {
-        id: '',
+        id: document.getElementById('connId').value || '',
         name: document.getElementById('connName').value,
         type: document.getElementById('connType').value,
         connectionString: document.getElementById('connString').value
       };
       const res = await post('/api/connections', body);
+      if (res.ok) {
+        document.getElementById('connId').value = res.json.id;
+        await refreshConnections();
+        document.getElementById('savedConn').value = res.json.id;
+      }
       document.getElementById('connOut').textContent = JSON.stringify(res.json, null, 2);
     };
 
@@ -117,6 +164,7 @@ sink:
       document.getElementById('history').textContent = JSON.stringify(await hist.json(), null, 2);
     };
 
+    refreshConnections();
     fetch('/api/jobs/history').then(r => r.json()).then(j => {
       document.getElementById('history').textContent = JSON.stringify(j, null, 2);
     });
