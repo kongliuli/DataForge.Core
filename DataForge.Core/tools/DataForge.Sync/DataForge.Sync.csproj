@@ -23,6 +23,9 @@
     <ProjectReference Include="..\..\src\DataForge.Jobs.SqlServer\DataForge.Jobs.SqlServer.csproj" />
     <ProjectReference Include="..\..\src\DataForge.Jobs.Parquet\DataForge.Jobs.Parquet.csproj" />
     <ProjectReference Include="..\..\src\DataForge.Jobs.DuckDB\DataForge.Jobs.DuckDB.csproj" />
+    <ProjectReference Include="..\..\src\DataForge.Jobs.MySql\DataForge.Jobs.MySql.csproj" />
+    <ProjectReference Include="..\..\src\DataForge.Jobs.Excel\DataForge.Jobs.Excel.csproj" />
+    <ProjectReference Include="..\..\src\DataForge.Jobs.Http\DataForge.Jobs.Http.csproj" />
   </ItemGroup>
 
 </Project>

@@ -11,7 +11,7 @@
 </head>
 <body>
   <h1>DataForge 迁移</h1>
-  <p>现有源：csv / json / sqlite / postgresql / sqlserver / parquet / duckdb。贴 YAML 后执行。</p>
+  <p>源：csv / json / sqlite / postgresql / sqlserver / parquet / duckdb / mysql / excel / http。</p>
   <textarea id="yaml">name: hello
 source:
   type: csv
@@ -22,6 +22,8 @@ sink:
 </textarea>
   <p><button id="run">运行</button></p>
   <pre id="out">等待运行</pre>
+  <h2>历史</h2>
+  <pre id="history">尚无</pre>
   <script>
     document.getElementById('run').onclick = async () => {
       const out = document.getElementById('out');
@@ -32,6 +34,8 @@ sink:
         body: JSON.stringify({ yaml: document.getElementById('yaml').value })
       });
       out.textContent = JSON.stringify(await res.json(), null, 2);
+      const hist = await fetch('/api/jobs/history');
+      document.getElementById('history').textContent = JSON.stringify(await hist.json(), null, 2);
     };
   </script>
 </body>

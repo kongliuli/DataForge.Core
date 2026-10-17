@@ -49,4 +49,43 @@ public class JobApiTests : IClassFixture<WebApplicationFactory<Program>>
         var response = await client.PostAsJsonAsync("/api/jobs/run", new { yaml = "" });
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
     }
+
+    [Fact]
+    public async Task Run_ExcelRoundTrip_AndHistory()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "df-web-xlsx-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        var source = Path.Combine(dir, "in.xlsx");
+        var target = Path.Combine(dir, "out.xlsx");
+
+        using (var book = new ClosedXML.Excel.XLWorkbook())
+        {
+            var sheet = book.AddWorksheet("Sheet1");
+            sheet.Cell(1, 1).Value = "Id";
+            sheet.Cell(1, 2).Value = "Name";
+            sheet.Cell(2, 1).Value = "1";
+            sheet.Cell(2, 2).Value = "Ada";
+            book.SaveAs(source);
+        }
+
+        var yaml = $"""
+            name: excel-copy
+            source:
+              type: excel
+              path: {source.Replace('\\', '/')}
+            sink:
+              type: excel
+              path: {target.Replace('\\', '/')}
+            """;
+
+        var client = _factory.CreateClient();
+        var response = await client.PostAsJsonAsync("/api/jobs/run", new { yaml });
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.True(response.StatusCode == HttpStatusCode.OK, body);
+        Assert.True(File.Exists(target));
+
+        var history = await client.GetFromJsonAsync<JsonElement>("/api/jobs/history");
+        Assert.True(history.GetArrayLength() >= 1);
+        Assert.True(history[0].GetProperty("success").GetBoolean());
+    }
 }

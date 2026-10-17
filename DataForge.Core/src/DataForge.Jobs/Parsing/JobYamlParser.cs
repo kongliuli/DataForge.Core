@@ -68,10 +68,17 @@ public static class JobYamlParser
             case "sqlite":
             case "postgresql":
             case "postgres":
+            case "mysql":
                 if (string.IsNullOrWhiteSpace(source.Connection))
                     throw new InvalidOperationException($"Job source.connection is required for {source.Type}.");
                 if (string.IsNullOrWhiteSpace(source.Table))
                     throw new InvalidOperationException($"Job source.table is required for {source.Type}.");
+                break;
+            case "excel":
+            case "http":
+            case "rest":
+                if (string.IsNullOrWhiteSpace(source.Path))
+                    throw new InvalidOperationException($"Job source.path is required for {source.Type}.");
                 break;
             case "parquet":
                 if (string.IsNullOrWhiteSpace(source.Path))
@@ -101,6 +108,7 @@ public static class JobYamlParser
             case "sqlite":
             case "postgresql":
             case "postgres":
+            case "mysql":
                 if (string.IsNullOrWhiteSpace(sink.Connection))
                     throw new InvalidOperationException($"Job sink.connection is required for {sink.Type}.");
                 if (string.IsNullOrWhiteSpace(sink.Table))
@@ -117,6 +125,12 @@ public static class JobYamlParser
                     throw new InvalidOperationException("Job sink.path is required for duckdb (database file).");
                 if (string.IsNullOrWhiteSpace(sink.Table))
                     throw new InvalidOperationException("Job sink.table is required for duckdb.");
+                break;
+            case "excel":
+            case "http":
+            case "rest":
+                if (string.IsNullOrWhiteSpace(sink.Path))
+                    throw new InvalidOperationException($"Job sink.path is required for {sink.Type}.");
                 break;
             default:
                 throw new InvalidOperationException($"Unsupported sink.type '{sink.Type}'.");

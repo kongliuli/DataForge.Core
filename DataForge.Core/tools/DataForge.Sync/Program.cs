@@ -1,5 +1,8 @@
 using DataForge.Jobs.DuckDB;
+using DataForge.Jobs.Excel;
 using DataForge.Jobs.Execution;
+using DataForge.Jobs.Http;
+using DataForge.Jobs.MySql;
 using DataForge.Jobs.Parquet;
 using DataForge.Jobs.PostgreSql;
 using DataForge.Jobs.Sqlite;
@@ -11,6 +14,9 @@ JobPostgreSqlRegistration.AddDataForgeJobsPostgreSql();
 JobSqlServerRegistration.AddDataForgeJobsSqlServer();
 JobParquetRegistration.AddDataForgeJobsParquet();
 JobDuckDBRegistration.AddDataForgeJobsDuckDB();
+JobMySqlRegistration.AddDataForgeJobsMySql();
+JobExcelRegistration.AddDataForgeJobsExcel();
+JobHttpRegistration.AddDataForgeJobsHttp();
 
 if (args.Length == 0 || args[0] is "-h" or "--help" or "help")
 {
