@@ -202,18 +202,12 @@ app.MapPost("/api/jobs/run/stream", async (HttpContext http, RunRequest request,
 
     http.Response.Headers.ContentType = "text/event-stream";
     http.Response.Headers.CacheControl = "no-cache";
-    var events = new List<JobProgress>();
-    var progress = new Progress<JobProgress>(item => events.Add(item));
+    var progress = new QueuedProgress<JobProgress>();
 
     async Task FlushAsync()
     {
-        while (events.Count > 0)
-        {
-            var batch = events.ToArray();
-            events.Clear();
-            foreach (var item in batch)
-                await WriteEventAsync(http, "progress", item, cancellationToken);
-        }
+        while (progress.TryDequeue(out var item))
+            await WriteEventAsync(http, "progress", item, cancellationToken);
     }
 
     try
