@@ -15,7 +15,7 @@
 </head>
 <body>
   <h1>DataForge Local DTS</h1>
-  <p>替代 LocalDts：连接档案 + 对象浏览 + YAML 作业运行。Catalog：sqlite / postgresql / sqlserver / mysql。</p>
+  <p>替代 LocalDts：连接档案 + 对象浏览 + YAML 作业运行（SSE 进度）。Catalog：sqlite / postgresql / sqlserver / mysql / excel / parquet / http / duckdb。</p>
 
   <section>
     <h2>连接档案</h2>
@@ -35,6 +35,10 @@
           <option>postgresql</option>
           <option>sqlserver</option>
           <option>mysql</option>
+          <option>excel</option>
+          <option>parquet</option>
+          <option>http</option>
+          <option>duckdb</option>
         </select>
       </div>
     </div>
@@ -62,6 +66,8 @@ sink:
   path: ./output.json
 </textarea>
     <button id="run">运行</button>
+    <h3>进度</h3>
+    <pre id="progress">等待运行</pre>
     <pre id="out">等待运行</pre>
     <h3>历史</h3>
     <pre id="history">加载中</pre>
@@ -157,9 +163,40 @@ sink:
 
     document.getElementById('run').onclick = async () => {
       const out = document.getElementById('out');
+      const progress = document.getElementById('progress');
       out.textContent = '运行中…';
-      const res = await post('/api/jobs/run', { yaml: document.getElementById('yaml').value });
-      out.textContent = JSON.stringify(res.json, null, 2);
+      progress.textContent = '';
+      const res = await fetch('/api/jobs/run/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
+        body: JSON.stringify({ yaml: document.getElementById('yaml').value })
+      });
+      if (!res.ok || !res.body) {
+        out.textContent = await res.text();
+        return;
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        buffer += decoder.decode(chunk.value, { stream: true });
+        const blocks = buffer.split('\n\n');
+        buffer = blocks.pop() || '';
+        for (const block of blocks) {
+          const eventLine = block.split('\n').find(line => line.startsWith('event: '));
+          const dataLine = block.split('\n').find(line => line.startsWith('data: '));
+          if (!dataLine) continue;
+          const name = eventLine ? eventLine.slice(7) : 'message';
+          const payload = JSON.parse(dataLine.slice(6));
+          if (name === 'progress') {
+            progress.textContent += JSON.stringify(payload) + '\n';
+          } else {
+            out.textContent = JSON.stringify(payload, null, 2);
+          }
+        }
+      }
       const hist = await fetch('/api/jobs/history');
       document.getElementById('history').textContent = JSON.stringify(await hist.json(), null, 2);
     };

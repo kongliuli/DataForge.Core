@@ -88,4 +88,33 @@ public class JobApiTests : IClassFixture<WebApplicationFactory<Program>>
         Assert.True(history.GetArrayLength() >= 1);
         Assert.True(history[0].GetProperty("success").GetBoolean());
     }
+
+    [Fact]
+    public async Task RunStream_EmitsProgressAndResult()
+    {
+        var dir = Path.Combine(Path.GetTempPath(), "df-sse-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        var csv = Path.Combine(dir, "in.csv");
+        var json = Path.Combine(dir, "out.json");
+        await File.WriteAllTextAsync(csv, "Id,Name\n1,sse\n");
+        var yaml = $"""
+            name: web-sse
+            execution:
+              progressEvery: 1
+            source:
+              type: csv
+              path: {csv.Replace('\\', '/')}
+            sink:
+              type: json
+              path: {json.Replace('\\', '/')}
+            """;
+
+        var client = _factory.CreateClient();
+        var response = await client.PostAsJsonAsync("/api/jobs/run/stream", new { yaml });
+        var body = await response.Content.ReadAsStringAsync();
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains("event: progress", body);
+        Assert.Contains("event: result", body);
+        Assert.Contains("web-sse", body);
+    }
 }

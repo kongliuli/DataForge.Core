@@ -1,3 +1,4 @@
+using System.Text.Json;
 using DataForge.Jobs.Catalog;
 using DataForge.Jobs.Execution;
 using DataForge.Web;
@@ -125,6 +126,54 @@ app.MapPost("/api/jobs/run", async (RunRequest request, JobRunHistory history, C
     }
 });
 
+app.MapPost("/api/jobs/run/stream", async (HttpContext http, RunRequest request, JobRunHistory history, CancellationToken cancellationToken) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Yaml))
+    {
+        http.Response.StatusCode = StatusCodes.Status400BadRequest;
+        await http.Response.WriteAsJsonAsync(new { error = "yaml is required" }, cancellationToken);
+        return;
+    }
+
+    http.Response.Headers.ContentType = "text/event-stream";
+    http.Response.Headers.CacheControl = "no-cache";
+    var events = new List<JobProgress>();
+    var progress = new Progress<JobProgress>(item => events.Add(item));
+
+    async Task FlushAsync()
+    {
+        while (events.Count > 0)
+        {
+            var batch = events.ToArray();
+            events.Clear();
+            foreach (var item in batch)
+                await WriteEventAsync(http, "progress", item, cancellationToken);
+        }
+    }
+
+    try
+    {
+        var run = JobWebRunner.RunYamlAsync(request.Yaml, request.Variables, cancellationToken, progress);
+        while (!run.IsCompleted)
+        {
+            await Task.WhenAny(run, Task.Delay(100, cancellationToken));
+            await FlushAsync();
+        }
+
+        var results = await run;
+        await FlushAsync();
+        var dto = results.Select(ToDto).ToArray();
+        var success = dto.All(item => item.Success);
+        history.Add(request.Yaml, dto, success);
+        await WriteEventAsync(http, "result", dto, cancellationToken);
+    }
+    catch (Exception ex)
+    {
+        history.Add(request.Yaml, [new { success = false, error = ex.Message }], success: false);
+        await WriteEventAsync(http, "error", new { error = ex.Message }, cancellationToken);
+    }
+});
+
 app.Run();
 
 static ResolvedConnection Resolve(CatalogRequest request, ConnectionStore store)
@@ -141,6 +190,13 @@ static ResolvedConnection Resolve(CatalogRequest request, ConnectionStore store)
     if (string.IsNullOrWhiteSpace(request.ConnectionString))
         return new ResolvedConnection(null, null, "connectionString is required");
     return new ResolvedConnection(request.Type, request.ConnectionString, null);
+}
+
+static async Task WriteEventAsync(HttpContext http, string name, object payload, CancellationToken cancellationToken)
+{
+    var json = JsonSerializer.Serialize(payload);
+    await http.Response.WriteAsync($"event: {name}\ndata: {json}\n\n", cancellationToken);
+    await http.Response.Body.FlushAsync(cancellationToken);
 }
 
 static JobResultDto ToDto(JobRunResult result) => new(
