@@ -1,10 +1,10 @@
 using DataForge.Core.Core.Models;
-using DataForge.Sync.Models;
+using DataForge.Jobs.Models;
 using Parquet;
 using Parquet.Schema;
 using Parquet.Serialization;
 
-namespace DataForge.Sync.Execution;
+namespace DataForge.Jobs.Execution;
 
 internal static class JobRowParquetSink
 {

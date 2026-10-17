@@ -4,7 +4,7 @@ using DataForge.Core.Core.Sources;
 using DataForge.Core.Core.Sources.Options;
 using System.Text;
 
-namespace DataForge.Sync.Sources;
+namespace DataForge.Jobs.Sources;
 
 internal sealed class JobRowCsvSource : IFileDataSource<JobRow>
 {

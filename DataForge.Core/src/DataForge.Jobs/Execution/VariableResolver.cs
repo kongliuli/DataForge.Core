@@ -1,7 +1,7 @@
 using System.Text.RegularExpressions;
-using DataForge.Sync.Models;
+using DataForge.Jobs.Models;
 
-namespace DataForge.Sync.Execution;
+namespace DataForge.Jobs.Execution;
 
 public static partial class VariableResolver
 {

@@ -1,9 +1,9 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 using DataForge.Core.Core.Validation;
-using DataForge.Sync.Models;
+using DataForge.Jobs.Models;
 
-namespace DataForge.Sync.Validation;
+namespace DataForge.Jobs.Validation;
 
 public sealed class JobRowValidator : IValidator<JobRow>
 {

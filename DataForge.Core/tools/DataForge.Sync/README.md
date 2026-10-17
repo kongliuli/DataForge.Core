@@ -1,6 +1,6 @@
 # DataForge.Sync
 
-Monorepo CLI tool for YAML-driven data sync jobs (**DEC-03**).
+Thin CLI host (`dataforge`) for YAML-driven jobs. Engine lives in **`DataForge.Jobs`** (model / parser / runner / providers).
 
 ## Status
 

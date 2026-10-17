@@ -1,8 +1,8 @@
-using DataForge.Sync.Models;
+using DataForge.Jobs.Models;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace DataForge.Sync.Parsing;
+namespace DataForge.Jobs.Parsing;
 
 public static class JobYamlParser
 {

@@ -1,4 +1,4 @@
-namespace DataForge.Sync;
+namespace DataForge.Jobs;
 
 /// <summary>
 /// Dynamic row for YAML jobs — column values keyed by header / field name.

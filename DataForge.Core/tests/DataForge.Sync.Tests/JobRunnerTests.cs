@@ -1,6 +1,9 @@
+using DataForge.Jobs;
+using DataForge.Jobs.Execution;
+using DataForge.Jobs.Models;
+using DataForge.Jobs.Parsing;
+using DataForge.Jobs.Validation;
 using DataForge.Sync.Execution;
-using DataForge.Sync.Parsing;
-using DataForge.Sync.Validation;
 using Xunit;
 
 namespace DataForge.Sync.Tests;
@@ -133,7 +136,7 @@ public class JobRowValidatorTests
     public void Validate_FailsRequiredField()
     {
         var validator = new JobRowValidator([
-            new Models.YamlValidationRule { Field = "OrderId", Required = true }
+            new YamlValidationRule { Field = "OrderId", Required = true }
         ]);
 
         var result = validator.Validate(new JobRow { Values = { ["OrderId"] = "" } });
@@ -145,7 +148,7 @@ public class JobRowValidatorTests
     public void Validate_EnforcesMinValue()
     {
         var validator = new JobRowValidator([
-            new Models.YamlValidationRule { Field = "Amount", Min = 0 }
+            new YamlValidationRule { Field = "Amount", Min = 0 }
         ]);
 
         Assert.False(validator.Validate(new JobRow { Values = { ["Amount"] = "-1" } }).IsValid);

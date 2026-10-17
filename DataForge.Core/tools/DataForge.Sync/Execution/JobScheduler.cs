@@ -1,5 +1,6 @@
 using Cronos;
-using DataForge.Sync.Models;
+using DataForge.Jobs.Execution;
+using DataForge.Jobs.Parsing;
 
 namespace DataForge.Sync.Execution;
 
@@ -18,7 +19,7 @@ public static class JobScheduler
         CancellationToken cancellationToken = default)
     {
         var yaml = await File.ReadAllTextAsync(jobFilePath, cancellationToken).ConfigureAwait(false);
-        var job = Parsing.JobYamlParser.Parse(yaml);
+        var job = JobYamlParser.Parse(yaml);
 
         if (string.IsNullOrWhiteSpace(job.Schedule))
             throw new InvalidOperationException("Job has no schedule field. Add schedule: \"0 2 * * *\" or use 'run'.");

@@ -4,7 +4,7 @@ using DataForge.Core.Core.Sources;
 using Npgsql;
 using System.Runtime.CompilerServices;
 
-namespace DataForge.Sync.Sources;
+namespace DataForge.Jobs.Sources;
 
 internal sealed class JobRowPostgreSqlSource : IRelationalDataSource<JobRow>
 {

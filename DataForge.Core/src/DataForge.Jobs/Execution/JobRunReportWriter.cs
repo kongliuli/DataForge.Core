@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace DataForge.Sync.Execution;
+namespace DataForge.Jobs.Execution;
 
 public static class JobRunReportWriter
 {

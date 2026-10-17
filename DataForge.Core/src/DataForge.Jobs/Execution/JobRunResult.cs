@@ -1,6 +1,6 @@
 using DataForge.Core.Core.Models;
 
-namespace DataForge.Sync.Execution;
+namespace DataForge.Jobs.Execution;
 
 public sealed class JobRunResult
 {

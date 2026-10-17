@@ -1,7 +1,7 @@
 using Parquet.Schema;
 using Parquet.Serialization;
 
-namespace DataForge.Sync.Sources;
+namespace DataForge.Jobs.Sources;
 
 internal sealed class JobRowParquetSource
 {

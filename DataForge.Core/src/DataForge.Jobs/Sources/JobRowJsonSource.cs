@@ -3,7 +3,7 @@ using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Sources;
 using System.Text.Json;
 
-namespace DataForge.Sync.Sources;
+namespace DataForge.Jobs.Sources;
 
 internal sealed class JobRowJsonSource : IFileDataSource<JobRow>
 {

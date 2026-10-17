@@ -1,7 +1,7 @@
 using DuckDB.NET.Data;
 using System.Runtime.CompilerServices;
 
-namespace DataForge.Sync.Sources;
+namespace DataForge.Jobs.Sources;
 
 internal sealed class JobRowDuckDbSource
 {

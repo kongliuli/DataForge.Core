@@ -1,4 +1,4 @@
-namespace DataForge.Sync.Models;
+namespace DataForge.Jobs.Models;
 
 public sealed class JobDefinition
 {

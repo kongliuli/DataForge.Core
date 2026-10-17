@@ -9,21 +9,15 @@
     <ToolCommandName>dataforge</ToolCommandName>
     <PackageId>DataForge.Sync</PackageId>
     <Version>0.5.0</Version>
-    <Description>YAML-driven data sync CLI for DataForge.Core (DEC-03)</Description>
+    <Description>Thin CLI host for DataForge.Jobs — YAML-driven data sync (dataforge run/watch).</Description>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Cronos" Version="0.8.4" />
-    <PackageReference Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\DataForge.Core\DataForge.Core.csproj" />
-    <ProjectReference Include="..\..\src\DataForge.Core.SqlServer\DataForge.Core.SqlServer.csproj" />
-    <ProjectReference Include="..\..\src\DataForge.Core.Sqlite\DataForge.Core.Sqlite.csproj" />
-    <ProjectReference Include="..\..\src\DataForge.Core.PostgreSql\DataForge.Core.PostgreSql.csproj" />
-    <ProjectReference Include="..\..\src\DataForge.Core.Parquet\DataForge.Core.Parquet.csproj" />
-    <ProjectReference Include="..\..\src\DataForge.Core.DuckDB\DataForge.Core.DuckDB.csproj" />
+    <ProjectReference Include="..\..\src\DataForge.Jobs\DataForge.Jobs.csproj" />
   </ItemGroup>
 
 </Project>

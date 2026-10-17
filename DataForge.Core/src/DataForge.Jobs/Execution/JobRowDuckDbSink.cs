@@ -1,11 +1,11 @@
 using DataForge.Core.Core.Infrastructure;
 using DataForge.Core.Core.Models;
-using DataForge.Sync.Models;
-using DataForge.Sync.Sources;
+using DataForge.Jobs.Models;
+using DataForge.Jobs.Sources;
 using DuckDB.NET.Data;
 using System.Diagnostics;
 
-namespace DataForge.Sync.Execution;
+namespace DataForge.Jobs.Execution;
 
 internal static class JobRowDuckDbSink
 {

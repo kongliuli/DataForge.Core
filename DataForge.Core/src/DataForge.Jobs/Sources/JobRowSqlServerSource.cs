@@ -4,7 +4,7 @@ using DataForge.Core.Core.Sources;
 using Microsoft.Data.SqlClient;
 using System.Runtime.CompilerServices;
 
-namespace DataForge.Sync.Sources;
+namespace DataForge.Jobs.Sources;
 
 internal sealed class JobRowSqlServerSource : IRelationalDataSource<JobRow>
 {

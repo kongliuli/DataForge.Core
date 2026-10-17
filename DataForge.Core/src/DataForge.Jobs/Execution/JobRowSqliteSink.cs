@@ -1,10 +1,10 @@
 using DataForge.Core.Core.Infrastructure;
 using DataForge.Core.Core.Models;
-using DataForge.Sync.Models;
+using DataForge.Jobs.Models;
 using Microsoft.Data.Sqlite;
 using System.Diagnostics;
 
-namespace DataForge.Sync.Execution;
+namespace DataForge.Jobs.Execution;
 
 internal static class JobRowSqliteSink
 {

@@ -1,12 +1,12 @@
 using DataForge.Core.Core.Pipeline;
 using DataForge.Core.Core.Sources.Options;
 using DataForge.Core.Core.Models;
-using DataForge.Sync.Models;
-using DataForge.Sync.Parsing;
-using DataForge.Sync.Sources;
-using DataForge.Sync.Validation;
+using DataForge.Jobs.Models;
+using DataForge.Jobs.Parsing;
+using DataForge.Jobs.Sources;
+using DataForge.Jobs.Validation;
 
-namespace DataForge.Sync.Execution;
+namespace DataForge.Jobs.Execution;
 
 public sealed class JobRunner
 {

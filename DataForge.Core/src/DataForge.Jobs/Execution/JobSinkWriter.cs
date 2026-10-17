@@ -1,9 +1,9 @@
 using DataForge.Core.Core.Models;
-using DataForge.Sync.Models;
+using DataForge.Jobs.Models;
 using System.Text;
 using System.Text.Json;
 
-namespace DataForge.Sync.Execution;
+namespace DataForge.Jobs.Execution;
 
 internal static class JobSinkWriter
 {

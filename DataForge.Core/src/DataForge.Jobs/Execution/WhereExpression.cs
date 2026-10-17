@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace DataForge.Sync.Execution;
+namespace DataForge.Jobs.Execution;
 
 public static partial class WhereExpression
 {
