@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json.schemastore.org/template",
+  "author": "DataForge Team",
+  "classifications": ["DataForge", "ETL", "Migration"],
+  "identity": "DataForge.Templates.Showcase",
+  "name": "DataForge migration showcase",
+  "shortName": "dataforge-showcase",
+  "tags": {
+    "language": "C#",
+    "type": "project"
+  },
+  "sourceName": "DataForgeShowcase",
+  "preferNameDirectory": true,
+  "symbols": {
+    "pgPort": {
+      "type": "parameter",
+      "datatype": "text",
+      "defaultValue": "5433",
+      "replaces": "5433"
+    }
+  }
+}

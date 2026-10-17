@@ -4,9 +4,9 @@ using DataForge.Core.Core.Sources;
 using Microsoft.Data.Sqlite;
 using System.Runtime.CompilerServices;
 
-namespace DataForge.Jobs.Sources;
+namespace DataForge.Jobs.Sqlite;
 
-internal sealed class JobRowSqliteSource : IRelationalDataSource<JobRow>
+public sealed class JobRowSqliteSource : IRelationalDataSource<JobRow>
 {
     private readonly string _connectionString;
     private readonly string _tableName;

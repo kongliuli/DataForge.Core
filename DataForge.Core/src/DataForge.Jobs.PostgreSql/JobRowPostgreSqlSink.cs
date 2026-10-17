@@ -5,9 +5,9 @@ using Npgsql;
 using System.Diagnostics;
 using System.Globalization;
 
-namespace DataForge.Jobs.Execution;
+namespace DataForge.Jobs.PostgreSql;
 
-internal static class JobRowPostgreSqlSink
+public static class JobRowPostgreSqlSink
 {
     public static async Task<ExportResults> WriteAsync(
         IAsyncEnumerable<JobRow> rows,

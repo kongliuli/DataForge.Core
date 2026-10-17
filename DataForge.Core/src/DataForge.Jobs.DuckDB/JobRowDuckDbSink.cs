@@ -1,13 +1,14 @@
 using DataForge.Core.Core.Infrastructure;
 using DataForge.Core.Core.Models;
+using DataForge.Core.DuckDB;
+using DataForge.Jobs;
 using DataForge.Jobs.Models;
-using DataForge.Jobs.Sources;
 using DuckDB.NET.Data;
 using System.Diagnostics;
 
-namespace DataForge.Jobs.Execution;
+namespace DataForge.Jobs.DuckDB;
 
-internal static class JobRowDuckDbSink
+public static class JobRowDuckDbSink
 {
     public static async Task<ExportResults> WriteAsync(
         IAsyncEnumerable<JobRow> rows,

@@ -1,9 +1,9 @@
-using Parquet.Schema;
+using DataForge.Jobs;
 using Parquet.Serialization;
 
-namespace DataForge.Jobs.Sources;
+namespace DataForge.Jobs.Parquet;
 
-internal sealed class JobRowParquetSource
+public sealed class JobRowParquetSource
 {
     public string FilePath { get; }
 

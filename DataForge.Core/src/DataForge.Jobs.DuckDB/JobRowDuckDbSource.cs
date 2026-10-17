@@ -1,9 +1,11 @@
+using DataForge.Core.DuckDB;
+using DataForge.Jobs;
 using DuckDB.NET.Data;
 using System.Runtime.CompilerServices;
 
-namespace DataForge.Jobs.Sources;
+namespace DataForge.Jobs.DuckDB;
 
-internal sealed class JobRowDuckDbSource
+public sealed class JobRowDuckDbSource
 {
     private readonly string _databasePath;
     private readonly string _sql;
@@ -36,7 +38,7 @@ internal sealed class JobRowDuckDbSource
     }
 }
 
-internal static class DuckDbConnectionHelper
+public static class DuckDbConnectionHelper
 {
     public static string BuildConnectionString(string databasePath) =>
         string.IsNullOrWhiteSpace(databasePath) || databasePath == ":memory:"

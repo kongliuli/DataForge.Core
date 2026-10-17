@@ -16,6 +16,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\tools\DataForge.Sync\DataForge.Sync.csproj" />
+      <ProjectReference Include="..\..\src\DataForge.Jobs.Sqlite\DataForge.Jobs.Sqlite.csproj" />
+    <ProjectReference Include="..\..\src\DataForge.Jobs.PostgreSql\DataForge.Jobs.PostgreSql.csproj" />
+    <ProjectReference Include="..\..\src\DataForge.Jobs.SqlServer\DataForge.Jobs.SqlServer.csproj" />
+    <ProjectReference Include="..\..\src\DataForge.Jobs.Parquet\DataForge.Jobs.Parquet.csproj" />
+    <ProjectReference Include="..\..\src\DataForge.Jobs.DuckDB\DataForge.Jobs.DuckDB.csproj" />
   </ItemGroup>
 
 </Project>
+

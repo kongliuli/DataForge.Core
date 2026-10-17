@@ -1,23 +1,23 @@
 # DataForge.Jobs
 
-声明式作业引擎：YAML → source → transforms → validate → sink。
+声明式作业引擎（薄核心）：YAML → source → transforms → validate → sink。
 
 - **目标框架**：`net8.0`
 - **版本**：`0.5.0`
-- **依赖**：`DataForge.Core` + 常用连接器（厚核心：Sqlite / PostgreSql / SqlServer / Parquet / DuckDB）
+- **内置 provider**：`csv` / `json`
+- **适配包**：`DataForge.Jobs.Sqlite` / `.PostgreSql` / `.SqlServer` / `.Parquet` / `.DuckDB`
 
-## 安装
-
-```bash
-dotnet add package DataForge.Jobs
-```
-
-## 用法
+使用数据库或 Parquet 前，引用对应适配包并调用 `AddDataForgeJobs*()` 注册 provider。
 
 ```csharp
 using DataForge.Jobs.Execution;
+using DataForge.Jobs.Sqlite;
+using DataForge.Jobs.PostgreSql;
+
+JobSqliteRegistration.AddDataForgeJobsSqlite();
+JobPostgreSqlRegistration.AddDataForgeJobsPostgreSql();
 
 var result = await new JobRunner().RunAsync("job.yaml");
 ```
 
-CLI 宿主见仓库 `tools/DataForge.Sync`（`dataforge` 工具）。设计说明：`docs/design-migration-nuget-foundation.md`。
+CLI 宿主：`tools/DataForge.Sync`（已注册全部适配包）。

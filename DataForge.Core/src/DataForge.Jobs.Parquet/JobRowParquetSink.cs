@@ -1,12 +1,13 @@
 using DataForge.Core.Core.Models;
+using DataForge.Jobs;
 using DataForge.Jobs.Models;
 using Parquet;
 using Parquet.Schema;
 using Parquet.Serialization;
 
-namespace DataForge.Jobs.Execution;
+namespace DataForge.Jobs.Parquet;
 
-internal static class JobRowParquetSink
+public static class JobRowParquetSink
 {
     public static async Task<ExportResults> WriteAsync(
         IAsyncEnumerable<JobRow> rows,

@@ -1,0 +1,15 @@
+name: merge-heterogeneous
+source:
+  type: postgresql
+  connection: Host=127.0.0.1;Port=5433;Username=dataforge;Password=dataforge;Database=dataforge
+  table: customer_orders
+transforms:
+  - select:
+      Buyer: Name
+      RegionCode: Region
+      OrderTotal: Amount
+sink:
+  type: sqlite
+  connection: Data Source=showcase.db
+  table: customer_order_summary
+  mode: insert

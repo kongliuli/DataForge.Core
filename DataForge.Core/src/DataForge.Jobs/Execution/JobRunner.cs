@@ -1,9 +1,8 @@
 using DataForge.Core.Core.Pipeline;
-using DataForge.Core.Core.Sources.Options;
 using DataForge.Core.Core.Models;
 using DataForge.Jobs.Models;
 using DataForge.Jobs.Parsing;
-using DataForge.Jobs.Sources;
+using DataForge.Jobs.Providers;
 using DataForge.Jobs.Validation;
 
 namespace DataForge.Jobs.Execution;
@@ -107,75 +106,11 @@ public sealed class JobRunner
 
     private static IDataPipeline<JobRow> CreateSource(JobDefinition job)
     {
-        return job.Source.Type.ToLowerInvariant() switch
-        {
-            "csv" => CreateCsvSource(job),
-            "json" => CreateJsonSource(job),
-            "sqlserver" => CreateSqlServerSource(job),
-            "sqlite" => CreateSqliteSource(job),
-            "postgresql" or "postgres" => CreatePostgreSqlSource(job),
-            "parquet" => CreateParquetSource(job),
-            "duckdb" => CreateDuckDbSource(job),
-            _ => throw new NotSupportedException($"Source type '{job.Source.Type}' is not supported.")
-        };
-    }
+        if (!JobProviderRegistry.TryGetSource(job.Source.Type, out var provider))
+            throw new NotSupportedException(
+                $"Source type '{job.Source.Type}' is not registered. Reference the matching DataForge.Jobs.* adapter and call its registration method.");
 
-    private static IDataPipeline<JobRow> CreateCsvSource(JobDefinition job)
-    {
-        var options = new CsvSourceOptions
-        {
-            HasHeaderRow = job.Source.Options?.HasHeader ?? true
-        };
-
-        if (job.Source.Options?.Delimiter is { } delimiter)
-            options.Delimiter = delimiter;
-
-        var source = new JobRowCsvSource(job.Source.Path, options);
-        return new DataPipeline<JobRow>(source.ReadAsync());
-    }
-
-    private static IDataPipeline<JobRow> CreateJsonSource(JobDefinition job)
-    {
-        var source = new JobRowJsonSource(job.Source.Path);
-        return new DataPipeline<JobRow>(source.ReadAsync());
-    }
-
-    private static IDataPipeline<JobRow> CreateParquetSource(JobDefinition job)
-    {
-        var source = new JobRowParquetSource(job.Source.Path);
-        return new DataPipeline<JobRow>(source.ReadAsync());
-    }
-
-    private static IDataPipeline<JobRow> CreateDuckDbSource(JobDefinition job)
-    {
-        var source = new JobRowDuckDbSource(job.Source.Path, job.Source.Query!);
-        return new DataPipeline<JobRow>(source.ReadAsync());
-    }
-
-    private static IDataPipeline<JobRow> CreateSqlServerSource(JobDefinition job)
-    {
-        var source = new JobRowSqlServerSource(job.Source.Connection!, job.Source.Table!);
-        return new DataPipeline<JobRow>(source.ReadAsync());
-    }
-
-    private static IDataPipeline<JobRow> CreateSqliteSource(JobDefinition job)
-    {
-        var connection = job.Source.Connection
-            ?? throw new InvalidOperationException("SQLite source requires connection.");
-        var table = job.Source.Table
-            ?? throw new InvalidOperationException("SQLite source requires table.");
-        var source = new JobRowSqliteSource(connection, table);
-        return new DataPipeline<JobRow>(source.ReadAsync());
-    }
-
-    private static IDataPipeline<JobRow> CreatePostgreSqlSource(JobDefinition job)
-    {
-        var connection = job.Source.Connection
-            ?? throw new InvalidOperationException("PostgreSQL source requires connection.");
-        var table = job.Source.Table
-            ?? throw new InvalidOperationException("PostgreSQL source requires table.");
-        var source = new JobRowPostgreSqlSource(connection, table);
-        return new DataPipeline<JobRow>(source.ReadAsync());
+        return provider.Create(job);
     }
 
     private static JobRow ProjectRow(JobRow row, Dictionary<string, string> mapping)

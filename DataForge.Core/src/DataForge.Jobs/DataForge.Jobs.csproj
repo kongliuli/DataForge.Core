@@ -7,7 +7,7 @@
     <PackageId>DataForge.Jobs</PackageId>
     <PackageVersion>0.5.0</PackageVersion>
     <Authors>DataForge Team</Authors>
-    <Description>YAML/JSON job engine for DataForge pipelines — model, parser, runner, and built-in source/sink providers.</Description>
+    <Description>YAML job engine for DataForge — model, parser, runner, and csv/json providers. Database and file adapters live in DataForge.Jobs.* packages.</Description>
     <PackageTags>data processing;ETL;jobs;migration;yaml</PackageTags>
     <RepositoryUrl>https://github.com/kongliuli/DataForge.Core</RepositoryUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
@@ -25,17 +25,16 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DataForge.Core\DataForge.Core.csproj" />
-    <ProjectReference Include="..\DataForge.Core.SqlServer\DataForge.Core.SqlServer.csproj" />
-    <ProjectReference Include="..\DataForge.Core.Sqlite\DataForge.Core.Sqlite.csproj" />
-    <ProjectReference Include="..\DataForge.Core.PostgreSql\DataForge.Core.PostgreSql.csproj" />
-    <ProjectReference Include="..\DataForge.Core.Parquet\DataForge.Core.Parquet.csproj" />
-    <ProjectReference Include="..\DataForge.Core.DuckDB\DataForge.Core.DuckDB.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <InternalsVisibleTo Include="DataForge.Sync" />
     <InternalsVisibleTo Include="DataForge.Sync.Tests" />
-    <InternalsVisibleTo Include="DataForge.Jobs.Tests" />
+    <InternalsVisibleTo Include="DataForge.Jobs.Sqlite" />
+    <InternalsVisibleTo Include="DataForge.Jobs.PostgreSql" />
+    <InternalsVisibleTo Include="DataForge.Jobs.SqlServer" />
+    <InternalsVisibleTo Include="DataForge.Jobs.Parquet" />
+    <InternalsVisibleTo Include="DataForge.Jobs.DuckDB" />
   </ItemGroup>
 
 </Project>

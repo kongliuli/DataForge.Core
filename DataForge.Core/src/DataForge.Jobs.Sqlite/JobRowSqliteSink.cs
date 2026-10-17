@@ -1,12 +1,12 @@
 using DataForge.Core.Core.Infrastructure;
 using DataForge.Core.Core.Models;
 using DataForge.Jobs.Models;
-using Microsoft.Data.SqlClient;
+using Microsoft.Data.Sqlite;
 using System.Diagnostics;
 
-namespace DataForge.Jobs.Execution;
+namespace DataForge.Jobs.Sqlite;
 
-internal static class JobRowSqlServerSink
+public static class JobRowSqliteSink
 {
     public static async Task<ExportResults> WriteAsync(
         IAsyncEnumerable<JobRow> rows,
@@ -14,9 +14,10 @@ internal static class JobRowSqlServerSink
         CancellationToken cancellationToken = default)
     {
         var connectionString = sink.Connection
-            ?? throw new InvalidOperationException("SQL Server sink requires connection.");
+            ?? throw new InvalidOperationException("SQLite sink requires connection.");
         var tableName = SqlIdentifier.ValidateTableName(sink.Table
-            ?? throw new InvalidOperationException("SQL Server sink requires table."));
+            ?? throw new InvalidOperationException("SQLite sink requires table."));
+        var quotedTable = SqlIdentifiers.QuoteSqlite(tableName);
 
         var batchSize = sink.Options?.BatchSize ?? 1000;
         var upsert = sink.Mode.Equals("upsert", StringComparison.OrdinalIgnoreCase);
@@ -34,7 +35,7 @@ internal static class JobRowSqlServerSink
             batch.Add(row);
             if (batch.Count >= batchSize)
             {
-                count += await WriteBatchAsync(batch, connectionString, tableName, upsert, keyColumns, cancellationToken)
+                count += await WriteBatchAsync(batch, connectionString, quotedTable, upsert, keyColumns, cancellationToken)
                     .ConfigureAwait(false);
                 batch.Clear();
             }
@@ -42,7 +43,7 @@ internal static class JobRowSqlServerSink
 
         if (batch.Count > 0)
         {
-            count += await WriteBatchAsync(batch, connectionString, tableName, upsert, keyColumns, cancellationToken)
+            count += await WriteBatchAsync(batch, connectionString, quotedTable, upsert, keyColumns, cancellationToken)
                 .ConfigureAwait(false);
         }
 
@@ -58,7 +59,7 @@ internal static class JobRowSqlServerSink
     private static async Task<int> WriteBatchAsync(
         List<JobRow> batch,
         string connectionString,
-        string tableName,
+        string quotedTable,
         bool upsert,
         string[] keyColumns,
         CancellationToken cancellationToken)
@@ -66,9 +67,9 @@ internal static class JobRowSqlServerSink
         if (batch.Count == 0)
             return 0;
 
-        await using var connection = new SqlConnection(connectionString);
+        await using var connection = new SqliteConnection(connectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
-        await using var transaction = (SqlTransaction)await connection.BeginTransactionAsync(cancellationToken)
+        await using var transaction = (SqliteTransaction)await connection.BeginTransactionAsync(cancellationToken)
             .ConfigureAwait(false);
 
         try
@@ -82,44 +83,36 @@ internal static class JobRowSqlServerSink
                 await using var command = connection.CreateCommand();
                 command.Transaction = transaction;
 
+                var quotedColumns = columns.Select(SqlIdentifiers.QuoteSqlite).ToArray();
                 var paramNames = columns.Select((_, i) => $"@p{i}").ToArray();
                 for (var i = 0; i < columns.Length; i++)
                     command.Parameters.AddWithValue(paramNames[i], (object?)row.Get(columns[i]) ?? DBNull.Value);
 
                 if (upsert)
                 {
+                    var conflict = string.Join(", ", keyColumns.Select(SqlIdentifiers.QuoteSqlite));
                     var nonKeyColumns = columns.Where(c => !keyColumns.Contains(c, StringComparer.OrdinalIgnoreCase)).ToArray();
-                    var keyWhere = string.Join(" AND ", keyColumns.Select(k =>
-                    {
-                        var idx = Array.FindIndex(columns, c => c.Equals(k, StringComparison.OrdinalIgnoreCase));
-                        return $"{k} = @p{idx}";
-                    }));
-
                     if (nonKeyColumns.Length == 0)
                     {
-                        command.CommandText = $@"
-IF NOT EXISTS (SELECT 1 FROM {tableName} WHERE {keyWhere})
-    INSERT INTO {tableName} ({string.Join(", ", columns)}) VALUES ({string.Join(", ", paramNames)})";
+                        command.CommandText =
+                            $"INSERT OR IGNORE INTO {quotedTable} ({string.Join(", ", quotedColumns)}) VALUES ({string.Join(", ", paramNames)})";
                     }
                     else
                     {
                         var updateSet = string.Join(", ", nonKeyColumns.Select(c =>
                         {
                             var idx = Array.FindIndex(columns, x => x.Equals(c, StringComparison.OrdinalIgnoreCase));
-                            return $"{c} = @p{idx}";
+                            return $"{SqlIdentifiers.QuoteSqlite(c)} = {paramNames[idx]}";
                         }));
-
-                        command.CommandText = $@"
-IF EXISTS (SELECT 1 FROM {tableName} WHERE {keyWhere})
-    UPDATE {tableName} SET {updateSet} WHERE {keyWhere}
-ELSE
-    INSERT INTO {tableName} ({string.Join(", ", columns)}) VALUES ({string.Join(", ", paramNames)})";
+                        command.CommandText =
+                            $"INSERT INTO {quotedTable} ({string.Join(", ", quotedColumns)}) VALUES ({string.Join(", ", paramNames)}) " +
+                            $"ON CONFLICT({conflict}) DO UPDATE SET {updateSet}";
                     }
                 }
                 else
                 {
                     command.CommandText =
-                        $"INSERT INTO {tableName} ({string.Join(", ", columns)}) VALUES ({string.Join(", ", paramNames)})";
+                        $"INSERT INTO {quotedTable} ({string.Join(", ", quotedColumns)}) VALUES ({string.Join(", ", paramNames)})";
                 }
 
                 await command.ExecuteNonQueryAsync(cancellationToken).ConfigureAwait(false);

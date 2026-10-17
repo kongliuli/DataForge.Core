@@ -1,0 +1,17 @@
+CREATE TABLE IF NOT EXISTS orders (
+  OrderId INTEGER PRIMARY KEY,
+  Amount REAL NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sales_flat (
+  OrderId INTEGER NOT NULL,
+  Customer TEXT NOT NULL,
+  Sku TEXT NOT NULL,
+  Qty INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS customer_order_summary (
+  Buyer TEXT NOT NULL,
+  RegionCode TEXT NOT NULL,
+  OrderTotal REAL NOT NULL
+);

@@ -1,0 +1,10 @@
+name: homo-sqlite-to-postgresql
+source:
+  type: sqlite
+  connection: Data Source=showcase.db
+  table: orders
+sink:
+  type: postgresql
+  connection: Host=127.0.0.1;Port=5433;Username=dataforge;Password=dataforge;Database=dataforge
+  table: orders
+  mode: insert

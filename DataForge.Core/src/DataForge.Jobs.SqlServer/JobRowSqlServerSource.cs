@@ -1,36 +1,34 @@
 using DataForge.Core.Core.Infrastructure;
 using DataForge.Core.Core.Models;
 using DataForge.Core.Core.Sources;
-using Npgsql;
+using Microsoft.Data.SqlClient;
 using System.Runtime.CompilerServices;
 
-namespace DataForge.Jobs.Sources;
+namespace DataForge.Jobs.SqlServer;
 
-internal sealed class JobRowPostgreSqlSource : IRelationalDataSource<JobRow>
+public sealed class JobRowSqlServerSource : IRelationalDataSource<JobRow>
 {
     private readonly string _connectionString;
     private readonly string _tableName;
-    private readonly string _quotedTableName;
 
-    public JobRowPostgreSqlSource(string connectionString, string tableName)
+    public JobRowSqlServerSource(string connectionString, string tableName)
     {
         _connectionString = connectionString;
         _tableName = SqlIdentifier.ValidateTableName(tableName);
-        _quotedTableName = SqlIdentifiers.QuotePostgreSql(_tableName);
     }
 
-    public string Name => $"PostgreSQL: {_tableName}";
+    public string Name => $"SQL Server: {_tableName}";
 
-    public DataSourceType SourceType => DataSourceType.PostgreSql;
+    public DataSourceType SourceType => DataSourceType.SqlServer;
 
     public async IAsyncEnumerable<JobRow> ReadAsync(
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
+        await using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
         await using var command = connection.CreateCommand();
-        command.CommandText = $"SELECT * FROM {_quotedTableName}";
+        command.CommandText = $"SELECT * FROM {_tableName}";
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
@@ -45,7 +43,7 @@ internal sealed class JobRowPostgreSqlSource : IRelationalDataSource<JobRow>
         object? parameters = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        await using var connection = new NpgsqlConnection(_connectionString);
+        await using var connection = new SqlConnection(_connectionString);
         await connection.OpenAsync(cancellationToken).ConfigureAwait(false);
 
         await using var command = connection.CreateCommand();
@@ -54,7 +52,7 @@ internal sealed class JobRowPostgreSqlSource : IRelationalDataSource<JobRow>
         if (parameters != null)
         {
             foreach (var prop in parameters.GetType().GetProperties(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
-                command.Parameters.AddWithValue(prop.Name, prop.GetValue(parameters) ?? DBNull.Value);
+                command.Parameters.AddWithValue($"@{prop.Name}", prop.GetValue(parameters) ?? DBNull.Value);
         }
 
         await using var reader = await command.ExecuteReaderAsync(cancellationToken).ConfigureAwait(false);
@@ -68,7 +66,7 @@ internal sealed class JobRowPostgreSqlSource : IRelationalDataSource<JobRow>
     public Task<DataSourceMetadata> GetMetadataAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult(new DataSourceMetadata
         {
-            SourceType = "PostgreSql",
+            SourceType = "SqlServer",
             Location = _tableName
         });
 
@@ -80,7 +78,7 @@ internal sealed class JobRowPostgreSqlSource : IRelationalDataSource<JobRow>
         return rows;
     }
 
-    private static JobRow MapRow(NpgsqlDataReader reader)
+    private static JobRow MapRow(SqlDataReader reader)
     {
         var row = new JobRow();
         for (var i = 0; i < reader.FieldCount; i++)

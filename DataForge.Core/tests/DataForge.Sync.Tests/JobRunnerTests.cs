@@ -1,12 +1,30 @@
 using DataForge.Jobs;
+using DataForge.Jobs.DuckDB;
 using DataForge.Jobs.Execution;
 using DataForge.Jobs.Models;
+using DataForge.Jobs.Parquet;
 using DataForge.Jobs.Parsing;
+using DataForge.Jobs.PostgreSql;
+using DataForge.Jobs.Sqlite;
+using DataForge.Jobs.SqlServer;
 using DataForge.Jobs.Validation;
 using DataForge.Sync.Execution;
 using Xunit;
 
 namespace DataForge.Sync.Tests;
+
+public class SyncProviderRegistration
+{
+    [System.Runtime.CompilerServices.ModuleInitializer]
+    internal static void Register()
+    {
+        JobSqliteRegistration.AddDataForgeJobsSqlite();
+        JobPostgreSqlRegistration.AddDataForgeJobsPostgreSql();
+        JobSqlServerRegistration.AddDataForgeJobsSqlServer();
+        JobParquetRegistration.AddDataForgeJobsParquet();
+        JobDuckDBRegistration.AddDataForgeJobsDuckDB();
+    }
+}
 
 public class WhereExpressionTests
 {
