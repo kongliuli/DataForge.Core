@@ -49,7 +49,8 @@ await scheduler.WatchFileAsync("job.yaml", variables, cancellationToken);
 - CLI `dataforge watch` 与 Web `POST /api/jobs/schedule` 复用同一实现
 - `JobScheduleService.ExportRegistrations()` 返回可 JSON 序列化的原始 YAML、变量、绝对作业路径、标识及启动运行选项；新服务逐项调用 `Restore(registration)` 后调用 `Start()` 即可重新调度。
 - `ScheduleFileStore.SaveAsync(path, service.ExportRegistrations())` 将注册写入同目录临时文件再替换目标；`LoadAsync(path)` 读取注册列表，文件不存在返回空列表，损坏 JSON 抛出异常。并发写入由宿主串行化。
-- 注册导出不含运行历史，也不会由 Web 自动恢复；宿主负责调用文件存储和恢复，重复标识会被拒绝。导出可能含连接凭据，应保存在受保护的位置。
+- Web 自动保存注册与删除，启动时恢复并重新调度。默认存储为内容根目录下的 `data/schedules.json`，可通过配置 `Schedules:Path`（环境变量 `Schedules__Path`）覆盖。一个存储文件只供一个 Web 实例使用；损坏或重复注册会阻止启动，不会静默丢弃。
+- 注册导出不含运行历史；恢复后的 `RunOnStart` 会再次执行，停机期间错过的 cron 时段不会补跑。导出可能含连接凭据，应保存在受保护的位置。
 
 已支持：`sqlite` / `postgresql` / `sqlserver` / `mysql`。
 

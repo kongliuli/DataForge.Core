@@ -39,6 +39,9 @@ ScaffoldingReadMe.txt
 # dotenv environment variables file
 .env
 
+# Web runtime state (may contain connection credentials)
+/DataForge.Core/tools/DataForge.Web/data/
+
 # Others
 ~$*
 *~

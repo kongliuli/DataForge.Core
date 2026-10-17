@@ -10,10 +10,9 @@ JobProviders.RegisterAll();
 builder.Services.AddSingleton<JobRunHistory>();
 builder.Services.AddSingleton<ConnectionStore>();
 builder.Services.AddSingleton<JobScheduleService>();
+builder.Services.AddSingleton<PersistentSchedules>();
+builder.Services.AddHostedService(services => services.GetRequiredService<PersistentSchedules>());
 var app = builder.Build();
-
-// Resident scheduler: schedules registered via /api/schedules run inside this process.
-app.Services.GetRequiredService<JobScheduleService>().Start();
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
@@ -114,18 +113,14 @@ app.MapGet("/api/jobs/history", (JobRunHistory history) =>
 
 app.MapGet("/api/schedules", (JobScheduleService schedules) => schedules.List());
 
-app.MapPost("/api/schedules", (RegisterScheduleRequest request, JobScheduleService schedules) =>
+app.MapPost("/api/schedules", async (RegisterScheduleRequest request, PersistentSchedules schedules, CancellationToken token) =>
 {
     if (string.IsNullOrWhiteSpace(request.Yaml))
         return Results.BadRequest(new { error = "yaml is required" });
 
     try
     {
-        var status = schedules.Add(
-            request.Yaml,
-            request.Id,
-            variables: request.Variables,
-            runOnStart: request.RunOnStart == true);
+        var status = await schedules.AddAsync(request, token);
 
         return Results.Created($"/api/schedules/{status.Id}", status);
     }
@@ -152,8 +147,8 @@ app.MapPost("/api/schedules/{id}/run", async (string id, JobScheduleService sche
     }
 });
 
-app.MapDelete("/api/schedules/{id}", (string id, JobScheduleService schedules) =>
-    schedules.Remove(id) ? Results.NoContent() : Results.NotFound());
+app.MapDelete("/api/schedules/{id}", async (string id, PersistentSchedules schedules, CancellationToken token) =>
+    await schedules.RemoveAsync(id, token) ? Results.NoContent() : Results.NotFound());
 
 app.MapPost("/api/jobs/schedule", (ScheduleRequest request) =>
 {
