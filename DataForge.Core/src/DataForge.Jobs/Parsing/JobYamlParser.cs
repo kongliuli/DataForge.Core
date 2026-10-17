@@ -1,5 +1,6 @@
 using DataForge.Jobs.Models;
 using YamlDotNet.Serialization;
+using YamlDotNet.RepresentationModel;
 using YamlDotNet.Serialization.NamingConventions;
 
 namespace DataForge.Jobs.Parsing;
@@ -15,16 +16,19 @@ public static class JobYamlParser
 
     public static JobFile ParseFile(string yaml)
     {
-        if (yaml.Contains("jobs:", StringComparison.Ordinal))
+        var document = new YamlStream();
+        document.Load(new StringReader(yaml));
+        if (document.Documents.Count != 1 || document.Documents[0].RootNode is not YamlMappingNode root)
+            throw new InvalidOperationException("Job YAML requires exactly one mapping document.");
+        if (root.Children.TryGetValue(new YamlScalarNode("jobs"), out var jobsNode))
         {
+            if (jobsNode is not YamlSequenceNode sequence || sequence.Children.Count == 0)
+                throw new InvalidOperationException("jobs must be a non-empty sequence.");
             var file = Deserializer.Deserialize<JobFile>(yaml)
                 ?? throw new InvalidOperationException("Job YAML deserialized to null.");
-            if (file.Jobs.Count > 0)
-            {
-                foreach (var job in file.Jobs)
-                    ValidateJob(job);
-                return file;
-            }
+            foreach (var job in file.Jobs)
+                ValidateJob(job);
+            return file;
         }
 
         var single = Deserializer.Deserialize<JobDefinition>(yaml)
