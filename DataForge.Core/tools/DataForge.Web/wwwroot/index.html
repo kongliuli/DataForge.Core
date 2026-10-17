@@ -142,6 +142,7 @@ DST=./out.json</textarea>
       const id = document.getElementById('scheduledJob').value;
       if (!id) throw new Error('请先选择注册作业');
       const result = await post('/api/schedules/' + encodeURIComponent(id) + '/run', {});
+      if (!result.ok) throw new Error(result.json.error || JSON.stringify(result.json));
       await refreshSchedules();
       document.getElementById('scheduleOut').textContent = JSON.stringify(result.json, null, 2);
     });
@@ -168,7 +169,11 @@ DST=./out.json</textarea>
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
-      return { ok: res.ok, json: await res.json() };
+      const text = await res.text();
+      let json;
+      try { json = text ? JSON.parse(text) : { error: `HTTP ${res.status} ${res.statusText}` }; }
+      catch { json = { error: `HTTP ${res.status}: ${text}` }; }
+      return { ok: res.ok, json };
     }
 
     async function refreshConnections() {
@@ -286,6 +291,9 @@ DST=./out.json</textarea>
       document.getElementById('history').textContent = JSON.stringify(await hist.json(), null, 2);
     };
 
+    refreshSchedules().catch(error => {
+      document.getElementById('scheduleOut').textContent = '加载调度失败：' + error.message;
+    });
     refreshConnections();
     fetch('/api/jobs/history').then(r => r.json()).then(j => {
       document.getElementById('history').textContent = JSON.stringify(j, null, 2);
