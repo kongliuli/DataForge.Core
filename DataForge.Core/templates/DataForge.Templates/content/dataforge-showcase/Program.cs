@@ -19,9 +19,17 @@ if (args.Length != 2 || args[0] is not "run")
     return args.Length == 1 && args[0] is "--help" or "-h" ? 0 : 1;
 }
 
+using var cancellation = new CancellationTokenSource();
+ConsoleCancelEventHandler onCancel = (_, e) =>
+{
+    e.Cancel = true;
+    cancellation.Cancel();
+};
+Console.CancelKeyPress += onCancel;
+
 try
 {
-    var results = await JobBatch.RunFileAsync(args[1]);
+    var results = await JobBatch.RunFileAsync(args[1], cancellationToken: cancellation.Token);
     foreach (var result in results)
     {
         if (result.Success)
@@ -31,8 +39,17 @@ try
     }
     return results.All(result => result.Success) ? 0 : 1;
 }
+catch (OperationCanceledException) when (cancellation.IsCancellationRequested)
+{
+    Console.Error.WriteLine("Job cancelled.");
+    return 130;
+}
 catch (Exception ex)
 {
     Console.Error.WriteLine(ex.Message);
     return 1;
+}
+finally
+{
+    Console.CancelKeyPress -= onCancel;
 }

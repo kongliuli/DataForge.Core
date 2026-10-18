@@ -45,7 +45,7 @@ dotnet run -- run jobs/01-homo.yaml
 dotnet run -- run jobs/05-batch.yaml
 ```
 
-入口调用 `JobBatch.RunFileAsync`，单作业与批次统一执行；逐项输出结果，任一执行结果失败时退出码为 1。
+入口调用 `JobBatch.RunFileAsync`，单作业与批次统一执行；逐项输出结果，任一执行结果失败时退出码为 1。运行时 Ctrl+C 请求协作取消，取消异常返回 130；已完成的写入不自动回滚。终端信号端到端验收仍待完成，目前已验证模板构建与引擎取消测试。
 
 默认 PostgreSQL 端口 `5433`（`dotnet new` 可用 `-pgPort`）。
 
