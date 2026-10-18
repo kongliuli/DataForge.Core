@@ -8,11 +8,11 @@ public sealed class ConnectionStore
     private readonly string _path;
     private readonly ConcurrentDictionary<string, ConnectionProfile> _items = new(StringComparer.OrdinalIgnoreCase);
 
-    public ConnectionStore(IWebHostEnvironment env)
+    public ConnectionStore(IWebHostEnvironment env, IConfiguration configuration)
     {
-        var dir = Path.Combine(env.ContentRootPath, "data");
-        Directory.CreateDirectory(dir);
-        _path = Path.Combine(dir, "connections.json");
+        _path = Path.GetFullPath(configuration["Connections:Path"]
+            ?? Path.Combine(env.ContentRootPath, "data", "connections.json"));
+        Directory.CreateDirectory(Path.GetDirectoryName(_path)!);
         Load();
     }
 
