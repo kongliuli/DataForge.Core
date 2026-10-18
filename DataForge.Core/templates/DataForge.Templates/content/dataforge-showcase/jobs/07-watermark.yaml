@@ -7,7 +7,7 @@ watermark:
   initial: "0"
 source:
   type: csv
-  path: ../data/orders.csv
+  path: ../sample.csv
 sink:
   type: json
-  path: ../out/orders-incremental.json
+  path: ../output/orders-incremental.json

@@ -7,14 +7,14 @@ jobs:
   - name: copy-a
     source:
       type: csv
-      path: data/orders.csv
+      path: ../sample.csv
     sink:
       type: json
-      path: out/a.json
+      path: ../output/a.json
   - name: copy-b
     source:
       type: csv
-      path: data/orders.csv
+      path: ../sample.csv
     sink:
       type: json
-      path: out/b.json
+      path: ../output/b.json
