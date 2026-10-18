@@ -20,7 +20,11 @@ public static class JobYamlParser
         return jobs[0];
     }
 
-    public static JobFile ParseFile(string yaml)
+    public static JobFile ParseFile(string yaml) => ParseFileCore(yaml, true);
+
+    internal static JobFile ParseForPreflight(string yaml) => ParseFileCore(yaml, false);
+
+    private static JobFile ParseFileCore(string yaml, bool validate)
     {
         var document = new YamlStream();
         document.Load(new StringReader(yaml));
@@ -32,15 +36,18 @@ public static class JobYamlParser
                 throw new InvalidOperationException("jobs must be a non-empty sequence.");
             var file = Deserializer.Deserialize<JobFile>(yaml)
                 ?? throw new InvalidOperationException("Job YAML deserialized to null.");
-            ValidateExecution(file.Execution);
-            foreach (var job in file.Jobs)
-                ValidateJob(job);
+            if (validate)
+            {
+                ValidateExecution(file.Execution);
+                foreach (var job in file.Jobs)
+                    ValidateJob(job);
+            }
             return file;
         }
 
         var single = Deserializer.Deserialize<JobDefinition>(yaml)
             ?? throw new InvalidOperationException("Job YAML deserialized to null.");
-        ValidateJob(single);
+        if (validate) ValidateJob(single);
         return new JobFile { Jobs = [single], SourceJob = single };
     }
 
