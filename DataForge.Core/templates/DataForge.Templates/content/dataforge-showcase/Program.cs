@@ -30,8 +30,13 @@ if (args.Length < 2 || args[0] is not "run")
           dotnet run -- run jobs/02-split-headers.yaml
           dotnet run -- run jobs/02-split-lines.yaml
           dotnet run -- run jobs/03-merge.yaml
+          # Excel↔JSON (requires --connectors all):
+          dotnet run -- run jobs/10-homo-excel-json.yaml
+          dotnet run -- run jobs/11-split-excel-json.yaml
+          dotnet run -- run jobs/12-merge-json-excel.yaml
+          dotnet run -- run jobs/13-hetero-excel-json.yaml
         Optional: --var KEY=VALUE (repeatable; quote values containing spaces).
-        See README.md. Init SQL lives in sql/.
+        See README.md. Init SQL lives in sql/. Samples in samples/.
         """);
     return args.Length == 1 && args[0] is "--help" or "-h" ? 0 : 1;
 }

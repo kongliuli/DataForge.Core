@@ -84,7 +84,11 @@ public class ExcelTarget<T> : IDataTarget<T>
             worksheet.SheetView.FreezeRows(1);
         }
 
-        // 保存文件
+        // 保存文件（目标目录不存在时自动创建，与 Json/Parquet 目标一致）
+        var destinationDirectory = Path.GetDirectoryName(Path.GetFullPath(destination));
+        if (!string.IsNullOrEmpty(destinationDirectory))
+            Directory.CreateDirectory(destinationDirectory);
+
         workbook.SaveAs(destination);
 
         return new ExportResults

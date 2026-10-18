@@ -1,0 +1,21 @@
+# Heterogeneous clean: Excel → filter + rename/project → JSON.
+# Drops cancelled rows, renames columns for a summary shape.
+# Requires: --connectors all (DataForge.Jobs.Excel).
+#   dotnet run -- run jobs/13-hetero-excel-json.yaml
+name: hetero-excel-clean-to-json
+source:
+  type: excel
+  path: ../samples/sales-flat.xlsx
+transforms:
+  - where: Status != 'cancelled'
+  - select:
+      Buyer: Customer
+      RegionCode: Region
+      Sku: Sku
+      LineTotal: Amount
+      Fulfillment: Status
+sink:
+  type: json
+  path: ../output/excel-json/sales-clean.json
+  options:
+    indented: true

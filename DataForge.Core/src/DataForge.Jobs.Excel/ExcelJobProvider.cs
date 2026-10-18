@@ -88,6 +88,8 @@ internal sealed class ExcelJobProvider : IJobSourceProvider, IJobSinkProvider
                 sheet.Cell(i + 2, col + 1).Value = list[i].Get(headers[col]) ?? "";
         }
 
+        // Match the csv/json/parquet sinks: the target directory need not pre-exist.
+        Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(sink.Path))!);
         workbook.SaveAs(sink.Path);
         sw.Stop();
         return new ExportResults { RecordsWritten = list.Count, Duration = sw.Elapsed, OutputPath = sink.Path };

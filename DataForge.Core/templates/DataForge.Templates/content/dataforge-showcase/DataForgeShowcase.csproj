@@ -23,7 +23,9 @@
 
   <ItemGroup>
     <None Include="jobs\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="samples\**\*" CopyToOutputDirectory="PreserveNewest" />
     <None Include="sql\**\*" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="sample.csv" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

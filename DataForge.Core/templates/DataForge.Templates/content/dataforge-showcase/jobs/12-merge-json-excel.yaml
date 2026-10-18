@@ -1,0 +1,20 @@
+# Merge two JSON tables (customers ⨝ orders) into one Excel workbook.
+# JSON source/sink ship with DataForge.Jobs; Excel sink needs --connectors all.
+#   dotnet run -- run jobs/12-merge-json-excel.yaml
+name: merge-json-to-excel
+sources:
+  - type: json
+    alias: c
+    path: ../samples/customers.json
+  - type: json
+    alias: o
+    path: ../samples/orders.json
+    on: c_Id = o_CustomerId
+transforms:
+  - select:
+      Buyer: c_Name
+      OrderId: o_Id
+      OrderTotal: o_Amount
+sink:
+  type: excel
+  path: ../output/excel-json/customer-orders.xlsx

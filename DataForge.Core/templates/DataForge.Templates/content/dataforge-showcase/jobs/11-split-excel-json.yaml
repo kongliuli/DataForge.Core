@@ -1,0 +1,34 @@
+# Split one Excel flat table into two JSON files (headers + lines).
+# Requires: --connectors all (DataForge.Jobs.Excel).
+#   dotnet run -- run jobs/11-split-excel-json.yaml
+name: split-excel-to-json
+jobs:
+  - name: order-headers
+    source:
+      type: excel
+      path: ../samples/sales-flat.xlsx
+    transforms:
+      - select:
+          OrderId: OrderId
+          Customer: Customer
+          Region: Region
+    sink:
+      type: json
+      path: ../output/excel-json/order-headers.json
+      options:
+        indented: true
+  - name: order-lines
+    source:
+      type: excel
+      path: ../samples/sales-flat.xlsx
+    transforms:
+      - select:
+          OrderId: OrderId
+          Sku: Sku
+          Qty: Qty
+          Amount: Amount
+    sink:
+      type: json
+      path: ../output/excel-json/order-lines.json
+      options:
+        indented: true

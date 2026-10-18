@@ -12,6 +12,7 @@ dotnet new dataforge-showcase -n MyMigration -o ./MyMigration
 能力：
 
 - 跨库同构 / 拆表 / 合表 / JOIN / 批处理 YAML
+- Excel↔JSON 四场景（同构 / 单表拆多表 / 多表合并 / 异构清洗；需 `--connectors all`）
 - 对接 `DataForge.Jobs` Catalog（探活、列表、结构、预览）
 - 与仓库 `tools/DataForge.Web`、`tools/DataForge.Sync` 同一引擎
 

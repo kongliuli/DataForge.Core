@@ -22,6 +22,10 @@ UI 走 Web/CLI，不走 WPF。
 | `jobs/04-join.yaml` | 多源等值 JOIN + `createTable` + upsert |
 | `jobs/05-batch.yaml` | `jobs:` 顺序编排，失败即停 |
 | `jobs/06-parallel.yaml` | `execution.parallelism` 并行批 |
+| `jobs/10-homo-excel-json.yaml` | Excel↔JSON 同构：`samples/sales-flat.xlsx` → JSON |
+| `jobs/11-split-excel-json.yaml` | Excel 单表拆多表 → 两个 JSON |
+| `jobs/12-merge-json-excel.yaml` | 多表合并：两个 JSON JOIN → Excel |
+| `jobs/13-hetero-excel-json.yaml` | 异构清洗：Excel 过滤+改名 → JSON |
 
 批处理选项写在文件根 `execution:`：`parallelism`（默认 1）、`stopOnError`（默认 true）、`progressEvery`、`batchSize`。
 
@@ -34,6 +38,28 @@ dotnet run -- run jobs/00-file-batch.yaml
 ```
 
 模板自带 `sample.csv`（Alice、Bob 两行），批次生成 `output/sample.json` 和 `output/sample.csv`。先用此场景验证安装，再配置真实数据库。
+
+## Excel ↔ JSON 四种场景（无需数据库）
+
+生成模板时加 `--connectors all`（会引用并注册 `DataForge.Jobs.Excel`），样例文件在 `samples/`：
+
+| 模式 | 作业 | 输入 | 输出 |
+|---|---|---|---|
+| 同构迁移 | `jobs/10-homo-excel-json.yaml` | `samples/sales-flat.xlsx` | `output/excel-json/homo-sales.json` |
+| 单表拆多表 | `jobs/11-split-excel-json.yaml` | 同上 | `order-headers.json` + `order-lines.json` |
+| 多表合并 | `jobs/12-merge-json-excel.yaml` | `customers.json` + `orders.json` | `customer-orders.xlsx` |
+| 异构清洗 | `jobs/13-hetero-excel-json.yaml` | `sales-flat.xlsx`（过滤 cancelled + 列改名） | `sales-clean.json` |
+
+```bash
+dotnet new dataforge-showcase -n ExcelJsonDemo -o ./ExcelJsonDemo --connectors all
+cd ExcelJsonDemo
+dotnet run -- run jobs/10-homo-excel-json.yaml
+dotnet run -- run jobs/11-split-excel-json.yaml
+dotnet run -- run jobs/12-merge-json-excel.yaml
+dotnet run -- run jobs/13-hetero-excel-json.yaml
+```
+
+默认 `--connectors default` 只有 sqlite/postgresql，跑 10–13 会报 `excel` 未注册；换 `--connectors all` 或自行引用 `DataForge.Jobs.Excel` 并调用 `JobExcelRegistration.AddDataForgeJobsExcel()`。纯 CLI 也可用全局工具：`dataforge run jobs/10-homo-excel-json.yaml`（`DataForge.Sync` 已内置注册 Excel）。
 
 ## 数据库场景 CLI
 

@@ -1,0 +1,13 @@
+# Homogeneous Excel → JSON (same columns, no transform).
+# Requires: --connectors all (DataForge.Jobs.Excel).
+# Run from the generated project directory:
+#   dotnet run -- run jobs/10-homo-excel-json.yaml
+name: homo-excel-to-json
+source:
+  type: excel
+  path: ../samples/sales-flat.xlsx
+sink:
+  type: json
+  path: ../output/excel-json/homo-sales.json
+  options:
+    indented: true
