@@ -147,8 +147,8 @@ public class JobJoinBatchTests
             """;
         await File.WriteAllTextAsync(yamlPath, yaml);
 
-        var phases = new List<string>();
-        var progress = new Progress<JobProgress>(item => phases.Add(item.Phase));
+        var phases = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        var progress = new InlineProgress(item => phases.Enqueue(item.Phase));
         var results = await JobBatch.RunFileAsync(yamlPath, progress: progress);
 
         Assert.Equal(2, results.Count);
@@ -158,5 +158,10 @@ public class JobJoinBatchTests
         Assert.Contains("completed", phases);
         Assert.True(File.Exists(Path.Combine(dir, "a.json")));
         Assert.True(File.Exists(Path.Combine(dir, "b.json")));
+    }
+
+    private sealed class InlineProgress(Action<JobProgress> report) : IProgress<JobProgress>
+    {
+        public void Report(JobProgress value) => report(value);
     }
 }
