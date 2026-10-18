@@ -11,6 +11,14 @@
     <PackageReference Include="DataForge.Jobs" Version="0.5.0" />
     <PackageReference Include="DataForge.Jobs.Sqlite" Version="0.5.0" />
     <PackageReference Include="DataForge.Jobs.PostgreSql" Version="0.5.0" />
+    <!--#if (connectors == "all") -->
+    <PackageReference Include="DataForge.Jobs.SqlServer" Version="0.5.0" />
+    <PackageReference Include="DataForge.Jobs.MySql" Version="0.5.0" />
+    <PackageReference Include="DataForge.Jobs.Excel" Version="0.5.0" />
+    <PackageReference Include="DataForge.Jobs.Http" Version="0.5.0" />
+    <PackageReference Include="DataForge.Jobs.Parquet" Version="0.5.0" />
+    <PackageReference Include="DataForge.Jobs.DuckDB" Version="0.5.0" />
+    <!--#endif-->
   </ItemGroup>
 
   <ItemGroup>

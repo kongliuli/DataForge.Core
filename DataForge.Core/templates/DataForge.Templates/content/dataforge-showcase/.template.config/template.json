@@ -16,7 +16,24 @@
       "type": "parameter",
       "datatype": "text",
       "defaultValue": "5433",
-      "replaces": "5433"
+      "replaces": "5433",
+      "description": "Default PostgreSQL port used by demo PG_* fallbacks in Program.cs"
+    },
+    "connectors": {
+      "type": "parameter",
+      "datatype": "choice",
+      "choices": [
+        {
+          "choice": "default",
+          "description": "sqlite + postgresql only (matches prior template behavior)"
+        },
+        {
+          "choice": "all",
+          "description": "Also reference and register sqlserver, mysql, excel, http, parquet, duckdb"
+        }
+      ],
+      "defaultValue": "default",
+      "description": "Which Jobs connector packages to reference and register"
     }
   }
 }

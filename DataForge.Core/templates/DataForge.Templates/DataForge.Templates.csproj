@@ -15,9 +15,11 @@
     <NoDefaultExcludes>true</NoDefaultExcludes>
     <PackageVersion>0.5.0</PackageVersion>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
     <Content Include="content\**\*" Exclude="content\**\bin\**;content\**\obj\**;content\**\output\**;content\**\state\**" />
     <Compile Remove="**\*" />
   </ItemGroup>

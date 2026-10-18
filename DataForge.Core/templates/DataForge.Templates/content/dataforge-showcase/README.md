@@ -47,15 +47,61 @@ dotnet run -- run jobs/05-batch.yaml
 
 入口调用 `JobBatch.RunFileAsync`，单作业与批次统一执行；逐项输出结果，任一执行结果失败时退出码为 1。运行时 Ctrl+C 请求协作取消，取消异常返回 130；已完成的写入不自动回滚。终端信号端到端验收仍待完成，目前已验证模板构建与引擎取消测试。
 
-默认 PostgreSQL 端口 `5433`（`dotnet new` 可用 `-pgPort`）。
+## PostgreSQL 凭据与 `-pgPort`
 
-YAML 中的 `${KEY}` 可通过重复的 `--var KEY=VALUE` 参数替换：
+YAML 作业**不再内嵌** Host/Port/Username/Password/Database 字面量，统一写成：
+
+```text
+Host=${PG_HOST};Port=${PG_PORT};Username=${PG_USER};Password=${PG_PASSWORD};Database=${PG_DATABASE}
+```
+
+解析优先级（由引擎 `VariableResolver` + 本模板 `Program.cs` 共同保证）：
+
+1. CLI `--var KEY=VALUE`
+2. 非空环境变量 `KEY`
+3. 本模板 `Program.cs` 里仅为开箱演示注入的默认值（`PG_HOST=127.0.0.1`、`PG_PORT=5433`、`PG_USER=dataforge`、`PG_PASSWORD=dataforge`、`PG_DATABASE=dataforge`）
+
+`dotnet new` 的 `-pgPort` 会替换 `Program.cs` 中演示默认端口字面量 `5433`；作业实际端口随之变化。环境变量 / `--var` 仍可覆盖：
+
+```powershell
+$env:PG_HOST='db.example'; $env:PG_PORT='5432'; $env:PG_USER='app'; $env:PG_PASSWORD='secret'; $env:PG_DATABASE='appdb'
+dotnet run -- run jobs/01-homo.yaml
+```
+
+```bash
+export PG_HOST=db.example PG_PORT=5432 PG_USER=app PG_PASSWORD=secret PG_DATABASE=appdb
+dotnet run -- run jobs/01-homo.yaml
+# 或
+dotnet run -- run jobs/01-homo.yaml --var PG_HOST=db.example --var PG_PORT=5432
+```
+
+YAML 中的其他 `${KEY}` 同样可通过重复的 `--var KEY=VALUE` 参数替换：
 
 ```bash
 dotnet run -- run jobs/custom.yaml --var SRC=/data/input.csv --var DST=/data/output.json
 ```
 
 值含空格时将整个 `KEY=VALUE` 参数加引号；值中的等号会保留。缺失值或空变量名会返回退出码 1。
+
+## 连接器选择（`--connectors`）
+
+本模板默认引用并注册 `sqlite` / `postgresql`（`--connectors default`，与历史行为一致）。
+
+生成时传入 `--connectors all` 还会额外引用并注册：`sqlserver`、`mysql`、`excel`、`http`、`parquet`、`duckdb`：
+
+```bash
+dotnet new dataforge-showcase -n MyMigration -o ./MyMigration --connectors all
+```
+
+## 纯 NuGet 命令行工具
+
+模板 `Program.cs` 只是最小的 `run` 子集。完整 CLI（`run` / `watch` / `catalog`）请安装全局工具：
+
+```bash
+dotnet tool install --global DataForge.Sync
+```
+
+`DataForge.*` / `DataForge.Jobs.*` 目前尚未发布到 nuget.org；本地验收可用仓库 `DataForge.Core/artifacts/packages` 作为附加源（例如在 `nuget.config` 里指向该绝对路径）。
 
 ## Web（仓库内工具）
 
@@ -77,4 +123,4 @@ var cols = await JobCatalog.DescribeTableAsync("sqlite", conn, "orders");
 var rows = await JobCatalog.PreviewAsync("sqlite", conn, "orders", 20);
 ```
 
-本模板默认引用并注册 `sqlite` / `postgresql`。其他 Catalog（例如 sqlserver、mysql、excel、parquet）需要额外引用对应 Jobs 适配包并调用其注册方法；它们并未默认包含在本模板中。
+默认生成物只注册 sqlite / postgresql；需要更多 Catalog 时请用 `--connectors all`，或自行引用对应 Jobs 适配包并调用其 `AddDataForgeJobs*` 注册方法。

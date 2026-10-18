@@ -6,10 +6,17 @@
     <Nullable>enable</Nullable>
     <PackageId>DataForge.Core.DependencyInjection</PackageId>
     <PackageVersion>0.3.0</PackageVersion>
+    <Authors>DataForge Team</Authors>
     <Description>Microsoft.Extensions.DependencyInjection integration for DataForge.Core</Description>
+    <PackageTags>data processing;ETL;dependencyinjection;di</PackageTags>
     <RepositoryUrl>https://github.com/kongliuli/DataForge.Core</RepositoryUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\DataForge.Core\DataForge.Core.csproj" />

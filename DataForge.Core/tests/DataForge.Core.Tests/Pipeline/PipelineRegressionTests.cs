@@ -49,7 +49,11 @@ public class PipelineRegressionTests
     [Fact]
     public void FromExcel_WithoutExtensionPackage_ThrowsGuidance()
     {
+        // This test exists precisely to pin the guidance thrown by the obsolete placeholder API,
+        // so the CS0618 obsolete warning is expected here and must not be suppressed globally.
+#pragma warning disable CS0618
         var act = () => DataForgePipeline.FromExcel<object>("file.xlsx");
+#pragma warning restore CS0618
         act.Should().Throw<DataForgeException>()
             .Which.ErrorCode.Should().Be("EXCEL_EXTENSION_REQUIRED");
     }

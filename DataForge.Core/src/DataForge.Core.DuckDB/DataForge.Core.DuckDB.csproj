@@ -11,7 +11,12 @@
     <PackageTags>data processing;ETL;duckdb;olap</PackageTags>
     <RepositoryUrl>https://github.com/kongliuli/DataForge.Core</RepositoryUrl>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="DuckDB.NET.Data.Full" Version="1.5.3" />

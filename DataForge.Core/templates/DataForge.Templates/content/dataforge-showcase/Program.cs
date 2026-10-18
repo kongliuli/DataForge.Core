@@ -1,9 +1,25 @@
 using DataForge.Jobs.Execution;
 using DataForge.Jobs.PostgreSql;
 using DataForge.Jobs.Sqlite;
+#if (connectors == "all")
+using DataForge.Jobs.DuckDB;
+using DataForge.Jobs.Excel;
+using DataForge.Jobs.Http;
+using DataForge.Jobs.MySql;
+using DataForge.Jobs.Parquet;
+using DataForge.Jobs.SqlServer;
+#endif
 
 JobSqliteRegistration.AddDataForgeJobsSqlite();
 JobPostgreSqlRegistration.AddDataForgeJobsPostgreSql();
+#if (connectors == "all")
+JobSqlServerRegistration.AddDataForgeJobsSqlServer();
+JobMySqlRegistration.AddDataForgeJobsMySql();
+JobExcelRegistration.AddDataForgeJobsExcel();
+JobHttpRegistration.AddDataForgeJobsHttp();
+JobParquetRegistration.AddDataForgeJobsParquet();
+JobDuckDBRegistration.AddDataForgeJobsDuckDB();
+#endif
 
 if (args.Length < 2 || args[0] is not "run")
 {
@@ -36,6 +52,8 @@ for (var i = 2; i < args.Length; i++)
     }
     variables[args[i][..separator].Trim()] = args[i][(separator + 1)..];
 }
+
+EnsureDemoPgDefaults(variables);
 
 using var cancellation = new CancellationTokenSource();
 ConsoleCancelEventHandler onCancel = (_, e) =>
@@ -70,4 +88,27 @@ catch (Exception ex)
 finally
 {
     Console.CancelKeyPress -= onCancel;
+}
+
+// Demo-only PG_* defaults for out-of-box YAML jobs. Precedence remains:
+// CLI --var > non-empty environment variable > these Program.cs defaults.
+// Defaults are only injected when neither --var nor env already supplies the key,
+// so an environment variable is never masked by a dictionary entry.
+static void EnsureDemoPgDefaults(Dictionary<string, string> variables)
+{
+    Ensure("PG_HOST", "127.0.0.1");
+    Ensure("PG_PORT", "5433");
+    Ensure("PG_USER", "dataforge");
+    Ensure("PG_PASSWORD", "dataforge");
+    Ensure("PG_DATABASE", "dataforge");
+
+    void Ensure(string key, string value)
+    {
+        if (variables.ContainsKey(key))
+            return;
+        var env = Environment.GetEnvironmentVariable(key);
+        if (!string.IsNullOrEmpty(env))
+            return;
+        variables[key] = value;
+    }
 }

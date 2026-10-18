@@ -11,7 +11,7 @@ jobs:
           Customer: Customer
     sink:
       type: postgresql
-      connection: Host=127.0.0.1;Port=5433;Username=dataforge;Password=dataforge;Database=dataforge
+      connection: Host=${PG_HOST};Port=${PG_PORT};Username=${PG_USER};Password=${PG_PASSWORD};Database=${PG_DATABASE}
       table: order_headers
       createTable: true
       mode: upsert
@@ -28,7 +28,7 @@ jobs:
           Qty: Qty
     sink:
       type: postgresql
-      connection: Host=127.0.0.1;Port=5433;Username=dataforge;Password=dataforge;Database=dataforge
+      connection: Host=${PG_HOST};Port=${PG_PORT};Username=${PG_USER};Password=${PG_PASSWORD};Database=${PG_DATABASE}
       table: order_lines
       createTable: true
       mode: insert

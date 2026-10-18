@@ -1,0 +1,147 @@
+name: Publish NuGet
+
+# Release gate: the packages the whole product is delivered through.
+# Only a published GitHub Release (or a manual run with push=true) reaches nuget.org;
+# every other path stops after packing and verifying the artifacts.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      push:
+        description: Push the packed packages to nuget.org
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: 8.0.x
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
+  DOTNET_NOLOGO: 1
+
+jobs:
+  pack:
+    name: Build, test and pack
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: DataForge.Core
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: dataforge
+          POSTGRES_PASSWORD: dataforge
+          POSTGRES_DB: dataforge
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore DataForge.Core.sln
+
+      - name: Build (Release)
+        run: dotnet build DataForge.Core.sln -c Release --no-restore
+
+      - name: Test (includes PostgreSQL integration)
+        run: dotnet test DataForge.Core.sln -c Release --no-build --logger trx --results-directory TestResults
+
+      - name: Pack
+        run: dotnet pack DataForge.Core.sln -c Release --no-build -o nupkg
+
+      - name: Verify package set
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected=(
+            DataForge.Core DataForge.Core.DependencyInjection DataForge.Core.DuckDB
+            DataForge.Core.Excel DataForge.Core.FluentValidation DataForge.Core.Http
+            DataForge.Core.Json DataForge.Core.MySql DataForge.Core.Parquet
+            DataForge.Core.PostgreSql DataForge.Core.Sqlite DataForge.Core.SqlServer
+            DataForge.Jobs DataForge.Jobs.DuckDB DataForge.Jobs.Excel DataForge.Jobs.Http
+            DataForge.Jobs.MySql DataForge.Jobs.Parquet DataForge.Jobs.PostgreSql
+            DataForge.Jobs.Sqlite DataForge.Jobs.SqlServer
+            DataForge.SchemaInfer DataForge.Sync DataForge.Templates DataForge.Web
+          )
+          count=$(ls nupkg/*.nupkg | wc -l)
+          echo "packed $count package(s)"
+          for id in "${expected[@]}"; do
+            if ! ls nupkg/"$id".[0-9]*.nupkg >/dev/null 2>&1; then
+              echo "::error::missing package $id"
+              exit 1
+            fi
+          done
+          missing=$(( ${#expected[@]} - count ))
+          if [ "$missing" -ne 0 ]; then
+            echo "::error::expected ${#expected[@]} packages, found $count"
+            exit 1
+          fi
+          for pkg in nupkg/*.nupkg; do
+            unzip -p "$pkg" '*.nuspec' | grep -q '<id>' || { echo "::error::$pkg has no nuspec"; exit 1; }
+          done
+          echo "verified ${#expected[@]} packages, each with a nuspec"
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-packages
+          path: DataForge.Core/nupkg/*.nupkg
+          if-no-files-found: error
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: publish-test-results
+          path: DataForge.Core/TestResults/*.trx
+          if-no-files-found: warn
+
+  publish:
+    name: Push to nuget.org
+    needs: pack
+    if: github.event_name == 'release' || inputs.push
+    runs-on: ubuntu-latest
+    environment: nuget
+    steps:
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Require NUGET_API_KEY
+        shell: bash
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          if [ -z "${NUGET_API_KEY:-}" ]; then
+            echo "::error::repository secret NUGET_API_KEY is not set; nothing was pushed."
+            exit 1
+          fi
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: nuget-packages
+          path: nupkg
+
+      - name: Push
+        shell: bash
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          set -euo pipefail
+          ls -1 nupkg
+          dotnet nuget push "nupkg/*.nupkg" \
+            --api-key "$NUGET_API_KEY" \
+            --source https://api.nuget.org/v3/index.json \
+            --skip-duplicate

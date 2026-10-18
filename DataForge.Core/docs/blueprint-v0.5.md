@@ -139,7 +139,7 @@ schema-infer csv sample.csv    # → 生成 validate.rules
 
 | 优先级 | 项 | 说明 |
 |--------|-----|------|
-| P0 | 合并 PR #7~#10 → main | 发布 NuGet 0.5.x |
+| P0 | 发布 NuGet 0.5.x | PR #7~#10 已并入 main；发布由仓库根 `.github/workflows/publish.yml` 承担（release 触发，或手动 `workflow_dispatch` 且 `push=true`），需仓库 secret `NUGET_API_KEY` |
 | P1 | Core API 审查 + 1.0.0 | DEC-04 文档化 breaking 承诺 |
 | P1 | Sync `validator: ClassName` 插件 | 加载 FluentValidation / 自定义 IValidator |
 | P2 | S-04 Web 状态页 | 任务历史、ExportResults、错误下载 |
