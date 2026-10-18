@@ -25,7 +25,17 @@ UI 走 Web/CLI，不走 WPF。
 
 批处理选项写在文件根 `execution:`：`parallelism`（默认 1）、`stopOnError`（默认 true）、`progressEvery`、`batchSize`。
 
-## CLI
+## 无数据库快速开始
+
+在生成的项目目录执行：
+
+```bash
+dotnet run -- run jobs/00-file-batch.yaml
+```
+
+模板自带 `sample.csv`（Alice、Bob 两行），批次生成 `output/sample.json` 和 `output/sample.csv`。先用此场景验证安装，再配置真实数据库。
+
+## 数据库场景 CLI
 
 ```bash
 docker start dataforge-pg
@@ -41,10 +51,13 @@ dotnet run -- run jobs/05-batch.yaml
 
 ## Web（仓库内工具）
 
+生成的模板不包含 Web 宿主。若已克隆 DataForge.Core 仓库，在包含解决方案的内层目录执行：
+
 ```bash
-dotnet run --project ../../tools/DataForge.Web
-# 浏览器打开首页：连接档案 / 探活 / 列表 / 结构 / 预览 / 跑 YAML
+dotnet run --project tools/DataForge.Web
 ```
+
+浏览器打开启动日志中的地址，可管理连接档案、探活、列表、结构、预览和运行 YAML。此命令不适用于独立生成的模板目录；独立 Web 分发仍待交付。
 
 ## NuGet 目录 API（可嵌入你的程序）
 
@@ -56,4 +69,4 @@ var cols = await JobCatalog.DescribeTableAsync("sqlite", conn, "orders");
 var rows = await JobCatalog.PreviewAsync("sqlite", conn, "orders", 20);
 ```
 
-已注册 Catalog：`sqlite` / `postgresql` / `sqlserver` / `mysql` / `excel` / `parquet`。文件类 Catalog 的 connection 是文件路径，table 是工作表名或 parquet 文件名。
+本模板默认引用并注册 `sqlite` / `postgresql`。其他 Catalog（例如 sqlserver、mysql、excel、parquet）需要额外引用对应 Jobs 适配包并调用其注册方法；它们并未默认包含在本模板中。

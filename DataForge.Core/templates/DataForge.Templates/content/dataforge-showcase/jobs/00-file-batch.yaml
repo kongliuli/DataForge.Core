@@ -1,0 +1,16 @@
+# Run from the generated project directory. No database required.
+jobs:
+  - name: json-copy
+    source:
+      type: csv
+      path: ../sample.csv
+    sink:
+      type: json
+      path: ../output/sample.json
+  - name: csv-copy
+    source:
+      type: csv
+      path: ../sample.csv
+    sink:
+      type: csv
+      path: ../output/sample.csv
