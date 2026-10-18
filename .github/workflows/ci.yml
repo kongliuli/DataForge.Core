@@ -43,6 +43,14 @@ jobs:
         run: dotnet test DataForge.Core.sln -c Release --no-build --logger trx --results-directory TestResults
       - name: Pack without publishing
         run: dotnet pack DataForge.Core.sln -c Release --no-build -o nupkg
+      - name: Publish standalone Web folder
+        run: dotnet publish tools/DataForge.Web/DataForge.Web.csproj -c Release --no-build -o web-publish
+      - name: Upload Web host
+        uses: actions/upload-artifact@v4
+        with:
+          name: dataforge-web-net8
+          path: DataForge.Core/web-publish/
+          if-no-files-found: error
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
