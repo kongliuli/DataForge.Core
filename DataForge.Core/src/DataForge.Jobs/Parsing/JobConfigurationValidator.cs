@@ -1,3 +1,5 @@
+using DataForge.Jobs.Providers;
+
 namespace DataForge.Jobs.Parsing;
 
 /// <summary>Checks YAML configuration without opening connections or executing jobs.</summary>
@@ -9,7 +11,20 @@ public static class JobConfigurationValidator
             return new(false, 0, "yaml is required");
         try
         {
-            return new(true, JobYamlParser.ParseFile(yaml).Jobs.Count, null);
+            var jobs = JobYamlParser.ParseFile(yaml).Jobs;
+            for (var index = 0; index < jobs.Count; index++)
+            {
+                var job = jobs[index];
+                var sources = job.Sources.Count > 0
+                    ? job.Sources.Select(source => source.ToSource())
+                    : [job.Source];
+                foreach (var source in sources)
+                    if (!JobProviderRegistry.TryGetSource(source.Type, out _))
+                        return new(false, jobs.Count, $"Job {index + 1}: source adapter is not registered. Install and register the required Jobs adapter.");
+                if (!JobProviderRegistry.TryGetSink(job.Sink.Type, out _))
+                    return new(false, jobs.Count, $"Job {index + 1}: sink adapter is not registered. Install and register the required Jobs adapter.");
+            }
+            return new(true, jobs.Count, null);
         }
         catch (Exception)
         {
@@ -24,5 +39,5 @@ public sealed record JobConfigurationReport(bool Valid, int JobCount, string? Er
 {
     public string Scope => "configuration-only";
     public IReadOnlyList<string> ChecksNotPerformed =>
-        ["connectivity", "permissions", "type-compatibility", "data-reconciliation", "variable-resolution", "provider-registration"];
+        ["connectivity", "permissions", "type-compatibility", "data-reconciliation", "variable-resolution"];
 }

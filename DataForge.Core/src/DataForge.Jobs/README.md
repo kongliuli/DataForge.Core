@@ -30,7 +30,7 @@ var report = JobConfigurationValidator.Validate(yaml);
 // report.Valid / JobCount / Error / Scope / ChecksNotPerformed
 ```
 
-检查复用作业解析器，覆盖 YAML 结构和必填配置。不会打开连接、读取源数据或写入目标。`Valid=true` 不代表迁移能够成功：连接、权限、类型兼容及数据对账未检查；错误摘要不会回显 YAML 片段。变量替换和 provider 注册状态也不在此 API 的检查范围。
+检查复用作业解析器，覆盖 YAML 结构和必填配置。不会打开连接、读取源数据或写入目标。`Valid=true` 不代表迁移能够成功：连接、权限、类型兼容及数据对账未检查；错误摘要不会回显 YAML 片段。所有单源、JOIN 源与目标的 provider 注册状态均会检查，缺少适配器时返回作业序号和安装注册提示。变量替换仍不在此 API 的检查范围。
 
 ## Catalog（替代 LocalDts DatabaseHelper）
 

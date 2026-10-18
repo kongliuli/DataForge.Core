@@ -17,6 +17,7 @@ public class JobConfigurationValidatorTests
         Assert.Null(report.Error);
         Assert.Equal("configuration-only", report.Scope);
         Assert.Contains("connectivity", report.ChecksNotPerformed);
+        Assert.DoesNotContain("provider-registration", report.ChecksNotPerformed);
     }
 
     [Theory]
