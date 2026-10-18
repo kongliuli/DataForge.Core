@@ -14,7 +14,7 @@ public static class JobRowParquetSink
         SinkDefinition sink,
         CancellationToken cancellationToken = default)
     {
-        var batch = new List<IDictionary<string, object>>();
+        var batch = new List<IDictionary<string, object?>>();
         ParquetSchema? schema = null;
         var count = 0;
 
@@ -22,7 +22,7 @@ public static class JobRowParquetSink
         {
             var dict = row.Values.ToDictionary(
                 static k => k.Key,
-                static k => (object)(k.Value ?? string.Empty),
+                static k => (object?)(k.Value ?? string.Empty),
                 StringComparer.OrdinalIgnoreCase);
             batch.Add(dict);
             schema ??= BuildSchema(dict.Keys);
@@ -64,7 +64,7 @@ public static class JobRowParquetSink
     }
 
     private static async Task<int> FlushAsync(
-        IReadOnlyList<IDictionary<string, object>> batch,
+        IReadOnlyList<IDictionary<string, object?>> batch,
         ParquetSchema schema,
         string path,
         bool append,

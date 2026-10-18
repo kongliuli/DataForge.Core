@@ -955,7 +955,7 @@ public class DataPipeline<T> : IDataPipeline<T>
     private static async IAsyncEnumerable<(TFirst First, TSecond Second)> ZipInternal<TFirst, TSecond>(
         IAsyncEnumerable<TFirst> first,
         IAsyncEnumerable<TSecond> second,
-        CancellationToken ct)
+        [EnumeratorCancellation] CancellationToken ct)
     {
         await using var e1 = first.GetAsyncEnumerator(ct);
         await using var e2 = second.GetAsyncEnumerator(ct);
