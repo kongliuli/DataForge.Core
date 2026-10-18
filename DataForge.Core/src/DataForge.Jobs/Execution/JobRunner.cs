@@ -64,26 +64,35 @@ public sealed class JobRunner
             string? nextWatermark = watermarkValue;
 
             ExportResults results;
+            JobRunReconciliation reconciliation;
+            var counters = new ReconciliationCounters();
             if (job.Sources.Count > 0)
             {
                 var joined = ApplyTransforms(
                     WithProgress(JobJoin.ReadJoinedAsync(job, cancellationToken), jobName, job.Execution?.ProgressEvery ?? 1000, progress, cancellationToken),
                     job,
-                    vars);
-                joined = ApplyWatermark(joined, job.Watermark, watermarkValue, value => nextWatermark = value, cancellationToken);
+                    vars,
+                    counters);
+                joined = ApplyWatermark(joined, job.Watermark, watermarkValue, value => nextWatermark = value, counters, cancellationToken);
                 results = await JobSinkWriter.WriteAsync(joined, job.Sink, cancellationToken).ConfigureAwait(false);
                 progress?.Report(JobProgress.Writing(jobName, results.RecordsWritten));
+
+                // JOIN 路径不执行 validate 阶段；未配置 validate 时丢弃行数就是 0，配置了则无法归属，记为 null。
+                reconciliation = BuildReconciliation(
+                    counters,
+                    results,
+                    job.Validate is { Rules.Count: > 0 } ? null : 0L);
             }
             else
             {
-                var pipeline = BuildPipeline(job, vars, watermarkValue);
+                var pipeline = BuildPipeline(job, vars, watermarkValue, counters);
                 var rows = WithProgress(
                     pipeline.AsAsyncEnumerable(cancellationToken),
                     jobName,
                     job.Execution?.ProgressEvery ?? 1000,
                     progress,
                     cancellationToken);
-                rows = ApplyWatermark(rows, job.Watermark, watermarkValue, value => nextWatermark = value, cancellationToken);
+                rows = ApplyWatermark(rows, job.Watermark, watermarkValue, value => nextWatermark = value, counters, cancellationToken);
 
                 results = await JobSinkWriter.WriteAsync(rows, job.Sink, cancellationToken).ConfigureAwait(false);
 
@@ -96,6 +105,7 @@ public sealed class JobRunner
                 }
 
                 progress?.Report(JobProgress.Writing(jobName, results.RecordsWritten));
+                reconciliation = BuildReconciliation(counters, results, ValidationRejectedCount(job, pipeline));
             }
 
             if (job.Watermark is not null &&
@@ -114,7 +124,8 @@ public sealed class JobRunner
                 JobFilePath = Path.GetFullPath(jobFilePath),
                 StartedAt = startedAt,
                 FinishedAt = DateTimeOffset.UtcNow,
-                ExportResults = results
+                ExportResults = results,
+                Reconciliation = reconciliation
             };
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -184,6 +195,7 @@ public sealed class JobRunner
         WatermarkDefinition? watermark,
         string? current,
         Action<string?> remember,
+        ReconciliationCounters counters,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var max = current;
@@ -197,7 +209,10 @@ public sealed class JobRunner
 
             var value = row.Get(watermark.Column);
             if (!JobWatermark.IsAfter(value, current))
+            {
+                counters.RowsSkippedByWatermark++;
                 continue;
+            }
 
             max = JobWatermark.Max(max, value);
             remember(max);
@@ -208,16 +223,31 @@ public sealed class JobRunner
     private static IDataPipeline<JobRow> BuildPipeline(
         JobDefinition job,
         IReadOnlyDictionary<string, string> variables,
-        string? watermarkValue)
+        string? watermarkValue,
+        ReconciliationCounters counters)
     {
         var pipeline = CreateSource(job, watermarkValue);
+
+        // 对账口径 RowsRead：源管道吐出、进入 transforms 之前的行数（恒等映射，只计数不改数据）。
+        pipeline = pipeline.Select(row =>
+        {
+            counters.RowsRead++;
+            return row;
+        });
 
         foreach (var step in job.Transforms)
         {
             if (!string.IsNullOrWhiteSpace(step.Where))
             {
                 var predicate = WhereExpression.Compile(step.Where, variables);
-                pipeline = pipeline.Where(predicate);
+                pipeline = pipeline.Where(row =>
+                {
+                    if (predicate(row))
+                        return true;
+
+                    counters.RowsFiltered++;
+                    return false;
+                });
             }
 
             if (step.Select is { Count: > 0 })
@@ -242,11 +272,15 @@ public sealed class JobRunner
     private static async IAsyncEnumerable<JobRow> ApplyTransforms(
         IAsyncEnumerable<JobRow> rows,
         JobDefinition job,
-        IReadOnlyDictionary<string, string> variables)
+        IReadOnlyDictionary<string, string> variables,
+        ReconciliationCounters counters)
     {
         var list = new List<JobRow>();
         await foreach (var row in rows.ConfigureAwait(false))
             list.Add(row);
+
+        // JOIN 路径对账口径 RowsRead：内连接结果行数（进入 transforms 之前）。
+        counters.RowsRead += list.Count;
 
         IEnumerable<JobRow> current = list;
         foreach (var step in job.Transforms)
@@ -254,7 +288,14 @@ public sealed class JobRunner
             if (!string.IsNullOrWhiteSpace(step.Where))
             {
                 var predicate = WhereExpression.Compile(step.Where, variables);
-                current = current.Where(predicate);
+                current = current.Where(row =>
+                {
+                    if (predicate(row))
+                        return true;
+
+                    counters.RowsFiltered++;
+                    return false;
+                });
             }
 
             if (step.Select is { Count: > 0 })
@@ -284,6 +325,44 @@ public sealed class JobRunner
             projected.Values[targetField] = row.Get(sourceField);
 
         return projected;
+    }
+
+    /// <summary>
+    /// 被 validate 阶段丢弃的行数。未配置 validate 时为 0（没有行经过校验）；
+    /// 配置了 validate 但管道实现不是 DataForge 管道（计数器不可观测）时为 null，绝不猜数。
+    /// </summary>
+    private static long? ValidationRejectedCount(JobDefinition job, IDataPipeline<JobRow> pipeline)
+    {
+        if (job.Validate is not { Rules.Count: > 0 })
+            return 0L;
+
+        return pipeline is DataPipeline<JobRow> dataPipeline ? dataPipeline.RejectedRowCount : null;
+    }
+
+    private static JobRunReconciliation BuildReconciliation(
+        ReconciliationCounters counters,
+        ExportResults results,
+        long? rejectedByValidation) =>
+        new()
+        {
+            RowsRead = counters.RowsRead,
+            RowsSkippedByWatermark = counters.RowsSkippedByWatermark,
+            RowsFiltered = counters.RowsFiltered,
+            RowsRejectedByValidation = rejectedByValidation,
+            RowsWritten = results.RecordsWritten
+        };
+
+    /// <summary>一次运行的执行期对账计数器（只读对账模型的数据来源）。</summary>
+    private sealed class ReconciliationCounters
+    {
+        /// <summary>源端产出、进入 transforms 之前的行数（JOIN 路径为内连接结果行数）。</summary>
+        public long RowsRead;
+
+        /// <summary>被 transforms.where 过滤掉的行数。</summary>
+        public long RowsFiltered;
+
+        /// <summary>被 runner 侧 watermark 过滤掉的行数。</summary>
+        public long RowsSkippedByWatermark;
     }
 
     private static JobRunResult Fail(string jobFilePath, DateTimeOffset startedAt, string message) =>

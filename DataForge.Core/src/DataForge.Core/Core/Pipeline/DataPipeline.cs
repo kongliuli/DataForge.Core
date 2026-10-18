@@ -26,6 +26,7 @@ public class DataPipeline<T> : IDataPipeline<T>
     private readonly ExternalSortOptions? _externalSortOptions;
     private readonly PipelineDiagnostics? _diagnostics;
     private readonly string? _badRowOutputPath;
+    private long _rejectedRowCount;
 
     public DataPipeline(IAsyncEnumerable<T> source)
     {
@@ -530,9 +531,20 @@ public class DataPipeline<T> : IDataPipeline<T>
                 {
                     yield return item;
                 }
+                else
+                {
+                    _rejectedRowCount++;
+                }
             }
         }
     }
+
+    /// <summary>
+    /// 被校验阶段判定为坏行并丢弃的累计行数（按行计，一行触发多条规则只算一行）。
+    /// 只在配置了 <c>ValidateWith</c> 的管道实例上有意义；无校验器时恒为 0。
+    /// 供 DataForge.Jobs 的迁移行数对账（JobRunReconciliation）读取。
+    /// </summary>
+    internal long RejectedRowCount => _rejectedRowCount;
 
     private void RecordValidationErrors(long rowNumber, T item, ValidationResult validationResult)
     {

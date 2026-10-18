@@ -22,6 +22,7 @@ public static class JobRunReportWriter
             StartedAt = result.StartedAt,
             FinishedAt = result.FinishedAt,
             DurationMs = (int)result.Duration.TotalMilliseconds,
+            Reconciliation = result.Reconciliation,
             Export = result.ExportResults == null ? null : new
             {
                 result.ExportResults.RecordsWritten,
