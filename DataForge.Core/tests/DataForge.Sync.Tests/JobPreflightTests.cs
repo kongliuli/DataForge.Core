@@ -218,22 +218,41 @@ public class JobPreflightTests
     [Fact]
     public async Task CheckSchema_ProbesRelationalSource_AndReportsMissingTable()
     {
-        // sqlite catalog provider is registered in this assembly and opening a connection string creates the
-        // file, so connectivity succeeds and the first real finding is the missing source table. The probe is
-        // catalog-only (read-only metadata): preflight must not create tables or rows.
-        var report = await JobPreflight.CheckYamlAsync(
-            """
-            source: { type: sqlite, connection: "Data Source=missing-preflight-db.sqlite;Mode=ReadOnly", table: t }
-            sink: { type: json, path: output.json }
-            """,
-            options: new JobPreflightOptions { CheckSchema = true, CheckTimeout = TimeSpan.FromSeconds(3) });
+        // Create an empty SQLite file first. Mode=ReadOnly against a missing path fails on Linux CI with
+        // source.connection.failed (unable to open database file) before the table probe can run.
+        // The probe is catalog-only (read-only metadata): preflight must not create tables or rows.
+        var directory = TempDirectory();
+        try
+        {
+            var dbPath = Path.Combine(directory, "empty-preflight.sqlite");
+            await using (var conn = new Microsoft.Data.Sqlite.SqliteConnection($"Data Source={dbPath}"))
+            {
+                await conn.OpenAsync();
+            }
 
-        Assert.False(report.Success);
-        Assert.Contains(report.Errors, e => e.Code == PreflightCodes.SourceTableMissing);
-        // The footer always re-states the schema-scope caveat; with CheckSchema on it no longer claims
-        // that nothing was checked.
-        var schemaNote = report.Issues.Single(i => i.Code == PreflightCodes.SchemaNotChecked);
-        Assert.DoesNotContain("未检查", schemaNote.Message);
+            var connection = $"Data Source={dbPath.Replace("\\", "/")};Mode=ReadOnly";
+            var yaml = "source: { type: sqlite, connection: \"" + connection + "\", table: t }\n" +
+                       "sink: { type: json, path: output.json }\n";
+            var report = await JobPreflight.CheckYamlAsync(
+                yaml,
+                options: new JobPreflightOptions { CheckSchema = true, CheckTimeout = TimeSpan.FromSeconds(3) });
+
+            Assert.False(report.Success);
+            Assert.Contains(report.Errors, e => e.Code == PreflightCodes.SourceTableMissing);
+            // The footer always re-states the schema-scope caveat; with CheckSchema on it no longer claims
+            // that nothing was checked.
+            var schemaNote = report.Issues.Single(i => i.Code == PreflightCodes.SchemaNotChecked);
+            Assert.DoesNotContain("未检查", schemaNote.Message);
+        }
+        finally
+        {
+            Microsoft.Data.Sqlite.SqliteConnection.ClearAllPools();
+            try { Directory.Delete(directory, true); }
+            catch (IOException)
+            {
+                // Windows can briefly keep the ReadOnly handle after ClearAllPools.
+            }
+        }
     }
 
     private static string TempDirectory()
