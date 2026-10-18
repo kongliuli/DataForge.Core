@@ -32,6 +32,7 @@ public static class JobYamlParser
                 throw new InvalidOperationException("jobs must be a non-empty sequence.");
             var file = Deserializer.Deserialize<JobFile>(yaml)
                 ?? throw new InvalidOperationException("Job YAML deserialized to null.");
+            ValidateExecution(file.Execution);
             foreach (var job in file.Jobs)
                 ValidateJob(job);
             return file;
@@ -45,8 +46,22 @@ public static class JobYamlParser
 
     public static IReadOnlyList<JobDefinition> ParseMany(string yaml) => ParseFile(yaml).Jobs;
 
+    private static void ValidateExecution(JobExecutionOptions? options)
+    {
+        if (options is null) return;
+        if (options.Parallelism <= 0)
+            throw new InvalidOperationException("execution.parallelism must be greater than zero.");
+        if (options.ProgressEvery < 0)
+            throw new InvalidOperationException("execution.progressEvery must be zero or greater.");
+        if (options.BatchSize is <= 0)
+            throw new InvalidOperationException("execution.batchSize must be greater than zero.");
+    }
+
     private static void ValidateJob(JobDefinition job)
     {
+        ValidateExecution(job.Execution);
+        if (job.Sink.Options?.BatchSize is <= 0)
+            throw new InvalidOperationException("sink.options.batchSize must be greater than zero.");
         if (job.Sources.Count > 0)
         {
             ValidateSource(job.Sources[0].ToSource());
