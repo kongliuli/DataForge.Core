@@ -45,6 +45,12 @@ jobs:
         run: dotnet pack DataForge.Core.sln -c Release --no-build -o nupkg
       - name: Publish standalone Web folder
         run: dotnet publish tools/DataForge.Web/DataForge.Web.csproj -c Release --no-build -o web-publish
+      - name: Verify Web artifact boundaries
+        run: |
+          test -f web-publish/DataForge.Web.dll
+          test -f web-publish/DataForge.Web.runtimeconfig.json
+          test -f web-publish/wwwroot/index.html
+          test ! -d web-publish/data
       - name: Upload Web host
         uses: actions/upload-artifact@v4
         with:
