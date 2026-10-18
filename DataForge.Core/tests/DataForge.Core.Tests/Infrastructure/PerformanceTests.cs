@@ -36,17 +36,16 @@ public class PerformanceTests
     [Fact]
     public void MemoryOptimizer_ReportsManagedMemorySize()
     {
-        var memoryBefore = MemoryOptimizer.GetManagedMemorySize();
+        const int count = 10000;
+        const int bytesPerArray = 1024;
+        var testData = Enumerable.Range(0, count).Select(_ => new byte[bytesPerArray]).ToArray();
 
-        // 分配一些内存
-        var testData = Enumerable.Range(0, 10000).Select(i => new byte[1024]).ToArray();
+        var reported = MemoryOptimizer.GetManagedMemorySize();
 
-        var memoryAfter = MemoryOptimizer.GetManagedMemorySize();
-
-        memoryAfter.Should().BeGreaterThan(memoryBefore);
-
-        // 清理
-        testData.Should().NotBeNull();
+        // Other tests and GC can reduce the process-wide total between samples.
+        // The report must still account for our live payload, excluding object overhead.
+        reported.Should().BeGreaterThanOrEqualTo((long)count * bytesPerArray);
+        GC.KeepAlive(testData);
     }
 
     [Fact]
