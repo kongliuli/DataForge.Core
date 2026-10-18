@@ -18,12 +18,20 @@ if (args.Length < 2 || args[0] is not "run")
     return args.Length == 0 ? 1 : 0;
 }
 
-var result = await new JobRunner().RunAsync(args[1]);
-if (!result.Success)
+try
 {
-    Console.Error.WriteLine(result.ErrorMessage);
+    var results = await JobBatch.RunFileAsync(args[1]);
+    foreach (var result in results)
+    {
+        if (result.Success)
+            Console.WriteLine($"{result.JobName}: wrote {result.ExportResults?.RecordsWritten ?? 0} row(s).");
+        else
+            Console.Error.WriteLine($"{result.JobName}: {result.ErrorMessage}");
+    }
+    return results.All(result => result.Success) ? 0 : 1;
+}
+catch (Exception ex)
+{
+    Console.Error.WriteLine(ex.Message);
     return 1;
 }
-
-Console.WriteLine($"Wrote {result.ExportResults!.RecordsWritten} row(s).");
-return 0;

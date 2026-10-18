@@ -31,7 +31,11 @@ UI 走 Web/CLI，不走 WPF。
 docker start dataforge-pg
 # 执行 sql/sqlite-init.sql 与 sql/postgres-init.sql
 dotnet run -- run jobs/01-homo.yaml
+# 同一入口也支持完整批次
+dotnet run -- run jobs/05-batch.yaml
 ```
+
+入口调用 `JobBatch.RunFileAsync`，单作业与批次统一执行；逐项输出结果，任一执行结果失败时退出码为 1。
 
 默认 PostgreSQL 端口 `5433`（`dotnet new` 可用 `-pgPort`）。
 
