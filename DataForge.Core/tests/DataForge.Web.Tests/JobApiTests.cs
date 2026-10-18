@@ -12,6 +12,38 @@ public class JobApiTests : IClassFixture<WebApplicationFactory<Program>>
     public JobApiTests(WebApplicationFactory<Program> factory) => _factory = factory;
 
     [Fact]
+    public async Task Validate_ReportsBatchCountWithoutExecuting()
+    {
+        var client = _factory.CreateClient();
+        var yaml = """
+            jobs:
+              - source: { type: csv, path: missing.csv }
+                sink: { type: json, path: unused.json }
+              - source: { type: csv, path: missing2.csv }
+                sink: { type: json, path: unused2.json }
+            """;
+        var response = await client.PostAsJsonAsync("/api/jobs/validate", new { yaml });
+        response.EnsureSuccessStatusCode();
+        var result = await response.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.True(result.GetProperty("valid").GetBoolean());
+        Assert.Equal(2, result.GetProperty("jobCount").GetInt32());
+        Assert.Equal("configuration-only", result.GetProperty("scope").GetString());
+        Assert.Contains("connectivity", result.GetProperty("checksNotPerformed").EnumerateArray().Select(x => x.GetString()));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("jobs: []")]
+    [InlineData("source: { type: csv }")]
+    [InlineData("secret: [sensitive-password")]
+    public async Task Validate_RejectsInvalidYamlWithoutEchoingInput(string yaml)
+    {
+        var response = await _factory.CreateClient().PostAsJsonAsync("/api/jobs/validate", new { yaml });
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.DoesNotContain("sensitive-password", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
     public async Task ResidentSchedule_RegisterRunAndRemove()
     {
         var dir = Path.Combine(Path.GetTempPath(), "df-resident-" + Guid.NewGuid().ToString("N"));

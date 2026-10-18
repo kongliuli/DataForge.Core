@@ -68,6 +68,8 @@ sink:
     <label>变量（每行 KEY=VALUE，YAML 里用 ${KEY}）</label>
     <textarea id="vars" style="min-height:4rem">SRC=./in.csv
 DST=./out.json</textarea>
+    <button id="validate">检查配置</button>
+    <p>检查 YAML 结构与必填配置，不连接数据源、不执行迁移；不验证权限或数据类型兼容性。</p>
     <button id="run">运行</button>
     <h3>定时作业</h3>
     <p>在上方 YAML 添加 schedule，例如 '0 2 * * *'（本机时区每天 02:00）。注册会自动保存，重启后恢复。</p>
@@ -241,6 +243,16 @@ DST=./out.json</textarea>
     document.getElementById('preview').onclick = async () => {
       const res = await post('/api/catalog/preview', { ...connPayload(), table: document.getElementById('tableName').value, limit: 20 });
       document.getElementById('connOut').textContent = JSON.stringify(res.json, null, 2);
+    };
+
+    document.getElementById('validate').onclick = async () => {
+      const out = document.getElementById('out');
+      try {
+        const res = await post('/api/jobs/validate', { yaml: document.getElementById('yaml').value });
+        out.textContent = JSON.stringify(res.json, null, 2);
+      } catch (error) {
+        out.textContent = '配置检查失败：' + error.message;
+      }
     };
 
     document.getElementById('run').onclick = async () => {
