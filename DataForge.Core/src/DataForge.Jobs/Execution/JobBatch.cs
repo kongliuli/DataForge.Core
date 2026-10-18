@@ -51,19 +51,25 @@ public static class JobBatch
         }
 
         using var gate = new SemaphoreSlim(parallelism);
-        var tasks = new List<Task<(int Index, JobRunResult Result)>>(jobs.Count);
+        var state = new BatchState();
+        var tasks = new List<Task<(int Index, JobRunResult? Result)>>(jobs.Count);
         for (var i = 0; i < jobs.Count; i++)
         {
             var index = i;
             var job = jobs[i];
-            tasks.Add(RunOneAsync(runner, job, index, jobs.Count, jobFilePath, variables, gate, progress, cancellationToken));
+            tasks.Add(RunOneAsync(runner, job, index, jobs.Count, jobFilePath, variables, gate, state, stopOnError, progress, cancellationToken));
         }
 
         var finished = await Task.WhenAll(tasks).ConfigureAwait(false);
-        return finished.OrderBy(item => item.Index).Select(item => item.Result).ToArray();
+        return finished.Where(item => item.Result is not null).OrderBy(item => item.Index).Select(item => item.Result!).ToArray();
     }
 
-    private static async Task<(int Index, JobRunResult Result)> RunOneAsync(
+    private sealed class BatchState
+    {
+        public int Failed;
+    }
+
+    private static async Task<(int Index, JobRunResult? Result)> RunOneAsync(
         JobRunner runner,
         JobDefinition job,
         int index,
@@ -71,14 +77,20 @@ public static class JobBatch
         string jobFilePath,
         IReadOnlyDictionary<string, string>? variables,
         SemaphoreSlim gate,
+        BatchState state,
+        bool stopOnError,
         IProgress<JobProgress>? progress,
         CancellationToken cancellationToken)
     {
         await gate.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (stopOnError && Volatile.Read(ref state.Failed) != 0)
+                return (index, null);
             progress?.Report(JobProgress.Batch(job.Name, index + 1, count, "batch-started"));
             var result = await runner.RunAsync(job, jobFilePath, variables, cancellationToken, progress).ConfigureAwait(false);
+            if (!result.Success) Interlocked.Exchange(ref state.Failed, 1);
             progress?.Report(JobProgress.Batch(job.Name, index + 1, count, result.Success ? "batch-completed" : "batch-failed"));
             return (index, result);
         }

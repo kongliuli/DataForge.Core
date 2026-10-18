@@ -21,6 +21,8 @@ JobPostgreSqlRegistration.AddDataForgeJobsPostgreSql();
 var result = await new JobRunner().RunAsync("job.yaml");
 ```
 
+批量文件使用 `JobBatch.RunFileAsync`。`execution.stopOnError: true` 在串行时停止后续作业；并行时在检测到失败后停止放行排队作业，已经放行的作业继续完成。返回值只包含实际执行的作业，并按 YAML 顺序排列；未执行作业不产生成功结果。此选项不回滚已经写入的数据。
+
 ## 配置检查（不执行迁移）
 
 ```csharp
