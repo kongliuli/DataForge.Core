@@ -49,6 +49,7 @@ public static partial class VariableResolver
             source.Path = ResolveText(source.Path, variables);
             source.Connection = ResolveText(source.Connection ?? string.Empty, variables);
             source.Table = ResolveText(source.Table ?? string.Empty, variables);
+            source.Query = ResolveText(source.Query ?? string.Empty, variables);
             source.On = ResolveText(source.On ?? string.Empty, variables);
         }
 
