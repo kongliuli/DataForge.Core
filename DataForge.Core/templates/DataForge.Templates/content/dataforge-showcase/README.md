@@ -49,6 +49,14 @@ dotnet run -- run jobs/05-batch.yaml
 
 默认 PostgreSQL 端口 `5433`（`dotnet new` 可用 `-pgPort`）。
 
+YAML 中的 `${KEY}` 可通过重复的 `--var KEY=VALUE` 参数替换：
+
+```bash
+dotnet run -- run jobs/custom.yaml --var SRC=/data/input.csv --var DST=/data/output.json
+```
+
+值含空格时将整个 `KEY=VALUE` 参数加引号；值中的等号会保留。缺失值或空变量名会返回退出码 1。
+
 ## Web（仓库内工具）
 
 生成的模板不包含 Web 宿主。若已克隆 DataForge.Core 仓库，在包含解决方案的内层目录执行：
