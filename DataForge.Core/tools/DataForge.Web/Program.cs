@@ -2,10 +2,29 @@ using System.Text.Json;
 using DataForge.Jobs.Catalog;
 using DataForge.Jobs.Execution;
 using DataForge.Jobs.Parsing;
+using DataForge.Jobs.Preflight;
 using DataForge.Jobs.Scheduling;
 using DataForge.Web;
 
-var builder = WebApplication.CreateBuilder(args);
+// A dotnet tool can be started from any working directory, so serve the UI from the
+// directory that actually holds wwwroot: the current directory while developing, and the
+// tool's own install directory (`dotnet tool install`) otherwise.
+var contentRoot = Directory.Exists(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot"))
+    ? Directory.GetCurrentDirectory()
+    : AppContext.BaseDirectory;
+
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions { Args = args, ContentRootPath = contentRoot });
+
+// Content root and data root differ only for an installed tool: the tool store should be
+// treated as read-only, so mutable state defaults to the user profile.
+if (!string.Equals(contentRoot, Directory.GetCurrentDirectory(), StringComparison.OrdinalIgnoreCase))
+{
+    var dataRoot = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "DataForge.Web");
+    builder.Configuration["Connections:Path"] ??= Path.Combine(dataRoot, "connections.json");
+    builder.Configuration["Schedules:Path"] ??= Path.Combine(dataRoot, "schedules.json");
+}
 JobProviders.RegisterAll();
 builder.Services.AddSingleton<JobRunHistory>();
 builder.Services.AddSingleton<ConnectionStore>();
@@ -177,6 +196,26 @@ app.MapPost("/api/jobs/validate", (RunRequest request) =>
     return report.Valid ? Results.Ok(report) : Results.BadRequest(report);
 });
 
+// Full preflight: same engine as the CLI/library, including the structured issue list and the
+// explicit "checks not performed" footer. Read-only: no DDL/DML, no output file, no watermark write.
+app.MapPost("/api/preflight", async (PreflightRequest request, CancellationToken cancellationToken) =>
+{
+    if (string.IsNullOrWhiteSpace(request.Yaml))
+        return Results.BadRequest(new { error = "yaml is required" });
+
+    var report = await JobPreflight.CheckYamlAsync(
+        request.Yaml,
+        "job.yaml",
+        new JobPreflightOptions
+        {
+            Variables = request.Variables,
+            CheckSchema = request.CheckSchema == true
+        },
+        cancellationToken);
+
+    return report.Success ? Results.Ok(report) : Results.BadRequest(report);
+});
+
 app.MapPost("/api/jobs/run", async (RunRequest request, JobRunHistory history, CancellationToken cancellationToken) =>
 {
     if (string.IsNullOrWhiteSpace(request.Yaml))
@@ -275,6 +314,8 @@ static JobResultDto ToDto(JobRunResult result) => new(
     result.ExportResults?.OutputPath);
 
 public sealed record RunRequest(string? Yaml, Dictionary<string, string>? Variables);
+
+public sealed record PreflightRequest(string? Yaml, Dictionary<string, string>? Variables, bool? CheckSchema);
 
 public sealed record ScheduleRequest(string? Yaml);
 

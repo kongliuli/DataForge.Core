@@ -6,6 +6,7 @@ using DataForge.Jobs.Http;
 using DataForge.Jobs.MySql;
 using DataForge.Jobs.Parquet;
 using DataForge.Jobs.PostgreSql;
+using DataForge.Jobs.Preflight;
 using DataForge.Jobs.Scheduling;
 using DataForge.Jobs.Sqlite;
 using DataForge.Jobs.SqlServer;
@@ -31,6 +32,7 @@ try
     return args[0] switch
     {
         "run" => await RunOnceAsync(args),
+        "preflight" => await PreflightAsync(args),
         "watch" => await WatchAsync(args),
         "catalog" => await CatalogAsync(args),
         _ => UnknownCommand(args[0])
@@ -74,10 +76,67 @@ static async Task<int> RunOnceAsync(string[] args)
 
         var export = result.ExportResults!;
         Console.WriteLine($"Job completed: {export.RecordsWritten} record(s) written to {export.OutputPath}");
+
+        if (result.Reconciliation is { } reconciliation)
+            Console.WriteLine(reconciliation.ToSummary());
     }
     if (!string.IsNullOrWhiteSpace(reportPath))
         Console.WriteLine($"Report written to {Path.GetFullPath(reportPath)}");
     return 0;
+}
+
+static async Task<int> PreflightAsync(string[] args)
+{
+    if (args.Length < 2)
+    {
+        Console.Error.WriteLine("Missing job file. Usage: dataforge preflight <job.yaml> [--var key=value] [--schema] [--json]");
+        return 1;
+    }
+
+    var jobPath = args[1];
+    var variables = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+    var checkSchema = false;
+    var asJson = false;
+
+    for (var i = 2; i < args.Length; i++)
+    {
+        var arg = args[i];
+        if (arg is "--schema") checkSchema = true;
+        else if (arg is "--json") asJson = true;
+        else if (arg is "--var")
+        {
+            if (i + 1 >= args.Length)
+                throw new InvalidOperationException("Missing value for --var.");
+            AddVariable(variables, args[++i]);
+        }
+        else if (arg.StartsWith("--var=", StringComparison.Ordinal))
+            AddVariable(variables, arg["--var=".Length..]);
+        else
+            throw new InvalidOperationException($"Unknown preflight option '{arg}'.");
+    }
+
+    var report = await JobPreflight.CheckAsync(
+        jobPath,
+        new JobPreflightOptions { Variables = variables, CheckSchema = checkSchema }).ConfigureAwait(false);
+
+    if (asJson)
+    {
+        Console.WriteLine(JsonSerializer.Serialize(report, new JsonSerializerOptions
+        {
+            WriteIndented = true,
+            DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
+        }));
+    }
+    else
+    {
+        Console.WriteLine(report);
+    }
+
+    if (report.Success)
+        return 0;
+
+    Console.Error.WriteLine($"Preflight failed: {report.Errors.Count} error(s), {report.Warnings.Count} warning(s).");
+    return 1;
 }
 
 static async Task<int> CatalogAsync(string[] args)
@@ -235,6 +294,7 @@ static void PrintHelp()
 
         Usage:
           dataforge run <job.yaml> [--var key=value] [--report run.json]
+          dataforge preflight <job.yaml> [--var key=value] [--schema] [--json]
           dataforge watch <job.yaml> [--var key=value ...]
           dataforge catalog <test|tables|describe|preview|exists|types> --type <db> --connection <cs> [--table name] [--limit n]
           dataforge help
@@ -251,8 +311,19 @@ static void PrintHelp()
           ${VAR} in paths/connections — CLI vars then environment
           @lastSync in where expressions — CLI vars only
 
+        Preflight (non-destructive):
+          dataforge preflight <job.yaml> [--schema] [--json]
+          checks configuration, paths, variables, adapter registration and (with --schema)
+          catalog connectivity plus coarse table/column existence
+          prints a structured issue list (severity / code / path) and the checks it does NOT
+          perform; exits 1 only when an error is reported
+          never writes: no DDL/DML, no output file, no watermark state file
+
         Observability (S-04 minimal):
-          --report run.json   JSON run summary (records, duration, row errors)
+          --report run.json   JSON run summary (records, duration, row errors, reconciliation)
+          run prints one reconciliation line per job:
+            Reconciled: read=3 skipped=0 filtered=1 rejected=0 written=2 difference=0
+          A non-zero difference is a hint only; it never fails the job.
 
         Docs: docs/roadmap-and-iteration.md §8.5
         """);

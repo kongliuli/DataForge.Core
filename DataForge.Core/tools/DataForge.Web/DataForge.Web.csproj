@@ -4,10 +4,21 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Microsoft.NET.Sdk.Web defaults IsPackable to false; the local web host ships as a dotnet tool. -->
+    <IsPackable>true</IsPackable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>dataforge-web</ToolCommandName>
+    <PackageId>DataForge.Web</PackageId>
+    <Version>0.5.0</Version>
+    <Authors>DataForge Team</Authors>
     <Description>Web host for DataForge.Jobs — paste or upload YAML and run existing providers.</Description>
+    <PackageTags>data processing;ETL;jobs;web;localdts</PackageTags>
+    <RepositoryUrl>https://github.com/kongliuli/DataForge.Core</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
     <Content Update="data\**\*" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
     <None Update="data\**\*" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
   </ItemGroup>

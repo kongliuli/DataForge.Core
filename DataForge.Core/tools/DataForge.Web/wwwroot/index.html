@@ -70,6 +70,9 @@ sink:
 DST=./out.json</textarea>
     <button id="validate">检查配置</button>
     <p>检查 YAML 结构、必填配置与适配器注册，不连接数据源、不执行迁移；不验证权限、数据类型兼容性或变量替换。</p>
+    <button id="preflight">预检</button>
+    <label style="display:block"><input type="checkbox" id="preflightSchema" style="width:auto" /> 预检时连接数据源（只读元数据，检查表/列存在性）</label>
+    <p>预检输出结构化问题清单（severity / code / path）并声明「未执行的检查」；不写库、不写文件、不动水位。勾选后会真实连接一次数据源（可能较慢）。</p>
     <button id="run">运行</button>
     <h3>定时作业</h3>
     <p>在上方 YAML 添加 schedule，例如 '0 2 * * *'（本机时区每天 02:00）。注册会自动保存，重启后恢复。</p>
@@ -255,11 +258,7 @@ DST=./out.json</textarea>
       }
     };
 
-    document.getElementById('run').onclick = async () => {
-      const out = document.getElementById('out');
-      const progress = document.getElementById('progress');
-      out.textContent = '运行中…';
-      progress.textContent = '';
+    const readVariables = () => {
       const variables = {};
       for (const line of document.getElementById('vars').value.split(/\r?\n/)) {
         const trimmed = line.trim();
@@ -268,6 +267,33 @@ DST=./out.json</textarea>
         if (eq <= 0) continue;
         variables[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim();
       }
+      return variables;
+    };
+
+    document.getElementById('preflight').onclick = async () => {
+      const out = document.getElementById('out');
+      out.textContent = '预检中…';
+      try {
+        const res = await post('/api/preflight', {
+          yaml: document.getElementById('yaml').value,
+          variables: readVariables(),
+          checkSchema: document.getElementById('preflightSchema').checked
+        });
+        const report = JSON.stringify(res.json, null, 2);
+        out.textContent = res.ok
+          ? report
+          : '预检发现 error，未执行任何迁移：\n' + report;
+      } catch (error) {
+        out.textContent = '预检失败：' + error.message;
+      }
+    };
+
+    document.getElementById('run').onclick = async () => {
+      const out = document.getElementById('out');
+      const progress = document.getElementById('progress');
+      out.textContent = '运行中…';
+      progress.textContent = '';
+      const variables = readVariables();
       const res = await fetch('/api/jobs/run/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'text/event-stream' },
