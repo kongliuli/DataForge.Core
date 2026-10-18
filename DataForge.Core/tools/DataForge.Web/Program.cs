@@ -173,24 +173,8 @@ app.MapPost("/api/jobs/schedule", (ScheduleRequest request) =>
 
 app.MapPost("/api/jobs/validate", (RunRequest request) =>
 {
-    if (string.IsNullOrWhiteSpace(request.Yaml))
-        return Results.BadRequest(new { valid = false, error = "yaml is required" });
-    try
-    {
-        var file = JobYamlParser.ParseFile(request.Yaml);
-        return Results.Ok(new
-        {
-            valid = true,
-            jobCount = file.Jobs.Count,
-            scope = "configuration-only",
-            checksNotPerformed = new[] { "connectivity", "permissions", "type-compatibility", "data-reconciliation" }
-        });
-    }
-    catch (Exception)
-    {
-        // YAML parser exceptions may include input snippets containing credentials.
-        return Results.BadRequest(new { valid = false, error = "Invalid job YAML or required configuration. Check source, sink and batch fields." });
-    }
+    var report = JobConfigurationValidator.Validate(request.Yaml);
+    return report.Valid ? Results.Ok(report) : Results.BadRequest(report);
 });
 
 app.MapPost("/api/jobs/run", async (RunRequest request, JobRunHistory history, CancellationToken cancellationToken) =>
