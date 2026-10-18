@@ -11,6 +11,7 @@ public static class JobBatch
         CancellationToken cancellationToken = default,
         IProgress<JobProgress>? progress = null)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (!File.Exists(jobFilePath))
             return [Fail(jobFilePath, $"Job file not found: {jobFilePath}")];
 
@@ -25,6 +26,7 @@ public static class JobBatch
         CancellationToken cancellationToken = default,
         IProgress<JobProgress>? progress = null)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var file = JobYamlParser.ParseFile(yaml);
         var jobs = file.Jobs;
         var options = file.Execution ?? jobs.FirstOrDefault()?.Execution;

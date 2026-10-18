@@ -18,6 +18,17 @@ public class JobCancellationTests
             runner.RunAsync(new JobDefinition(), "job.yaml", cancellationToken: cts.Token));
     }
 
+    [Fact]
+    public async Task PreCancelledBatch_ThrowsBeforeFileLookupOrYamlParsing()
+    {
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            JobBatch.RunFileAsync("missing.yaml", cancellationToken: cts.Token));
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            JobBatch.RunYamlAsync("invalid: [", cancellationToken: cts.Token));
+    }
+
     [Theory]
     [InlineData(1)]
     [InlineData(2)]
