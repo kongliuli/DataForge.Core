@@ -34,6 +34,12 @@ var report = JobConfigurationValidator.Validate(yaml);
 
 检查复用作业解析器，覆盖 YAML 结构和必填配置。不会打开连接、读取源数据或写入目标。`Valid=true` 不代表迁移能够成功：连接、权限、类型兼容及数据对账未检查；错误摘要不会回显 YAML 片段。所有单源、JOIN 源与目标的 provider 注册状态均会检查，缺少适配器时返回作业序号和安装注册提示。变量替换仍不在此 API 的检查范围。
 
+## 文件源可读性预检
+
+`await JobFilePreflight.CheckAsync(yaml, jobFilePath, variables, cancellationToken)` 返回每个作业、每个源的 `passed` / `failed` / `not-checked` 结果。按作业文件目录解析相对路径并使用现有变量解析器；对 CSV、JSON、Excel、Parquet 以只读方式打开并尝试读取一个字节，不写目标。其他源明确返回未检查。
+
+这只证明当前文件可打开，不检查格式、完整内容、目标写权限或连接可用性；未解析的变量仍可能导致文件检查失败。无效 YAML 仍抛解析异常，调用方应避免直接向用户暴露原始异常内容。
+
 ## Catalog（替代 LocalDts DatabaseHelper）
 
 关系库适配包在 `AddDataForgeJobs*()` 时自动注册 Catalog：
