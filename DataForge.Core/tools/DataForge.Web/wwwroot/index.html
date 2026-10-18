@@ -69,7 +69,7 @@ sink:
     <textarea id="vars" style="min-height:4rem">SRC=./in.csv
 DST=./out.json</textarea>
     <button id="validate">检查配置</button>
-    <p>检查 YAML 结构与必填配置，不连接数据源、不执行迁移；不验证权限或数据类型兼容性。</p>
+    <p>检查 YAML 结构与必填配置，不连接数据源、不执行迁移；不验证权限、数据类型兼容性、变量替换或适配器注册状态。</p>
     <button id="run">运行</button>
     <h3>定时作业</h3>
     <p>在上方 YAML 添加 schedule，例如 '0 2 * * *'（本机时区每天 02:00）。注册会自动保存，重启后恢复。</p>

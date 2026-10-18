@@ -24,5 +24,5 @@ public sealed record JobConfigurationReport(bool Valid, int JobCount, string? Er
 {
     public string Scope => "configuration-only";
     public IReadOnlyList<string> ChecksNotPerformed =>
-        ["connectivity", "permissions", "type-compatibility", "data-reconciliation"];
+        ["connectivity", "permissions", "type-compatibility", "data-reconciliation", "variable-resolution", "provider-registration"];
 }
